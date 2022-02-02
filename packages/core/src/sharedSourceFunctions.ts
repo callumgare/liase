@@ -1,0 +1,126 @@
+import Axios from 'axios'
+import Cheerio from 'cheerio'
+import mimeTypes from 'mime-types'
+import { z } from 'zod'
+export { z }
+
+export async function getWebpage (url) {
+  return getWebpageWithAxios(url)
+}
+
+export async function getJSONPage (url): Promise<any> {
+  try {
+    return Axios.get(url, { responseType: 'json' }).then(res => res.data)
+  } catch (error) {
+    console.error('Failed when trying to load: ' + url)
+    throw error
+  }
+}
+
+export function createFileFromURL (url: string, kind: string, additionalValues?: any) {
+  const [, ext] = url.match(/\.(\w+)(?:\?[^?]*)?$/)
+  const mimeType = mimeTypes.lookup(ext)
+  let video, image
+  if (ext.match(/^gif$/i)) {
+    video = true
+    image = false
+  } else if (mimeType.match(/^video\//)) {
+    video = true
+    image = false
+  } else if (mimeType.match(/^image\//)) {
+    video = false
+    image = true
+  } else {
+    throw new Error('Could not detect media type')
+  }
+  return {
+    type: 'file',
+    url,
+    ext,
+    mimeType,
+    kind,
+    video,
+    image,
+    ...additionalValues
+  }
+}
+
+async function getWebpageWithAxios (url) {
+  try {
+    const response = await Axios.get(url)
+    return Cheerio.load(response.data)
+  } catch (error) {
+    console.error('Failed when trying to load: ' + url)
+    throw error
+  }
+}
+
+export const fileSchema = z.object({
+  type: z.literal('file')
+    .describe(''),
+  url: z.string().url()
+    .describe(''),
+  ext: z.string().regex(/^\w+$/)
+    .describe(''),
+  mimeType: z.string()
+    .describe(''),
+  kind: z.enum(['full', 'thumbnail'])
+    .describe(''),
+  video: z.boolean(),
+  image: z.boolean(),
+  fileSize: z.number().int(),
+  width: z.number().int(),
+  height: z.number().int()
+})
+
+export const mediaSchema = z.object({
+  source: z.string()
+    .describe('The name of the source where the media was found'),
+  type: z.literal('media')
+    .describe('The type of this returned object'),
+  id: z.string()
+    .describe('The ID value used to identify a media. This value will be unique amount the other media available from the source but two media from different sources could possibly share the same id.'),
+  url: z.string().url()
+    .describe(''),
+  usernameOfUploader: z.string()
+    .describe('The username of the account which uploaded the media to the source (not necessarily the same as the person who created the media).'),
+  usernameOfCreator: z.string()
+    .describe('The username of the account responsible for creating the media to the source (not necessarily the same as the person who uploaded the media to the source).'),
+  title: z.string()
+    .describe('The title of the media'),
+  tags: z.array(z.string())
+    .describe(''),
+  views: z.number().int()
+    .describe('The number times this media has been viewed'),
+  numberOfLikes: z.number().int()
+    .describe('The number of times this media has been liked.'),
+  numberOfDislikes: z.number().int()
+    .describe(''),
+  percentOfLikes: z.number()
+    .describe('The percentage of likes to dislikes that this media has received'),
+  dateUploaded: z.date()
+    .describe('The date that the media was uploaded'),
+  relativeDateUploaded: z.string()
+    .describe('The relative time since the media was uploaded. e.g. "Two weeks ago"'),
+  description: z.string()
+    .describe('A description supplied with the media'),
+  duration: z.number()
+    .describe('The play time of the media'),
+  files: z.array(fileSchema)
+})
+
+export const getPageSchema = (objectType) => z.object({
+  source: z.string()
+    .describe('The name of the source where the media was found'),
+  type: z.literal('page')
+    .describe('The type of this returned object'),
+  cursor: z.number().int()
+    .describe(''),
+  number: z.number().int()
+    .describe(''),
+  url: z.string().url(),
+  items: z.array(objectType),
+  totalItems: z.number().int()
+    .describe('Total items found not just on this page but the sum of items from all pages.'),
+  isNext: z.boolean()
+})
