@@ -8,9 +8,9 @@ export async function getWebpage (url) {
   return getWebpageWithAxios(url)
 }
 
-export async function getJSONPage (url): Promise<any> {
+export async function fetchJSON (url): Promise<any> {
   try {
-    return Axios.get(url, { responseType: 'json' }).then(res => res.data)
+    return Axios.get(url, { responseType: 'json' })
   } catch (error) {
     console.error('Failed when trying to load: ' + url)
     throw error

@@ -75,7 +75,7 @@ export default {
 
 async function getSingleMedia (query: z.infer<typeof singleMediaInputSchema>) {
   // const url = `${rootUrlApi}/gfycats/${id}`
-  // const res = await getJSONPage(url)
+  // const {data: res} = await fetchJSON(url)
   // return getMediaFromGiphyItem(res.giphyItem, createFileFromURL)
   const giphy = Giphy(query.apiKey)
   const res = await giphy.id(query.id)
