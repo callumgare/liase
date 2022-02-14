@@ -25,7 +25,8 @@ import mediaFinder from 'media-finder';
   const mediaQuery = mediaFinder({
     source: 'GIPHY',
     searchText: 'cheese',
-  }).iterateBy('media');
+    iterateBy: 'media',
+  });
 
   let result = await mediaQuery.getNext()
   console.log(`Title of first result: ${result.title}`)

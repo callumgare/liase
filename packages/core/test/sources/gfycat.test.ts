@@ -14,9 +14,10 @@ test('Can create a query object which can be modified and iterated over', async 
   const mediaQuery = mediaFinder({
     searchText: 'sad',
     source: 'Gfycat',
+    iterateBy: 'media'
   });
   
-  const firstMedia = await mediaQuery.iterateBy('media').getNext()
+  const firstMedia = await mediaQuery.getNext()
   const outputType = mediaQuery.getReturnType()
   outputType.parse(firstMedia)
 
@@ -25,9 +26,9 @@ test('Can create a query object which can be modified and iterated over', async 
 
   expect(firstMedia.id).not.toBe(secondMedia.id);
   
-  mediaQuery.updateQuery({searchText: 'fire'})
+  mediaQuery.updateQuery({searchText: 'fire', iterateBy: 'page'})
   
-  for await (const result of mediaQuery.iterateBy('page')) {
+  for await (const result of mediaQuery) {
     const outputType = mediaQuery.getReturnType()
     outputType.parse(result)
     expect(result.items.length).toBeGreaterThan(3);

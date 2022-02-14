@@ -3,15 +3,22 @@ import initSource from './initialiseSource.js'
 
 const defaultNumOfPagesToFetch = 10
 
-class MediaFinder {
-  _query: Object
-  sources: Object
-  _iterator: AsyncIterator<Object>
+type Query = {
+  iterateBy?: 'page' | 'media',
+  [key: string]: any
+}
 
-  constructor (query) {
-    this._query = query
+class MediaFinder {
+  #query: Query
+  sources: Object
+  #iterator
+
+  constructor (query, options) {
+    this.#query = query
     this.sources = {}
     this.loadSources(Object.values(coreSources))
+    options.plugins?.forEach(plugin => this.loadPlugin(plugin))
+    this.#iterator = this.getIterator()
   }
 
   loadSources (sources) {
@@ -30,25 +37,26 @@ class MediaFinder {
     this.sources[source.name] = initSource(source)
   }
 
-  get query (): any {
-    return this._query || {}
+  get query (): Query {
+    return this.#query
   }
 
   set query (query) {
-    this.updateQuery(query)
+    this.replaceQuery(query)
   }
 
-  updateQuery (query) {
-    this._query = Object.assign({}, this._query, query)
+  updateQuery (query: Query) {
+    const newQuery = Object.assign({}, this.#query, query)
+    return this.replaceQuery(newQuery)
+  }
+
+  replaceQuery (query: Query) {
     this.rewind()
-    return this
+    this.#query = query
   }
 
   async getNext () {
-    if (!this._iterator) {
-      this._iterator = this[Symbol.asyncIterator]()
-    }
-    return (await this._iterator.next()).value
+    return (await this.#iterator.next()).value
   }
 
   getSource (sourceName) {
@@ -59,25 +67,13 @@ class MediaFinder {
     return source
   }
 
-  rewindRequested = false
-
-  rewind () {
-    this.rewindRequested = true
+  // A user call getNext() and then update the 'iterateBy' value in the query. To ensure this change occurs
+  // when the next call getNext() we need to refresh the
+  rewind (): void {
+    this.#iterator = this.getIterator()
   }
 
-  async * [Symbol.asyncIterator] () {
-    this.rewindRequested = false
-    let iterator = this.getIterator()
-    let result = await iterator.next()
-    while (!result.done) {
-      yield result.value
-      if (this.rewindRequested) {
-        iterator = this.getIterator()
-        this.rewindRequested = false
-      }
-      result = await iterator.next()
-    }
-  }
+  [Symbol.asyncIterator] = this.getIterator
 
   getIterator () {
     if (!this.query?.source) {
@@ -97,7 +93,7 @@ class MediaFinder {
       } else {
         throw new Error(`Pagination type "${capability.pagination}" is not recognised`)
       }
-      if (this.iterationType === 'media') {
+      if (this.#query.iterateBy === 'media') {
         return (async function * () {
           for await (const page of iterator) {
             for (const media of page.items) {
@@ -114,18 +110,6 @@ class MediaFinder {
     }
   }
 
-  iterationType = 'auto'
-
-  iterateBy (iterationType) {
-    this.iterationType = iterationType
-    this.rewind()
-    return this
-  }
-
-  static async get (query, iterationType = 'auto') {
-    return (new MediaFinder(query)).iterateBy(iterationType).getNext()
-  }
-
   getReturnType () {
     const outputType = this.findFirstMatchingCapability(
       this.getSource(this.query.source),
@@ -136,7 +120,7 @@ class MediaFinder {
       return null
     }
 
-    if (this.iterationType === 'media') {
+    if (this.#query.iterateBy === 'media') {
       return outputType.shape.items.element
     }
 
@@ -198,6 +182,6 @@ class MediaFinder {
   }
 }
 
-export default function (query): MediaFinder {
-  return new MediaFinder(query)
+export default function (query, options = {}): MediaFinder {
+  return new MediaFinder(query, options)
 }

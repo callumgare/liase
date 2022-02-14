@@ -3,12 +3,12 @@ import basicPlugin from './fixtures/basic-plugin'
 
 test('Get media', async () => {
   expect.assertions(2);
-  const mediaQuery = mediaFinder({});
-  mediaQuery.loadPlugin(basicPlugin);
-  mediaQuery.query = {
+  const mediaQuery = mediaFinder({
     source: 'Test Site',
     searchText: 'search text'
-  }
+  }, {
+    plugins: [basicPlugin]
+  });
   const outputType = mediaQuery.getReturnType()
 
   let page = await mediaQuery.getNext()
@@ -19,12 +19,12 @@ test('Get media', async () => {
 
 test('Use getWebsite shared function', async () => {
   expect.assertions(1);
-  const mediaQuery = mediaFinder({});
-  mediaQuery.loadPlugin(basicPlugin);
-  mediaQuery.query = {
+  const mediaQuery = mediaFinder({
     source: 'Test Site',
     id: 'test-getWebpage'
-  }
+  }, {
+    plugins: [basicPlugin]
+  });
   const outputType = mediaQuery.getReturnType()
   
   let media = await mediaQuery.getNext()
