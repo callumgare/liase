@@ -1,4 +1,5 @@
 {
+  "name": "media-finder",
   "version": "0.0.1",
   "description": "Easy way to search for media content on internet",
   "main": "dist/MediaFinder",
@@ -42,5 +43,8 @@
     "ts-jest-resolver": "^2.0.0",
     "ts-node": "^10.4.0",
     "typescript": "^4.5.5"
+  },
+  "optionalDependencies": {
+    "fsevents": "^2.3.2"
   }
 }
