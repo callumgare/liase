@@ -115,6 +115,8 @@ export const getPageSchema = (objectType) => z.object({
     .describe('The name of the source where the media was found'),
   type: z.literal('page')
     .describe('The type of this returned object'),
+  page: z.number().int(),
+  totalPages: z.number().int(),
   cursor: z.number().int()
     .describe(''),
   number: z.number().int()
