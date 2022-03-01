@@ -66,8 +66,9 @@ export const fileSchema = z.object({
     .describe(''),
   kind: z.enum(['full', 'thumbnail'])
     .describe(''),
-  video: z.boolean(),
   image: z.boolean(),
+  video: z.boolean(),
+  audio: z.boolean(),
   fileSize: z.number().int(),
   width: z.number().int(),
   height: z.number().int()
