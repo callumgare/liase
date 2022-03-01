@@ -1,6 +1,6 @@
 {
   "name": "media-finder",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Easy way to search for media content on internet",
   "main": "dist/MediaFinder",
   "files": [
