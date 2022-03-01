@@ -5,15 +5,23 @@ on:
       - main
 jobs:
   lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - run: npm ci
       - run: npm run lint
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: npm ci
+      - run: npm run test
   release:
     name: Publish Package
     runs-on: ubuntu-latest
-    needs: lint
+    needs: [lint, test]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
