@@ -18,8 +18,17 @@ export async function fetchJSON (url): Promise<any> {
 }
 
 export function createFileFromURL (url: string, kind: string, additionalValues?: any) {
-  const [, ext] = url.match(/\.(\w+)(?:\?[^?]*)?$/)
-  const mimeType = mimeTypes.lookup(ext)
+  let ext = additionalValues?.ext || url.match(/\.(\w+)(?:\?[^?]*)?$/)?.[1]
+  let mimeType = additionalValues?.mimeType
+  if (ext && !mimeType) {
+    mimeType = mimeTypes.lookup(ext)
+  } else if (mimeType && !ext) {
+    ext = mimeTypes.extension(mimeType)
+  }
+  if (!ext || !mimeType) {
+    console.info(`url: ${url}\next: ${ext}\nmimeType: ${mimeType}`)
+    throw new Error('Couldn\'t derive file type')
+  }
   let video, image
   if (ext.match(/^gif$/i)) {
     video = true
@@ -31,7 +40,7 @@ export function createFileFromURL (url: string, kind: string, additionalValues?:
     video = false
     image = true
   } else {
-    throw new Error('Could not detect media type')
+    throw new Error(`Media type not valid: ${mimeType}`)
   }
   return {
     type: 'file',
