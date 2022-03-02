@@ -56,7 +56,11 @@ class MediaFinder {
   }
 
   async getNext () {
-    return (await this.#iterator.next()).value
+    const next = await this.#iterator.next()
+    if (next.done) {
+      return null
+    }
+    return next.value
   }
 
   getSource (sourceName) {
