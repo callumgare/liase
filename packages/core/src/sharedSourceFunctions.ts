@@ -30,10 +30,7 @@ export function createFileFromURL (url: string, kind: string, additionalValues?:
     throw new Error('Couldn\'t derive file type')
   }
   let video, image
-  if (ext.match(/^gif$/i)) {
-    video = true
-    image = false
-  } else if (mimeType.match(/^video\//)) {
+  if (mimeType.match(/^video\//) || ext.match(/^gif$/i) || mimeType === 'application/vnd.apple.mpegurl') {
     video = true
     image = false
   } else if (mimeType.match(/^image\//)) {
