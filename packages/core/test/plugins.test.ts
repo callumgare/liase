@@ -26,7 +26,7 @@ test('Use getWebsite shared function', async () => {
     plugins: [basicPlugin]
   });
   const outputType = mediaQuery.getReturnType()
-  
+
   let media = await mediaQuery.getNext()
   outputType.parse(media)
   expect(media.title).toBe('Example Domain');

@@ -74,18 +74,18 @@ export default {
 }
 
 async function getSingleMedia (query: z.infer<typeof singleMediaInputSchema>) {
-  // const url = `${rootUrlApi}/gfycats/${id}`
-  // const {data: res} = await fetchJSON(url)
-  // return getMediaFromGiphyItem(res.giphyItem, createFileFromURL)
+  if (!query.apiKey) {
+    throw new Error('API key needed to search Giphy')
+  }
   const giphy = Giphy(query.apiKey)
   const res = await giphy.id(query.id)
   return getMediaFromGifItem(res.data[0])
 }
 
 async function getSearch (query: z.infer<typeof mediaSearchInputSchema>): Promise<z.infer<typeof giphyPageOfMediaSchema>> {
-  // if (!query.apiKey) {
-  //   throw new Error('API key needed to search Giphy')
-  // }
+  if (!query.apiKey) {
+    throw new Error('API key needed to search Giphy')
+  }
   const giphy = Giphy(query.apiKey)
   const res = await giphy.search({
     q: query.searchText,

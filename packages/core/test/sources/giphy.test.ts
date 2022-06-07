@@ -5,6 +5,7 @@ test('Can get a page of gifs', async () => {
   const gifs = await mediaFinder({
     searchText: 'happy',
     source: 'GIPHY',
+    apiKey: process.env.GIPHY_API_KEY,
   }).getNext()
   expect(gifs.items.length).toBeGreaterThan(3);
 }, 1000 * 20);
@@ -14,9 +15,10 @@ test('Can create a query object which can be modified and iterated over', async 
   const mediaQuery = mediaFinder({
     searchText: 'sad',
     source: 'GIPHY',
+    apiKey: process.env.GIPHY_API_KEY,
     iterateBy: 'media'
   });
-  
+
   const firstMedia = await mediaQuery.getNext()
   const outputType = mediaQuery.getReturnType()
   outputType.parse(firstMedia)
@@ -25,12 +27,12 @@ test('Can create a query object which can be modified and iterated over', async 
   outputType.parse(secondMedia)
 
   expect(firstMedia.id).not.toBe(secondMedia.id);
-  
+
   mediaQuery.updateQuery({
     searchText: 'fire',
     iterateBy: 'page'
   })
-  
+
   for await (const result of mediaQuery) {
     const outputType = mediaQuery.getReturnType()
     outputType.parse(result)
@@ -44,6 +46,7 @@ test('Can get specific gif', async () => {
   const mediaQuery = mediaFinder({
     id: 'YsTs5ltWtEhnq',
     source: 'GIPHY',
+    apiKey: process.env.GIPHY_API_KEY,
   })
   let media = await mediaQuery.getNext()
   const outputType = mediaQuery.getReturnType()

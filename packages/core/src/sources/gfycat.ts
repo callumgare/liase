@@ -1,5 +1,6 @@
+import fetch from 'node-fetch'
+
 import {
-  fetchJSON,
   createFileFromURL,
   mediaSchema,
   fileSchema,
@@ -84,13 +85,13 @@ export default {
 
 async function getSingleMedia (query: z.infer<typeof singleMediaInputSchema>) {
   const url = `${rootUrlApi}/gfycats/${query.id}`
-  const { data: res } = await fetchJSON(url)
+  const res = await fetch(url).then(res => res.json())
   return getMediaFromGfyItem(res.gfyItem)
 }
 
 async function getSearch (query: z.infer<typeof mediaSearchInputSchema>): Promise<z.infer<typeof gfycatPageOfMediaSchema>> {
   const url = `${rootUrlApi}/gfycats/search?search_text=${query.searchText}${query.cursor ? `&cursor=${query.cursor}` : ''}&count=10&order=trending&type=g`
-  const { data: res } = await fetchJSON(url)
+  const res = await fetch(url).then(res => res.json())
 
   return {
     source: sourceName,
@@ -104,7 +105,6 @@ async function getSearch (query: z.infer<typeof mediaSearchInputSchema>): Promis
 }
 
 function getMediaFromGfyItem (gfyItem): z.infer<typeof gfycatMediaSchema> {
-  // console.log('---', JSON.stringify(gfyItem.likes))
   return {
     source: sourceName,
     type: 'media',
