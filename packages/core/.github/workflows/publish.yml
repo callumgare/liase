@@ -9,8 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: bash -c "curl -fsSL https://deb.nodesource.com/setup_17.x | bash -"
-      - run: apt-get install -y nodejs
       - run: npm ci
       - run: npm run lint
 
@@ -21,8 +19,6 @@ jobs:
       GIPHY_API_KEY: ${{ secrets.GIPHY_API_KEY }}
     steps:
       - uses: actions/checkout@v2
-      - run: bash -c "curl -fsSL https://deb.nodesource.com/setup_17.x | bash -"
-      - run: apt-get install -y nodejs
       - run: npm ci
       - run: npm run test
 
@@ -31,8 +27,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint, test]
     steps:
-      - run: bash -c "curl -fsSL https://deb.nodesource.com/setup_17.x | bash -"
-      - run: apt-get install -y nodejs
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
