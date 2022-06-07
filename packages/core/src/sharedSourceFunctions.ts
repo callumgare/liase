@@ -8,15 +8,6 @@ export async function getWebpage (url) {
   return getWebpageWithFetch(url)
 }
 
-export async function fetchJSON (url): Promise<any> {
-  try {
-    return fetch(url).then(res => res.json())
-  } catch (error) {
-    console.error('Failed when trying to load: ' + url)
-    throw error
-  }
-}
-
 export function createFileFromURL (url: string, kind: string, additionalValues?: any) {
   let ext = additionalValues?.ext || url.match(/\.(\w+)(?:\?[^?]*)?$/)?.[1]
   let mimeType = additionalValues?.mimeType
