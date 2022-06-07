@@ -3,7 +3,7 @@ import {
   mediaSchema,
   getPageSchema,
   z
-} from '../../src/sharedSourceFunctions.js';
+} from '../../src/sharedSourceFunctions';
 
 const sourceName = 'Test Site'
 

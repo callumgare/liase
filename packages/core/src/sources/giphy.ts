@@ -5,7 +5,7 @@ import {
   fileSchema,
   getPageSchema,
   z
-} from '../sharedSourceFunctions.js'
+} from '../sharedSourceFunctions'
 
 const sourceName = 'GIPHY'
 
