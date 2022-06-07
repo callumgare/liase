@@ -1,5 +1,5 @@
-import * as coreSources from './sources/index'
-import initSource from './initialiseSource'
+import * as coreSources from './sources/index.js'
+import initSource from './initialiseSource.js'
 
 const defaultNumOfPagesToFetch = 10
 

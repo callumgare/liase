@@ -6,7 +6,7 @@ import {
   fileSchema,
   getPageSchema,
   z
-} from '../sharedSourceFunctions'
+} from '../sharedSourceFunctions.js'
 
 const rootUrlApi = 'https://api.gfycat.com/v1'
 const rootUrlSite = 'https://gfycat.com'
