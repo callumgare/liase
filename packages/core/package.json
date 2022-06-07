@@ -23,10 +23,10 @@
   "type": "module",
   "dependencies": {
     "@types/giphy-api": "^2.0.3",
-    "axios": "^0.22.0",
     "cheerio": "^0.22.0",
     "giphy-api": "^2.0.2",
     "mime-types": "^2.1.28",
+    "node-fetch": "^2.6.7",
     "release-it": "^14.12.4",
     "zod": "^3.11.6"
   },

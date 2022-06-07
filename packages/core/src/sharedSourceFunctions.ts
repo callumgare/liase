@@ -1,16 +1,16 @@
-import Axios from 'axios'
 import Cheerio from 'cheerio'
+import fetch from 'node-fetch'
 import mimeTypes from 'mime-types'
 import { z } from 'zod'
 export { z }
 
 export async function getWebpage (url) {
-  return getWebpageWithAxios(url)
+  return getWebpageWithFetch(url)
 }
 
 export async function fetchJSON (url): Promise<any> {
   try {
-    return Axios.get(url, { responseType: 'json' })
+    return fetch(url).then(res => res.json())
   } catch (error) {
     console.error('Failed when trying to load: ' + url)
     throw error
@@ -51,10 +51,10 @@ export function createFileFromURL (url: string, kind: string, additionalValues?:
   }
 }
 
-async function getWebpageWithAxios (url) {
+async function getWebpageWithFetch (url) {
   try {
-    const response = await Axios.get(url)
-    return Cheerio.load(response.data)
+    const body = await fetch(url).then(res => res.text())
+    return Cheerio.load(body)
   } catch (error) {
     console.error('Failed when trying to load: ' + url)
     throw error
