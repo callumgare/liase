@@ -6,6 +6,7 @@
     "module": "es2015",
     "moduleResolution": "node",
     "esModuleInterop": true,
+    "declaration": true,
     "forceConsistentCasingInFileNames": true,
     "typeRoots": [
       "./node_modules/@types"
