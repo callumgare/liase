@@ -103,7 +103,7 @@ export const mediaSchema = z.object({
   description: z.string()
     .describe('A description supplied with the media'),
   duration: z.number()
-    .describe('The play time of the media'),
+    .describe('The play time of the media in seconds'),
   files: z.array(fileSchema)
 })
 
@@ -122,5 +122,5 @@ export const getPageSchema = (objectType) => z.object({
   items: z.array(objectType),
   totalItems: z.number().int()
     .describe('Total items found not just on this page but the sum of items from all pages.'),
-  isNext: z.boolean()
+  hasNext: z.boolean()
 })

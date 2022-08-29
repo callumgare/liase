@@ -50,7 +50,7 @@ const gfycatPageOfMediaSchema = getPageSchema(gfycatMediaSchema).pick({
   url: true,
   items: true,
   totalItems: true,
-  isNext: true
+  hasNext: true
 }).extend({
   cursor: z.string().describe('')
 })
@@ -100,7 +100,7 @@ async function getSearch (query: z.infer<typeof mediaSearchInputSchema>): Promis
     items: res.gfycats.map(gfyItem => getMediaFromGfyItem(gfyItem)),
     cursor: res.cursor,
     totalItems: res.found,
-    isNext: Boolean(res.cursor)
+    hasNext: Boolean(res.cursor)
   }
 }
 

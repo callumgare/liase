@@ -26,7 +26,7 @@ const examplePageOfMediaSchema = getPageSchema(exampleMediaSchema).pick({
   type: true,
   number: true,
   items: true,
-  isNext: true,
+  hasNext: true,
 })
 
 const singleMediaInputSchema = z.object({
@@ -67,7 +67,7 @@ function getPage(query: z.infer<typeof mediaSearchInputSchema>): z.infer<typeof 
     type: 'page',
     items: [exampleMedia],
     number: query.page,
-    isNext: false,
+    hasNext: false,
   }
 }
 

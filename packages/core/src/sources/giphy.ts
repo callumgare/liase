@@ -40,7 +40,7 @@ const giphyPageOfMediaSchema = getPageSchema(giphyMediaSchema).pick({
   cursor: true,
   items: true,
   totalItems: true,
-  isNext: true
+  hasNext: true
 })
 
 const singleMediaInputSchema = z.object({
@@ -100,7 +100,7 @@ async function getSearch (query: z.infer<typeof mediaSearchInputSchema>): Promis
     items: res.data.map(gif => getMediaFromGifItem(gif)),
     cursor: res.pagination.offset + res.pagination.count,
     totalItems: res.pagination.total_count,
-    isNext: (res.pagination.count + res.pagination.offset) < res.pagination.total_count
+    hasNext: (res.pagination.count + res.pagination.offset) < res.pagination.total_count
   }
 }
 

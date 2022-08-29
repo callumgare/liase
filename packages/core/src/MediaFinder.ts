@@ -147,14 +147,14 @@ class MediaFinder {
     while (page <= maxPageToFetch) {
       const pageQuery = Object.assign({}, query, { page })
       const results = await capability.run(pageQuery)
-      if (page === maxPageToFetch && results.isNext) {
-        results.isNext = false
-        results.isNextWithoutLimit = true
+      if (page === maxPageToFetch && results.hasNext) {
+        results.hasNext = false
+        results.hasNextWithoutLimit = true
       }
 
       yield results
 
-      if (!results.isNext) {
+      if (!results.hasNext) {
         break
       }
 
@@ -169,14 +169,14 @@ class MediaFinder {
     while (pageCount <= maxPageToFetch) {
       const pageQuery = Object.assign({}, query, { cursor })
       const results = await capability.run(pageQuery)
-      if (pageCount === maxPageToFetch && results.isNext) {
-        results.isNext = false
-        results.isNextWithoutLimit = true
+      if (pageCount === maxPageToFetch && results.hasNext) {
+        results.hasNext = false
+        results.hasNextWithoutLimit = true
       }
 
       yield results
 
-      if (!results.isNext) {
+      if (!results.hasNext) {
         break
       }
 
