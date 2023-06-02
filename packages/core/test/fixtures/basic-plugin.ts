@@ -1,42 +1,51 @@
 import {
   getWebpage,
-  mediaSchema,
-  getPageSchema,
-  z
-} from '../../src/sharedSourceFunctions.js';
+  z,
+} from "../../src/sharedSourceFunctions.js";
 
-const sourceName = 'Test Site'
+import {createFileSchema} from "@/src/schemas/file"
+import {createMediaSchema} from "@/src/schemas/media"
+import {createPageSchema} from "@/src/schemas/page"
 
-const exampleMedia = {
-  source: sourceName,
-  type: 'media',
-  id: '1234',
-  title: 'Media Title',
-} as const;
+const sourceName = "Test Site";
 
-const exampleMediaSchema = mediaSchema.pick({
-  source: true,
-  type: true,
-  id: true,
-  title: true,
+const exampleFileSchema = createFileSchema({
+  required: ["url", "ext"],
+  optional: []
+})
+
+const exampleMediaSchema = createMediaSchema({
+  fileSchema: exampleFileSchema,
+  required: ["title"],
+  optional: [],
 });
 
-const examplePageOfMediaSchema = getPageSchema(exampleMediaSchema).pick({
-  source: true,
-  type: true,
-  number: true,
-  items: true,
-  hasNext: true,
+const examplePageOfMediaSchema = createPageSchema({
+  paginationType: "offset",
+  itemsSchema: exampleMediaSchema,
+  required: ["hasNext"],
+  optional: [],
 })
 
+const exampleMedia: z.infer<typeof exampleMediaSchema> = {
+  meta: {
+    type: "media"
+  },
+  url: "https://example.com",
+  source: sourceName,
+  id: "1234",
+  title: "Media Title",
+  files: []
+};
+
 const singleMediaInputSchema = z.object({
-  id: z.string()
-})
+  id: z.string(),
+});
 
 const mediaSearchInputSchema = z.object({
   searchText: z.string(),
-  page: z.number().optional()
-})
+  page: z.number().optional(),
+});
 
 export default {
   sources: [
@@ -52,33 +61,40 @@ export default {
         {
           name: "Search media",
           inputType: mediaSearchInputSchema,
-          pagination: 'number',
+          pagination: "number",
           run: getPage,
           outputType: examplePageOfMediaSchema,
-        }
-      ]
-    }
-  ]
-}
+        },
+      ],
+    },
+  ],
+};
 
-function getPage(query: z.infer<typeof mediaSearchInputSchema>): z.infer<typeof examplePageOfMediaSchema> {
+function getPage(
+  query: z.infer<typeof mediaSearchInputSchema>
+): z.infer<typeof examplePageOfMediaSchema> {
   return {
-    source: 'example plugin',
-    type: 'page',
+    paginationType: "offset",
+    meta: {
+      type: "page"
+    },
+    source: "example plugin",
     items: [exampleMedia],
-    number: query.page,
+    number: query.page ?? 0,
     hasNext: false,
-  }
+  };
 }
 
-async function getSingleMedia(query: z.infer<typeof singleMediaInputSchema>): Promise<z.infer<typeof exampleMediaSchema>> {
-  if (query.id == 'test-getWebpage') {
-    const $ = await getWebpage('http://example.com/')
+async function getSingleMedia(
+  query: z.infer<typeof singleMediaInputSchema>
+): Promise<z.infer<typeof exampleMediaSchema>> {
+  if (query.id == "test-getWebpage") {
+    const $ = await getWebpage("http://example.com/");
     return {
       ...exampleMedia,
-      title: $('h1').text()
-    }
+      title: $("h1").text(),
+    };
   } else {
-    return exampleMedia
+    return exampleMedia;
   }
 }

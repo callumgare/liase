@@ -8,9 +8,14 @@
     "esModuleInterop": true,
     "declaration": true,
     "forceConsistentCasingInFileNames": true,
-    "typeRoots": [
-      "./node_modules/@types"
-    ]
+    "strict": true,
+    "typeRoots": ["./node_modules/@types"],
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "noImplicitAny": false,
+    "noImplicitThis": false
   },
   "include": ["./src/**/*"]
 }

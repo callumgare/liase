@@ -1,6 +1,6 @@
 name: Publish Package
 on:
- push:
+  push:
     branches:
       - main
 jobs:
@@ -42,8 +42,8 @@ jobs:
         if: steps.check.outputs.changed == 'true'
         uses: actions/setup-node@v2
         with:
-          node-version: '12.x'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: "12.x"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependences
         if: steps.check.outputs.changed == 'true'
