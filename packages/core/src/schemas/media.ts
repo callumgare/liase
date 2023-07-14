@@ -14,7 +14,7 @@ const baseMediaSchema = z.object({
       .describe(
         'This will always be "media" and can be used to test if an object is a media object or not'
       ),
-  }),
+  }).strict(),
   source: z
     .string()
     .describe("The name of the source where the media was found"),
@@ -24,7 +24,7 @@ const baseMediaSchema = z.object({
       "The ID value used to identify a media. This value will be unique amount the other media available from the source but two media from different sources could possibly share the same id."
     ),
   url: z.string().url().describe(""),
-});
+}).strict();
 
 type BaseMediaShape = ZodShape<typeof baseMediaSchema>
 
@@ -63,7 +63,7 @@ const commonMediaSchema = z.object({
     ),
   description: z.string().describe("A description supplied with the media"),
   duration: z.number().describe("The play time of the media in seconds"),
-});
+}).strict();
 
 type CommonMediaShape = ZodShape<typeof commonMediaSchema>
 
@@ -106,10 +106,10 @@ export function createMediaSchema<
     optionalProperties
   );
 
-  const result: any = mediaSchema.merge(
+  const result = mediaSchema.merge(
     z.object({
       files: z.array(fileSchema),
-    })
-  );
+    }).strict()
+  ) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
   return result
 }

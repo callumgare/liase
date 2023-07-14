@@ -5,9 +5,11 @@ import type { Plugin } from "@/types/plugins.js";
 const defaultNumOfPagesToFetch = 10;
 
 type Query = {
-  [key: string]: any,
+  [key: string]: unknown,
   source: string,
   iterateBy?: "page" | "media",
+  numOfPagesToFetch?: number,
+  page?: number,
 };
 
 type Options = {
@@ -17,6 +19,8 @@ type Options = {
 class MediaFinder {
   #query?: Query;
   sources: { [sourceName: string]: Source };
+  // We can't really provide build time types for query results unfortunately
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   #iterator?: AsyncGenerator<any, void, unknown>;
 
   constructor(query?: Query, options?: Options) {

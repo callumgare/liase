@@ -17,8 +17,8 @@ const basePageProperties = z.object({
       .describe(
         'This will always be "media" and can be used to test if an object is a media object or not'
       ),
-  }),
-});
+  }).strict(),
+}).strict();
 
 type BasePageShape = ZodShape<typeof basePageProperties>
 
@@ -27,14 +27,14 @@ const cursorPageProperties = z.object({
     .literal("cursor")
     .describe("The type of this returned object"),
   cursor: z.number().int().describe(""),
-});
+}).strict();
 
 const offsetPageProperties = z.object({
   paginationType: z
     .literal("offset")
     .describe("The type of this returned object"),
   number: z.number().int().describe(""),
-});
+}).strict();
 
 const commonPageProperties = z.object({
   totalPages: z.number().int(),
@@ -47,7 +47,7 @@ const commonPageProperties = z.object({
       "Total items found not just on this page but the sum of items from all pages."
     ),
   hasNext: z.boolean(),
-});
+}).strict();
 
 type CommonPageShape = ZodShape<typeof commonPageProperties>
 
@@ -55,7 +55,7 @@ export function createPageSchema<
   ItemsShape extends z.ZodRawShape,
   CommonPropsRequired extends keyof CommonPageShape,
   CommonPropsOptional extends keyof CommonPageShape,
-  ExtendProps extends z.ZodRawShape = {}
+  ExtendProps extends z.ZodRawShape = NonNullable<unknown>
 >({
   paginationType,
   itemsSchema,
@@ -94,7 +94,7 @@ export function createPageSchema<
   ItemsShape extends z.ZodRawShape,
   CommonPropsRequired extends keyof CommonPageShape,
   CommonPropsOptional extends keyof CommonPageShape,
-  ExtendProps extends z.ZodRawShape = {}
+  ExtendProps extends z.ZodRawShape = NonNullable<unknown>
 >({
   paginationType,
   itemsSchema,
@@ -137,7 +137,7 @@ export function createPageSchema<
     | z.infer<typeof cursorPageProperties.shape.paginationType>
     | z.infer<typeof offsetPageProperties.shape.paginationType>
   >,
-  ExtendProps extends z.ZodRawShape = {}
+  ExtendProps extends z.ZodRawShape = NonNullable<unknown>
 >({
   paginationType,
   itemsSchema,
@@ -153,14 +153,14 @@ export function createPageSchema<
     // require this prop so callers will at least pass in an empty array.
   extend?: ExtendProps;
 }) {
-  let result: any = createSchemaFromSuperset(
+  let result = createSchemaFromSuperset(
     basePageProperties,
     commonPageProperties,
     requiredProperties,
     optionalProperties
   ).extend({
     items: z.array(itemsSchema),
-  });
+  }) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
   if (paginationType === "offset") {
     result = result.merge(offsetPageProperties)
   } else if (paginationType === "cursor") {

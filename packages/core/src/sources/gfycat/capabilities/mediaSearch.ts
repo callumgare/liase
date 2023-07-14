@@ -14,7 +14,7 @@ import { Capability } from "@/types/sources.js";
 const mediaSearchInputSchema = z.object({
   searchText: z.string(),
   cursor: z.string().optional(),
-});
+}).passthrough();
 
 async function getSearch(
   query: z.infer<typeof mediaSearchInputSchema>

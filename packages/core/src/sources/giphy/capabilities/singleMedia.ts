@@ -10,7 +10,7 @@ import { Capability } from "@/types/sources.js";
 const singleMediaInputSchema = z.object({
   id: z.string(),
   apiKey: z.string().optional(),
-});
+}).passthrough();
 
 async function getSingleMedia(query: z.infer<typeof singleMediaInputSchema>): Promise<z.infer<typeof giphyMediaSchema>> {
   if (!query.apiKey) {

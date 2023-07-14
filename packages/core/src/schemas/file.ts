@@ -4,7 +4,7 @@ import { createSchemaFromSuperset, MergeShape, ZodShape, PickShape, PartialShape
 const baseFileSchema = z.object({
   type: z.literal("file").describe(""),
   kind: z.enum(["full", "thumbnail"]).describe(""),
-});
+}).strict();
 
 type BaseFileShape = ZodShape<typeof baseFileSchema>
 
@@ -18,7 +18,7 @@ const commonFileSchema = z.object({
   fileSize: z.number().int(),
   width: z.number().int(),
   height: z.number().int(),
-});
+}).strict();
 
 type CommonFileShape = ZodShape<typeof commonFileSchema>
 
@@ -44,11 +44,11 @@ export function createFileSchema<
     >
   >
 > {
-  const result: any = createSchemaFromSuperset(
+  const result = createSchemaFromSuperset(
     baseFileSchema,
     commonFileSchema,
     requiredProperties,
     optionalProperties
-  );
+  ) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
   return result
 }

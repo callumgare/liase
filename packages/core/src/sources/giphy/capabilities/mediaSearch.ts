@@ -13,7 +13,7 @@ const mediaSearchInputSchema = z.object({
   searchText: z.string(),
   apiKey: z.string().optional(),
   cursor: z.number().optional(),
-});
+}).passthrough();
 
 async function getSearch(
   query: z.infer<typeof mediaSearchInputSchema>

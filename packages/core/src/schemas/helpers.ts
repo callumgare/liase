@@ -1,4 +1,4 @@
-import { z, ZodRawShape, ZodObject, ZodAny, ZodLiteral } from "zod";
+import { z, ZodRawShape, ZodObject } from "zod";
 
 type identity<T> = T;
 type flatten<T> = identity<{ [k in keyof T]: T[k] }>;
@@ -65,7 +65,7 @@ export function createSchemaFromSuperset<
     {} as { [k in keyof CommonShape]: true }
   );
 
-  const result: any = z.object({}).merge(
+  const result = z.object({}).merge(
     baseSchema.merge(
       commonSchema
         .pick(requiredPropertiesObj)
@@ -73,7 +73,7 @@ export function createSchemaFromSuperset<
           commonSchema.pick(optionalPropertiesObj).partial()
         )
     )
-  );
+  ).strict() as any; // eslint-disable-line @typescript-eslint/no-explicit-any
   return result
 }
 

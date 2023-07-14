@@ -7,7 +7,7 @@ import { Capability } from "@/types/sources.js";
 
 const singleMediaInputSchema = z.object({
   id: z.string(),
-});
+}).passthrough();
 
 async function getSingleMedia(query: z.infer<typeof singleMediaInputSchema>) {
   const url = `${rootUrlApi}/gfycats/${query.id}`;
