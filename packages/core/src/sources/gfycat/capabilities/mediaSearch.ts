@@ -5,11 +5,11 @@ import {
   gfycatPageOfMediaSchema,
   gfycatRawAPISearchPageSchema,
   GfycatPageOfMedia
-} from "../types";
-import { getMediaFromGfyItem } from "../helpers";
-import { rootUrlApi, sourceName } from "../constants";
-import { validateSchema } from "@/src/sharedSourceFunctions";
-import { Capability } from "@/types/sources";
+} from "../types.js";
+import { getMediaFromGfyItem } from "../helpers.js";
+import { rootUrlApi, sourceName } from "../constants.js";
+import { validateSchema } from "@/src/sharedSourceFunctions.js";
+import { Capability } from "@/types/sources.js";
 
 const mediaSearchInputSchema = z.object({
   searchText: z.string(),

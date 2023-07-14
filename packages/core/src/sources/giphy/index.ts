@@ -1,7 +1,7 @@
-import { sourceName } from "./constants";
-import singleMediaCapability from "./capabilities/singleMedia";
-import mediaSearchCapability from "./capabilities/mediaSearch";
-import { Source } from "@/types/sources";
+import { sourceName } from "./constants.js";
+import singleMediaCapability from "./capabilities/singleMedia.js";
+import mediaSearchCapability from "./capabilities/mediaSearch.js";
+import { Source } from "@/types/sources.js";
 
 const source: Source = {
   name: sourceName,

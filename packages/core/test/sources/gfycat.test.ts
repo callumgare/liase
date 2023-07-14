@@ -1,4 +1,4 @@
-import mediaFinder from "@/src/MediaFinder";
+import mediaFinder from "@/src/MediaFinder.js";
 
 test(
   "Can get a page of gifs",

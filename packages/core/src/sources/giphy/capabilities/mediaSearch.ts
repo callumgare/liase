@@ -4,10 +4,10 @@ import Giphy from "giphy-api";
 import {
   giphyPageOfMediaSchema,
   GiphyPageOfMedia
-} from "../types";
-import { getMediaFromGifItem } from "../helpers";
-import { sourceName } from "../constants";
-import { Capability } from "@/types/sources";
+} from "../types.js";
+import { getMediaFromGifItem } from "../helpers.js";
+import { sourceName } from "../constants.js";
+import { Capability } from "@/types/sources.js";
 
 const mediaSearchInputSchema = z.object({
   searchText: z.string(),

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createFileSchema } from "@/src/schemas/file";
+import { createFileSchema } from "@/src/schemas/file.js";
 
 const fileSchema = createFileSchema ({
   required: ["url", "ext", "mimeType", "video", "image"],

@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { createFileSchema } from "@/src/schemas/file";
-import { createMediaSchema } from "@/src/schemas/media";
+import { createFileSchema } from "@/src/schemas/file.js";
+import { createMediaSchema } from "@/src/schemas/media.js";
 
 const fileSchema = createFileSchema ({
   required: ["url", "ext", "mimeType", "video", "image"],

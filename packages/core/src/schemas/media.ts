@@ -5,7 +5,7 @@ import {
   ZodShape,
   PartialShape,
   MergeShape,
-} from "./helpers";
+} from "./helpers.js";
 
 const baseMediaSchema = z.object({
   meta: z.object({

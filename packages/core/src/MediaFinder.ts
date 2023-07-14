@@ -1,5 +1,5 @@
 import * as coreSources from "./sources/index.js";
-import type { Source } from "@/types/sources";
+import type { Source } from "@/types/sources.js";
 
 const defaultNumOfPagesToFetch = 10;
 

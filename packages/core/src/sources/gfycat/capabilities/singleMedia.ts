@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { gfycatMediaSchema, gfycatRawAPISingleGfycatSchema } from "../types";
-import { rootUrlApi } from "../constants";
-import { getMediaFromGfyItem } from "../helpers";
-import { validateSchema } from "@/src/sharedSourceFunctions";
-import { Capability } from "@/types/sources";
+import { gfycatMediaSchema, gfycatRawAPISingleGfycatSchema } from "../types.js";
+import { rootUrlApi } from "../constants.js";
+import { getMediaFromGfyItem } from "../helpers.js";
+import { validateSchema } from "@/src/sharedSourceFunctions.js";
+import { Capability } from "@/types/sources.js";
 
 const singleMediaInputSchema = z.object({
   id: z.string(),

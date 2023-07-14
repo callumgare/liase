@@ -2,7 +2,7 @@
   "name": "media-finder",
   "version": "0.2.3",
   "description": "Easy way to search for media content on internet",
-  "main": "dist/MediaFinder.js",
+  "main": "dist/src/MediaFinder.js",
   "files": [
     "dist/*"
   ],
@@ -12,7 +12,7 @@
     "lint": "eslint --ext .ts,.js src",
     "lint:fix": "eslint --fix --ext .ts,.js src",
     "lint:prettier": "prettier --write .",
-    "test": "jest",
+    "test": "env NODE_OPTIONS=--experimental-vm-modules jest",
     "test:watch": "npm run test -- --watch",
     "release": "release-it"
   },
@@ -49,8 +49,8 @@
     "release-it": "^15.5.0",
     "ts-jest": "^29.1.0",
     "ts-jest-resolver": "^2.0.1",
-    "ts-node": "^10.4.0",
-    "typescript": "^5.0.4"
+    "tsx": "^3.12.7",
+    "typescript": "^5.1.6"
   },
   "optionalDependencies": {
     "fsevents": "^2.3.2"

@@ -5,7 +5,7 @@ import {
   MergeShape,
   PickShape,
   PartialShape,
-} from "./helpers";
+} from "./helpers.js";
 
 const basePageProperties = z.object({
   source: z

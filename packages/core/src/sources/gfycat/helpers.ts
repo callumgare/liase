@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { createFileFromURL } from "@/src/sharedSourceFunctions";
+import { createFileFromURL } from "@/src/sharedSourceFunctions.js";
 import {
   gfycatFileSchema,
   gfycatMediaSchema,
   gfycatRawAPIMediaSchema,
-} from "./types";
-import { rootUrlSite, sourceName } from "./constants";
+} from "./types.js";
+import { rootUrlSite, sourceName } from "./constants.js";
 
 export function getMediaFromGfyItem(
   gfyItem: z.infer<typeof gfycatRawAPIMediaSchema>

@@ -3,9 +3,9 @@ import Giphy from "giphy-api";
 
 import {
   giphyMediaSchema,
-} from "../types";
-import { getMediaFromGifItem } from "../helpers";
-import { Capability } from "@/types/sources";
+} from "../types.js";
+import { getMediaFromGifItem } from "../helpers.js";
+import { Capability } from "@/types/sources.js";
 
 const singleMediaInputSchema = z.object({
   id: z.string(),

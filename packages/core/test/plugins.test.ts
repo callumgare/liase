@@ -1,5 +1,5 @@
-import mediaFinder from "../src/MediaFinder";
-import basicPlugin from "./fixtures/basic-plugin";
+import mediaFinder from "../src/MediaFinder.js";
+import basicPlugin from "./fixtures/basic-plugin.js";
 
 test("Get media", async () => {
   expect.assertions(2);

@@ -3,9 +3,9 @@ import {
   z,
 } from "../../src/sharedSourceFunctions.js";
 
-import {createFileSchema} from "@/src/schemas/file"
-import {createMediaSchema} from "@/src/schemas/media"
-import {createPageSchema} from "@/src/schemas/page"
+import {createFileSchema} from "@/src/schemas/file.js"
+import {createMediaSchema} from "@/src/schemas/media.js"
+import {createPageSchema} from "@/src/schemas/page.js"
 
 const sourceName = "Test Site";
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { createFileSchema } from "@/src/schemas/file";
-import { createMediaSchema } from "@/src/schemas/media";
-import { createPageSchema } from "@/src/schemas/page";
+import { createFileSchema } from "@/src/schemas/file.js";
+import { createMediaSchema } from "@/src/schemas/media.js";
+import { createPageSchema } from "@/src/schemas/page.js";
 
 export const gfycatFileSchema = createFileSchema({
   required: ["url", "ext", "mimeType", "video", "image"],

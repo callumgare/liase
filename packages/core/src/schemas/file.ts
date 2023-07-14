@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createSchemaFromSuperset, MergeShape, ZodShape, PickShape, PartialShape } from "./helpers";
+import { createSchemaFromSuperset, MergeShape, ZodShape, PickShape, PartialShape } from "./helpers.js";
 
 const baseFileSchema = z.object({
   type: z.literal("file").describe(""),

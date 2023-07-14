@@ -1,11 +1,11 @@
 import { z } from "zod";
 
-import { createFileFromURL } from "@/src/sharedSourceFunctions";
+import { createFileFromURL } from "@/src/sharedSourceFunctions.js";
 import {
   giphyFileSchema,
   giphyMediaSchema,
-} from "./types";
-import { sourceName } from "./constants";
+} from "./types.js";
+import { sourceName } from "./constants.js";
 
 export function getMediaFromGifItem(giphyItem): z.infer<typeof giphyMediaSchema> {
   return {
