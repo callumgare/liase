@@ -1,24 +1,32 @@
 import * as coreSources from "./sources/index.js";
-import type { Source } from "@/types/sources.js";
+import type { Capability, Source } from "@/types/sources.js";
+import type { Plugin } from "@/types/plugins.js";
 
 const defaultNumOfPagesToFetch = 10;
 
 type Query = {
-  iterateBy?: "page" | "media";
-  [key: string]: any;
+  [key: string]: any,
+  source: string,
+  iterateBy?: "page" | "media",
 };
 
-class MediaFinder {
-  #query: Query;
-  sources: { [sourceName: string]: Source };
-  #iterator;
+type Options = {
+  plugins?: Array<Plugin>
+}
 
-  constructor(query, options) {
-    this.#query = query;
+class MediaFinder {
+  #query?: Query;
+  sources: { [sourceName: string]: Source };
+  #iterator?: AsyncGenerator<any, void, unknown>;
+
+  constructor(query?: Query, options?: Options) {
     this.sources = {};
     this.loadSources(Object.values(coreSources));
-    options.plugins?.forEach((plugin) => this.loadPlugin(plugin));
-    this.#iterator = this.getIterator();
+    options?.plugins?.forEach((plugin) => this.loadPlugin(plugin));
+    if (query) {
+      this.#query = query;
+      this.#iterator = this.getIterator();
+    }
   }
 
   loadSources(sources: Source[]) {
@@ -27,7 +35,7 @@ class MediaFinder {
     }
   }
 
-  loadPlugin(plugin) {
+  loadPlugin(plugin: Plugin) {
     if (plugin.sources) {
       this.loadSources(plugin.sources);
     }
@@ -42,15 +50,18 @@ class MediaFinder {
     this.sources[source.name] = source;
   }
 
-  get query(): Query {
+  get query(): Query | undefined {
     return this.#query;
   }
 
-  set query(query) {
+  set query(query: Query) {
     this.replaceQuery(query);
   }
 
-  updateQuery(query: Query) {
+  updateQuery(query: Partial<Query>) {
+    if (!this.#query) {
+      throw Error("Can not update query as none has yet been set")
+    }
     const newQuery = Object.assign({}, this.#query, query);
     return this.replaceQuery(newQuery);
   }
@@ -61,6 +72,9 @@ class MediaFinder {
   }
 
   async getNext() {
+    if (!this.#iterator) {
+      throw new Error("No query specified");
+    }
     const next = await this.#iterator.next();
     if (next.done) {
       return null;
@@ -68,7 +82,7 @@ class MediaFinder {
     return next.value;
   }
 
-  getSource(sourceName) {
+  getSource(sourceName: string): Source {
     const source = this.sources[sourceName];
     if (!source) {
       throw new Error(
@@ -87,6 +101,9 @@ class MediaFinder {
   [Symbol.asyncIterator] = this.getIterator;
 
   getIterator() {
+    if (!this.query) {
+      throw new Error("No query specified");
+    }
     if (!this.query?.source) {
       throw new Error("No source specified");
     }
@@ -99,7 +116,7 @@ class MediaFinder {
     }
     if (capability.pagination) {
       let iterator;
-      if (capability.pagination === "number") {
+      if (capability.pagination === "offset") {
         iterator = this.getPagesByNumber(this.query, capability);
       } else if (capability.pagination === "cursor") {
         iterator = this.getPagesByCursor(this.query, capability);
@@ -108,7 +125,7 @@ class MediaFinder {
           `Pagination type "${capability.pagination}" is not recognised`
         );
       }
-      if (this.#query.iterateBy === "media") {
+      if (this.query.iterateBy === "media") {
         return (async function* () {
           for await (const page of iterator) {
             for (const media of page.items) {
@@ -119,13 +136,17 @@ class MediaFinder {
       }
       return iterator;
     } else {
+      const query = this.query
       return async function* () {
-        yield capability.run(this.query);
+        yield capability.run(query);
       }.call(this);
     }
   }
 
   getReturnType() {
+    if (!this.query) {
+      throw new Error("No query specified");
+    }
     const outputType = this.findFirstMatchingCapability(
       this.getSource(this.query.source),
       this.query
@@ -135,14 +156,14 @@ class MediaFinder {
       return null;
     }
 
-    if (this.#query.iterateBy === "media") {
+    if (this.query.iterateBy === "media") {
       return outputType.shape.items.element;
     }
 
     return outputType;
   }
 
-  findFirstMatchingCapability(source, query) {
+  findFirstMatchingCapability(source: Source, query: Query) {
     for (const capability of source.capabilities) {
       if (capability.inputType.safeParse(query).success) {
         return capability;
@@ -151,7 +172,7 @@ class MediaFinder {
     return null;
   }
 
-  async *getPagesByNumber(query, capability) {
+  async *getPagesByNumber(query: Query, capability: Capability) {
     let page = query.page || 1;
     const maxPageToFetch =
       page - 1 + (query.numOfPagesToFetch || defaultNumOfPagesToFetch);
@@ -174,12 +195,12 @@ class MediaFinder {
     }
   }
 
-  async *getPagesByCursor(query, capability) {
+  async *getPagesByCursor(query: Query, capability: Capability) {
     let cursor;
     let pageCount = 0;
     const maxPageToFetch = query.numOfPagesToFetch || defaultNumOfPagesToFetch;
     while (pageCount <= maxPageToFetch) {
-      const pageQuery = Object.assign({}, query, { cursor });
+      const pageQuery: Query = Object.assign({}, query, { cursor });
       const results = await capability.run(pageQuery);
       if (pageCount === maxPageToFetch && results.hasNext) {
         results.hasNext = false;
@@ -198,6 +219,6 @@ class MediaFinder {
   }
 }
 
-export default function (query, options = {}): MediaFinder {
+export default function (query?: Query, options?: Options): MediaFinder {
   return new MediaFinder(query, options);
 }

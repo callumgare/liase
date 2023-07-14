@@ -6,6 +6,7 @@ import {
 import {createFileSchema} from "@/src/schemas/file.js"
 import {createMediaSchema} from "@/src/schemas/media.js"
 import {createPageSchema} from "@/src/schemas/page.js"
+import { Plugin } from "@/types/plugins.js";
 
 const sourceName = "Test Site";
 
@@ -47,7 +48,7 @@ const mediaSearchInputSchema = z.object({
   page: z.number().optional(),
 });
 
-export default {
+const basicPlugin: Plugin = {
   sources: [
     {
       name: sourceName,
@@ -61,7 +62,7 @@ export default {
         {
           name: "Search media",
           inputType: mediaSearchInputSchema,
-          pagination: "number",
+          pagination: "offset",
           run: getPage,
           outputType: examplePageOfMediaSchema,
         },
@@ -69,6 +70,8 @@ export default {
     },
   ],
 };
+
+export default basicPlugin
 
 function getPage(
   query: z.infer<typeof mediaSearchInputSchema>

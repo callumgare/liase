@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { GIFObject } from "giphy-api";
 
 import { createFileFromURL } from "@/src/sharedSourceFunctions.js";
 import {
@@ -7,7 +8,7 @@ import {
 } from "./types.js";
 import { sourceName } from "./constants.js";
 
-export function getMediaFromGifItem(giphyItem): z.infer<typeof giphyMediaSchema> {
+export function getMediaFromGifItem(giphyItem: GIFObject): z.infer<typeof giphyMediaSchema> {
   return {
     source: sourceName,
     meta: {
@@ -22,12 +23,12 @@ export function getMediaFromGifItem(giphyItem): z.infer<typeof giphyMediaSchema>
   };
 }
 
-function filesFromGiphyItemFiles(giphyItem): z.infer<typeof giphyFileSchema>[] {
+function filesFromGiphyItemFiles(giphyItem: GIFObject): z.infer<typeof giphyFileSchema>[] {
   return [
-    createFileFromURL(giphyItem.images.original_mp4.mp4, "full", {
-      fileSize: parseInt(giphyItem.images.original_mp4.mp4_size),
-      width: parseInt(giphyItem.images.original_mp4.width),
-      height: parseInt(giphyItem.images.original_mp4.height),
+    createFileFromURL(giphyItem.images.original.mp4, "full", {
+      fileSize: parseInt(giphyItem.images.original.mp4_size),
+      width: parseInt(giphyItem.images.original.width),
+      height: parseInt(giphyItem.images.original.height),
     }),
     createFileFromURL(giphyItem.images.preview.mp4, "thumbnail", {
       fileSize: parseInt(giphyItem.images.preview.mp4_size),

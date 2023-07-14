@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export type Capability<
-  Input extends z.AnyZodObject,
-  Output extends z.ZodTypeAny
+  Input extends z.AnyZodObject = z.AnyZodObject,
+  Output extends z.ZodTypeAny = z.ZodTypeAny
 > = {
   name: string;
   inputType: Input;

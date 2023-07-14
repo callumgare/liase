@@ -5,7 +5,7 @@ import { z } from "zod";
 export { z };
 import { fromZodError } from 'zod-validation-error';
 
-export async function getWebpage(url) {
+export async function getWebpage(url: string) {
   return getWebpageWithFetch(url);
 }
 
@@ -51,7 +51,7 @@ export function createFileFromURL(
   };
 }
 
-async function getWebpageWithFetch(url) {
+async function getWebpageWithFetch(url: string) {
   try {
     const body = await fetch(url).then((res) => res.text());
     return Cheerio.load(body);
