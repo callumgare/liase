@@ -3,36 +3,35 @@ import {
   z,
 } from "../../src/sharedSourceFunctions.js";
 
-import {createFileSchema} from "@/src/schemas/file.js"
-import {createMediaSchema} from "@/src/schemas/media.js"
-import {createPageSchema} from "@/src/schemas/page.js"
-import { Plugin } from "@/types/plugins.js";
+import { Plugin } from "@/src/schemas/plugin.js";
 
 const sourceName = "Test Site";
 
-const exampleFileSchema = createFileSchema({
-  required: ["url", "ext"],
-  optional: []
+const exampleFileSchema = z.object({
+  type: z.literal("full"),
+  url: z.string().url(),
+  ext: z.string().regex(/^\w+$/),
 })
 
-const exampleMediaSchema = createMediaSchema({
-  fileSchema: exampleFileSchema,
-  required: ["title"],
-  optional: [],
+const exampleMediaSchema = z.object({
+  source: z.literal(sourceName),
+  id: z.string(),
+  title: z.string(),
+  files: z.array(exampleFileSchema)
 });
 
-const examplePageOfMediaSchema = createPageSchema({
-  paginationType: "offset",
-  itemsSchema: exampleMediaSchema,
-  required: ["hasNext"],
-  optional: [],
+const exampleResponseSchema = z.object({
+  page: z.object({
+    paginationType: z.literal("offset"),
+    pageNumber: z.number().int(),
+    isLastPage: z.boolean(),
+  }),
+  media: z.array(exampleMediaSchema)
 })
 
+type ExampleResponse = z.infer<typeof exampleResponseSchema>
+
 const exampleMedia: z.infer<typeof exampleMediaSchema> = {
-  meta: {
-    type: "media"
-  },
-  url: "https://example.com",
   source: sourceName,
   id: "1234",
   title: "Media Title",
@@ -45,26 +44,27 @@ const singleMediaInputSchema = z.object({
 
 const mediaSearchInputSchema = z.object({
   searchText: z.string(),
-  page: z.number().optional(),
+  pageNumber: z.number().optional(),
 });
 
 const basicPlugin: Plugin = {
   sources: [
     {
       name: sourceName,
-      capabilities: [
+      requestHandlers: [
         {
           name: "Single media",
-          inputType: singleMediaInputSchema,
+          requestSchema: singleMediaInputSchema,
+          responseSchema: exampleResponseSchema.omit({page: true}),
+          paginationType: "none",
           run: getSingleMedia,
-          outputType: exampleMediaSchema,
         },
         {
           name: "Search media",
-          inputType: mediaSearchInputSchema,
-          pagination: "offset",
+          requestSchema: mediaSearchInputSchema,
+          responseSchema: exampleResponseSchema,
+          paginationType: "offset",
           run: getPage,
-          outputType: examplePageOfMediaSchema,
         },
       ],
     },
@@ -74,30 +74,29 @@ const basicPlugin: Plugin = {
 export default basicPlugin
 
 function getPage(
-  query: z.infer<typeof mediaSearchInputSchema>
-): z.infer<typeof examplePageOfMediaSchema> {
-  return {
-    paginationType: "offset",
-    meta: {
-      type: "page"
+  {request}: {request: z.infer<typeof mediaSearchInputSchema>}
+): Promise<ExampleResponse> {
+  return new Promise(resolve => resolve({
+    page: {
+      paginationType: "offset",
+      pageNumber: request.pageNumber ?? 0,
+      isLastPage: true,
     },
-    source: "example plugin",
-    items: [exampleMedia],
-    number: query.page ?? 0,
-    hasNext: false,
-  };
+    media: [exampleMedia],
+  }));
 }
 
 async function getSingleMedia(
-  query: z.infer<typeof singleMediaInputSchema>
-): Promise<z.infer<typeof exampleMediaSchema>> {
-  if (query.id == "test-getWebpage") {
+  {request}: {request: z.infer<typeof singleMediaInputSchema>}
+): Promise<Omit<ExampleResponse, "page">> {
+  if (request.id == "test-getWebpage") {
     const $ = await getWebpage("http://example.com/");
     return {
-      ...exampleMedia,
-      title: $("h1").text(),
-    };
+      media: [{...exampleMedia, title: $("h1").text()}],
+    }
   } else {
-    return exampleMedia;
+    return {
+      media: [exampleMedia],
+    };
   }
 }

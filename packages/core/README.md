@@ -1,4 +1,4 @@
-> :warning: **This package is currently experimental and the API is both poorly document and likely to change**
+> :warning: **This package is currently experimental and the API is both poorly documented and likely to change**
 
 # Media Finder
 
@@ -7,41 +7,49 @@ Media Finder attempts to provide a consistent API to search for, and pull the me
 ## Search
 
 ```js
-import mediaFinder from "media-finder";
-// Or if you're using CommonJS for modules:
-// const MediaFinder = require('media-finder');
+import { createMediaFinderQuery } from "media-finder";
 
 // Self-executing async function is used here simply to enable the use of await.
 (async () => {
   // Search and return immediately the first page of results
-  const gifs = await mediaFinder({
-    source: "GIPHY",
-    searchText: "cheese",
+  const response = await createMediaFinderQuery({
+    request: {
+      source: "GIPHY",
+      queryType: "Search",
+      searchText: "cheese",
+    },
+    queryOptions: {
+      secrets: {
+        apiKey: process.env.GIPHY_API_KEY,
+      }
+    }
   }).getNext();
   // Prints the number of results in the first page
-  console.log(`Got ${gifs.items.length} gifs`);
+  console.log(`Got ${response?.media.length} gifs`);
+})();
 
+(async () => {
   // Alternatively create a query object which can be modified and iterated over
-  const mediaQuery = mediaFinder({
-    source: "GIPHY",
-    searchText: "cheese",
-    iterateBy: "media",
+  const mediaQuery = createMediaFinderQuery({
+    request: {
+      source: "GIPHY",
+      queryType: "Search",
+      searchText: "cake",
+    },
+    queryOptions: {
+      fetchCountLimit: 3,
+      secrets: {
+        apiKey: process.env.GIPHY_API_KEY,
+      }
+    }
   });
-
-  let result = await mediaQuery.getNext();
-  console.log(`Title of first result: ${result.title}`);
-
-  result = await mediaQuery.getNext();
-  console.log(`Title of first result: ${result.title}`);
-
-  mediaQuery.updateQuery({ searchText: "cake" });
 
   const media = [];
 
-  for await (const result of mediaQuery) {
-    media.push(result);
+  for await (const response of mediaQuery) {
+    media.push(...response.media);
   }
 
-  console.log(`Got ${media.length} results`);
+  console.log(`Got ${media.length} gifs in total`);
 })();
 ```

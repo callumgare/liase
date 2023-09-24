@@ -1,19 +1,15 @@
-import { z } from "zod";
 import { GIFObject } from "giphy-api";
 
 import { createFileFromURL } from "@/src/sharedSourceFunctions.js";
 import {
-  giphyFileSchema,
-  giphyMediaSchema,
+  GiphyFile,
+  GiphyMedia,
 } from "./types.js";
 import { sourceName } from "./constants.js";
 
-export function getMediaFromGifItem(giphyItem: GIFObject): z.infer<typeof giphyMediaSchema> {
+export function getMediaFromGifItem(giphyItem: GIFObject): GiphyMedia {
   return {
     source: sourceName,
-    meta: {
-      type: "media",
-    },
     id: giphyItem.id,
     title: giphyItem.title,
     url: giphyItem.url,
@@ -23,7 +19,7 @@ export function getMediaFromGifItem(giphyItem: GIFObject): z.infer<typeof giphyM
   };
 }
 
-function filesFromGiphyItemFiles(giphyItem: GIFObject): z.infer<typeof giphyFileSchema>[] {
+function filesFromGiphyItemFiles(giphyItem: GIFObject): GiphyFile[] {
   return [
     createFileFromURL(giphyItem.images.original.mp4, "full", {
       fileSize: parseInt(giphyItem.images.original.mp4_size),

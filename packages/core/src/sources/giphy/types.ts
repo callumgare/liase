@@ -1,29 +1,42 @@
 import {z} from "zod"
+import { sourceName } from "./constants.js";
 
-import { createFileSchema } from "@/src/schemas/file.js";
-import { createMediaSchema } from "@/src/schemas/media.js";
-import { createPageSchema } from "@/src/schemas/page.js";
+export const giphyFileSchema = z.object({
+  type: z.enum(["thumbnail", "full"]),
+  url: z.string().url(),
+  ext: z.string().regex(/^\w+$/),
+  mimeType: z.string().describe(""),
+  image: z.boolean(),
+  video: z.boolean(),
+  fileSize: z.number().int(),
+  width: z.number().int(),
+  height: z.number().int(),
+}).strict();
 
-export const giphyFileSchema = createFileSchema({
-  required: ["url", "ext", "mimeType", "video", "image"],
-  optional: ["fileSize", "width", "height"],
-});
+export type GiphyFile = z.infer<typeof giphyFileSchema>
 
-export const giphyMediaSchema = createMediaSchema({
-  fileSchema: giphyFileSchema,
-  required: [
-    "title",
-    "usernameOfUploader",
-    "dateUploaded",
-  ],
-  optional: []
-})
+export const giphyMediaSchema = z.object({
+  source: z.literal(sourceName),
+  id: z.string(),
+  title: z.string(),
+  url: z.string(),
+  dateUploaded: z.date(),
+  usernameOfUploader: z.string(),
+  files: z.array(giphyFileSchema)
+}).strict()
 
-export const giphyPageOfMediaSchema = createPageSchema({
-  paginationType: "cursor",
-  itemsSchema: giphyMediaSchema,
-  required: ["url", "totalItems", "hasNext"],
-  optional: []
-});
+export type GiphyMedia = z.infer<typeof giphyMediaSchema>
 
-export type GiphyPageOfMedia = z.infer<typeof giphyPageOfMediaSchema>
+export const giphyResponseSchema = z.object({
+  page: z.object({
+    paginationType: z.literal("cursor"),
+    cursor: z.number().int(),
+    nextCursor: z.number().int(),
+    totalMedia: z.number().int(),
+    isLastPage: z.boolean(),
+    url: z.string(),
+  }).strict(),
+  media: z.array(giphyMediaSchema),
+}).strict()
+
+export type GiphyResponse = z.infer<typeof giphyResponseSchema>

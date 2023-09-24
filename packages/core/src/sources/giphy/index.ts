@@ -1,11 +1,11 @@
 import { sourceName } from "./constants.js";
-import singleMediaCapability from "./capabilities/singleMedia.js";
-import mediaSearchCapability from "./capabilities/mediaSearch.js";
-import { Source } from "@/types/sources.js";
+import singleMediaCapability from "./requestHandlers/singleMedia.js";
+import mediaSearchCapability from "./requestHandlers/mediaSearch.js";
+import { Source } from "@/src/schemas/source.js";
 
 const source: Source = {
   name: sourceName,
-  capabilities: [singleMediaCapability, mediaSearchCapability],
+  requestHandlers: [singleMediaCapability, mediaSearchCapability],
 };
 
 export default source;

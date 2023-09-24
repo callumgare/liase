@@ -2,26 +2,23 @@ import { z } from "zod";
 import { createFileFromURL } from "@/src/sharedSourceFunctions.js";
 import {
   gfycatFileSchema,
-  gfycatMediaSchema,
+  GfycatMedia,
   gfycatRawAPIMediaSchema,
 } from "./types.js";
 import { rootUrlSite, sourceName } from "./constants.js";
 
 export function getMediaFromGfyItem(
   gfyItem: z.infer<typeof gfycatRawAPIMediaSchema>
-): z.infer<typeof gfycatMediaSchema> {
-  return gfycatMediaSchema.parse({
+): GfycatMedia {
+  return ({
     source: sourceName,
-    meta: {
-      type: "media",
-    },
     id: gfyItem.gfyId,
     views: gfyItem.views,
     numberOfLikes: parseInt(gfyItem.likes.toString()),
     url: `${rootUrlSite}/${gfyItem.gfyId}`,
     dateUploaded: new Date(gfyItem.createDate * 1000),
     usernameOfUploader:
-      gfyItem.userData?.username || gfyItem.username || gfyItem.userName,
+      (gfyItem.userData?.username || gfyItem.username || gfyItem.userName) as string,
     tags: gfyItem.tags || [],
     files: filesFromGfyItemFiles(gfyItem),
   });

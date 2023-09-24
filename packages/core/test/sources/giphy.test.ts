@@ -1,15 +1,22 @@
-import mediaFinder from "@/src/MediaFinder.js";
+import { createMediaFinderQuery } from "@/src/index.js";
 
 test(
   "Can get a page of gifs",
   async () => {
     expect.assertions(1);
-    const gifs = await mediaFinder({
-      searchText: "happy",
-      source: "GIPHY",
-      apiKey: process.env.GIPHY_API_KEY,
+    const gifs = await createMediaFinderQuery({
+      request: {
+        source: "GIPHY",
+        queryType: "Search",
+        searchText: "happy",
+      },
+      queryOptions: {
+        secrets: {
+          apiKey: process.env.GIPHY_API_KEY,
+        }
+      }
     }).getNext();
-    expect(gifs.items.length).toBeGreaterThan(3);
+    expect(gifs?.media.length).toBeGreaterThan(3);
   },
   1000 * 20
 );
@@ -18,31 +25,35 @@ test(
   "Can create a query object which can be modified and iterated over",
   async () => {
     expect.assertions(2);
-    const mediaQuery = mediaFinder({
-      searchText: "sad",
-      source: "GIPHY",
-      apiKey: process.env.GIPHY_API_KEY,
-      iterateBy: "media",
+    const mediaQuery = createMediaFinderQuery({
+      request: {
+        source: "GIPHY",
+        queryType: "Search",
+        searchText: "sad",
+      },
+      queryOptions: {
+        secrets: {
+          apiKey: process.env.GIPHY_API_KEY,
+        }
+      }
     });
 
-    const firstMedia = await mediaQuery.getNext();
-    const outputType = mediaQuery.getReturnType();
-    outputType.parse(firstMedia);
+    const firstPage = await mediaQuery.getNext();
+    const responseSchema = mediaQuery.getResponseSchema();
+    responseSchema.parse(firstPage);
 
-    const secondMedia = await mediaQuery.getNext();
-    outputType.parse(secondMedia);
+    const secondPage = await mediaQuery.getNext();
+    responseSchema.parse(secondPage);
 
-    expect(firstMedia.id).not.toBe(secondMedia.id);
+    expect(firstPage?.page?.paginationType === "cursor" && firstPage.page.cursor)
+      .not.toBe(secondPage?.page?.paginationType === "cursor" && secondPage?.page.cursor);
 
-    mediaQuery.updateQuery({
-      searchText: "fire",
-      iterateBy: "page",
-    });
+    mediaQuery.request = { ...mediaQuery.request, searchText: "fire" };
 
     for await (const result of mediaQuery) {
-      const outputType = mediaQuery.getReturnType();
-      outputType.parse(result);
-      expect(result.items.length).toBeGreaterThan(3);
+      const responseSchema = mediaQuery.getResponseSchema();
+      responseSchema.parse(result);
+      expect(result.media.length).toBeGreaterThan(3);
       break;
     }
   },
@@ -53,17 +64,24 @@ test(
   "Can get specific gif",
   async () => {
     expect.assertions(2);
-    const mediaQuery = mediaFinder({
-      id: "YsTs5ltWtEhnq",
-      source: "GIPHY",
-      apiKey: process.env.GIPHY_API_KEY,
+    const mediaQuery = createMediaFinderQuery({
+      request: {
+        source: "GIPHY",
+        queryType: "Single media",
+        id: "YsTs5ltWtEhnq",
+      },
+      queryOptions: {
+        secrets: {
+          apiKey: process.env.GIPHY_API_KEY,
+        }
+      }
     });
-    let media = await mediaQuery.getNext();
-    const outputType = mediaQuery.getReturnType();
-    outputType.parse(media);
+    let response = await mediaQuery.getNext();
+    const responseSchema = mediaQuery.getResponseSchema();
+    responseSchema.parse(response);
 
-    expect(media.id).toBe("YsTs5ltWtEhnq");
-    expect(media.title).toBe("Confused Clark Kent GIF");
+    expect(response?.media[0].id).toBe("YsTs5ltWtEhnq");
+    expect(response?.media[0].title).toBe("Confused Clark Kent GIF");
   },
   1000 * 20
 );

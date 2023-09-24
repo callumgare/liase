@@ -3,28 +3,24 @@ import fetch from "node-fetch";
 import mimeTypes from "mime-types";
 import { z } from "zod";
 import { fromZodError } from 'zod-validation-error';
+import { GenericFile } from "./schemas/file.js";
 export { z };
 
 export async function getWebpage(url: string) {
   return getWebpageWithFetch(url);
 }
 
-type File<URL extends string, Kind extends string> = {
-  [key: string]: unknown,
-  type: "file",
+export function createFileFromURL<
+  URL extends string,
+  Type extends string,
+  AdditionalValues extends Omit<GenericFile, "type" | "url">,
+>(
   url: URL,
-  ext: string,
-  mimeType: string,
-  kind: Kind,
-  video: boolean,
-  image: boolean,
-}
-
-export function createFileFromURL<URL extends string, Kind extends string>(
-  url: URL,
-  kind: Kind,
-  additionalValues?: Partial<File<URL, Kind>>
-): File<URL, Kind> {
+  type: Type,
+  // any doesn't seem to widen the type and not sure how to make this optionally without using it
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  additionalValues: AdditionalValues = {} as any,
+): {url: URL, type: Type} & Pick<Required<GenericFile>, "ext" | "mimeType" | "video" | "image"> & AdditionalValues {
   let ext = additionalValues?.ext || url.match(/\.(\w+)(?:\?[^?]*)?$/)?.[1];
   let mimeType = additionalValues?.mimeType;
   if (ext && !mimeType) {
@@ -51,11 +47,10 @@ export function createFileFromURL<URL extends string, Kind extends string>(
     throw new Error(`Media type not valid: ${mimeType}`);
   }
   return {
-    type: "file",
     url,
     ext,
     mimeType,
-    kind,
+    type,
     video,
     image,
     ...additionalValues,
@@ -84,6 +79,7 @@ export function validateSchema<Schema extends z.AnyZodObject>(
         `${error.issues.length} issue(s) occurred when trying to parse the response`
       );
       console.error(fromZodError(error))
+      console.info("Object to validate:", objectToValidate)
       return objectToValidate as z.infer<Schema>;
     } else {
       throw error;
