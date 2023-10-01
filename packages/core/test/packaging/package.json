@@ -1,0 +1,10 @@
+{
+  "name": "test-media-finder-packaging",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Callum Gare <callum@gare.au>",
+  "license": "MIT",
+  "dependencies": {
+    "media-finder": "file:../.."
+  }
+}
