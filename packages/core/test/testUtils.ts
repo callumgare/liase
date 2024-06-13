@@ -5,7 +5,7 @@ import { FinderOptionsInput } from '@/src/schemas/finderOptions.js';
 import { getOrdinal, hasNoDuplicates } from '@/src/utils.js';
 import { QueryOptionsInput } from '@/src/schemas/queryOptions.js';
 import deepmerge from "deepmerge"
-
+import { copy } from 'copy-anything'
 
 export function createBasicTestsForRequestHandlers<
   S extends Source,
@@ -97,4 +97,29 @@ export function createBasicTestsForRequestHandlers<
       );
     })
   }
+}
+
+// Some values in a response may naturally change over time
+// or be differ based on other factors like a client's ip.
+// This can result in the tests failing due to a response
+// not matching its snapshot even though this difference may
+// not indicate any problem. To avoid this we first normalise
+// any parts of a response which may naturally vary before we
+// snapshot it.
+export function normaliseResponse(response: GenericResponse) {
+  const clonedResponse = copy(response)
+  for (const media of clonedResponse.media || []) {
+    if (media.url) {
+      const url = new URL(media.url)
+      media.url = url.origin + url.pathname
+    }
+
+    for (const file of media?.files || []) {
+      if (file.url) {
+        const url = new URL(file.url)
+        file.url = url.origin + url.pathname
+      }
+    }
+  }
+  return clonedResponse
 }

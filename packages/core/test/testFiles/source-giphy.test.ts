@@ -1,13 +1,13 @@
 import { expect } from 'vitest'
 import giphySource from '@/src/sources/giphy/index.js';
-import { createBasicTestsForRequestHandlers } from '../testUtils.js';
+import { createBasicTestsForRequestHandlers, normaliseResponse } from '../testUtils.js';
 
 createBasicTestsForRequestHandlers({
   source: giphySource,
   queries: {
     "single-media": {
       request: { id: "YsTs5ltWtEhnq" },
-      checkResponse: response => expect(response).toMatchSnapshot()
+      checkResponse: response => expect(normaliseResponse(response)).toMatchSnapshot()
     },
     search: {
       request: { searchText: "happy" },
