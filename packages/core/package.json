@@ -37,6 +37,7 @@
   "devDependencies": {
     "@loopback/http-caching-proxy": "^6.0.3",
     "@refactorjs/http-proxy": "^0.2.14",
+    "@tsconfig/node21": "^21.0.3",
     "@types/giphy-api": "^2.0.3",
     "@types/mime-types": "^2.1.1",
     "@types/node": "^18.15.11",
