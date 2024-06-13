@@ -1,0 +1,45 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Can successfully get response from request handler "single-media" of source "giphy" 1`] = `
+{
+  "media": [
+    {
+      "dateUploaded": 2014-02-13T05:21:06.000Z,
+      "files": [
+        {
+          "ext": "mp4",
+          "fileSize": 482201,
+          "height": 259,
+          "image": false,
+          "mimeType": "video/mp4",
+          "type": "full",
+          "url": "https://media2.giphy.com/media/YsTs5ltWtEhnq/giphy.mp4?cid=107e7acadevwkhub0ijbr5b1s0nohzl8791lf5b77xh8s7sp&ep=v1_gifs&rid=giphy.mp4&ct=g",
+          "video": true,
+          "width": 400,
+        },
+        {
+          "ext": "mp4",
+          "fileSize": 41127,
+          "height": 162,
+          "image": false,
+          "mimeType": "video/mp4",
+          "type": "thumbnail",
+          "url": "https://media2.giphy.com/media/YsTs5ltWtEhnq/giphy-preview.mp4?cid=107e7acadevwkhub0ijbr5b1s0nohzl8791lf5b77xh8s7sp&ep=v1_gifs&rid=giphy-preview.mp4&ct=g",
+          "video": true,
+          "width": 251,
+        },
+      ],
+      "id": "YsTs5ltWtEhnq",
+      "mediaFinderSource": "giphy",
+      "title": "Confused Clark Kent GIF",
+      "url": "https://giphy.com/gifs/confused-flying-YsTs5ltWtEhnq",
+      "usernameOfUploader": "",
+    },
+  ],
+  "request": {
+    "id": "YsTs5ltWtEhnq",
+    "queryType": "single-media",
+    "source": "giphy",
+  },
+}
+`;
