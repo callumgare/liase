@@ -3,7 +3,9 @@ import { z } from "zod";
 import { requestHandlerSchema } from "./requestHandler.js"
 
 export const sourceSchema = z.object({
-  name: z.string(),
+  id: z.string().regex(/^[a-z-]+$/),
+  displayName: z.string(),
+  description: z.string(),
   requestHandlers: requestHandlerSchema.array()
 }).strict()
 

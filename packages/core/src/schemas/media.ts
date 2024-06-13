@@ -2,7 +2,7 @@ import { z } from "zod";
 import { genericFileSchema } from "./file.js";
 
 export const genericMediaSchema = z.object({
-  source: z.string().describe("The name of the source where the media was found"),
+  mediaFinderSource: z.string().regex(/^[a-z-]+$/).describe("The id of the media-finder source which found the media"),
   id: z.string().describe(
     "The ID value used to identify a media. This value will be unique amount the other media available from the " +
       "source but two media from different sources could possibly share the same id."
@@ -28,3 +28,5 @@ export const genericMediaSchema = z.object({
   description: z.string().optional().describe("A description supplied with the media"),
   duration: z.number().optional().describe("The play time of the media in seconds"),
 }).passthrough();
+
+export type GenericMedia = z.infer<typeof genericMediaSchema>

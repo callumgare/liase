@@ -1,13 +1,16 @@
-import { z } from "zod";
-
 import * as coreSources from "./sources/index.js";
 import type { Source } from "@/src/schemas/source.js";
 import type { Plugin } from "@/src/schemas/plugin.js";
 import { finderOptionsSchema, FinderOptions, FinderOptionsInput } from "@/src/schemas/finderOptions.js";
-import { RequestHandler } from "./schemas/requestHandler.js";
+import { RequestHandler, requestHandlerSchema } from "./schemas/requestHandler.js";
+import { zodParseOrThrow } from "./utils.js";
 
 export default class MediaFinder {
-  sources: { [sourceName: string]: Source } = {};
+  protected sourceMap: { [sourceName: string]: Source } = {};
+  get sources(): Source[] {
+    return Object.values(this.sourceMap)
+  };
+
   _finderOptions: FinderOptions;
 
   constructor(finderOptions: FinderOptionsInput = {}) {
@@ -29,93 +32,86 @@ export default class MediaFinder {
   }
 
   loadSource(source: Source) {
-    if (Object.prototype.hasOwnProperty.call(this.sources, source.name)) {
+    if (Object.prototype.hasOwnProperty.call(this.sourceMap, source.id)) {
       console.warn(
-        `Loading "${source.name}" but a source with the same name has already been loaded. It will be overwritten.`
+        `Loading "${source.id}" but a source with the same id has already been loaded. The ` +
+        `existing source will be overwritten.`
       );
     }
 
-    // Add source independant properties to handler request and response schema
-    const requestHandlers = source.requestHandlers.map(requestHandler => {
-      try {
-        const requestSchema = requestHandler.requestSchema.extend({
-          source: z.string(),
-          queryType: z.string(),
-        })
+    // Validate request handlers
+    for (const requestHandler of source.requestHandlers) {
+      const {paginationType, requestSchema} = requestHandler
 
-        if (requestHandler.paginationType === "offset" && !requestSchema.shape.pageNumber) {
-          throw Error(
-            `Request handler "${requestHandler.name}" of source "${source.name}" has paginationType ` +
-              `${requestHandler.paginationType} but no pageNumber property in the request schema.`
-          )
-        } else if (requestHandler.paginationType === "cursor" && !requestSchema.shape.cursor) {
-          throw Error(
-            `Request handler "${requestHandler.name}" of source "${source.name}" has paginationType ` +
-              `${requestHandler.paginationType} but no cursor property in the request schema.`
-          )
-        }
+      const errorMessage = `Could not load source "${source.id}" as the request handler "${requestHandler.id}" is invalid`
+      zodParseOrThrow(requestHandlerSchema, requestHandler, {errorMessage})
 
-        let responseSchema: z.AnyZodObject = requestHandler.responseSchema.extend({
-          request: requestSchema
-        })
-        if (requestHandler.paginationType !== "none" ) {
-          const pageSchema = responseSchema.shape.page
-          if (!pageSchema) {
-            throw Error(
-              `Request handler "${requestHandler.name}" of source "${source.name}" has paginationType ` +
-                `${requestHandler.paginationType} but no page property in the response schema.`
-            )
-          }
-          responseSchema = responseSchema.extend({
-            page: responseSchema.shape.page.extend({
-              fetchCountLimitHit: z.boolean()
-            })
-          })
+      const paginationInvalidRequestError = (issue: "missing" | "has", property: string) =>
+        new Error(
+          `Request handler "${requestHandler.id}" of source "${source.id}" has paginationType ` +
+          `${paginationType} but ${issue === "missing" ? "is missing" : "includes"} ${property} ` +
+          `in the request schema.`
+        )
+
+      if (paginationType === "offset") {
+        if (!requestSchema.shape.pageNumber) {
+          throw paginationInvalidRequestError("missing", "pageNumber")
         }
-        return {
-          ...requestHandler,
-          requestSchema,
-          responseSchema,
+        if (requestSchema.shape.cursor) {
+          throw paginationInvalidRequestError("has", "cursor")
         }
-      } catch(error) {
-        console.error(error)
-        throw Error(`Error occured when loading request handler "${requestHandler.name}" of source "${source.name}"`)
+      } else if (paginationType === "cursor") {
+        if (!requestSchema.shape.cursor) {
+          throw paginationInvalidRequestError("missing", "cursor")
+        }
+        if (requestSchema.shape.pageNumber) {
+          throw paginationInvalidRequestError("has", "pageNumber")
+        }
+      } else if (paginationType === "none") {
+        if (requestSchema.shape.pageNumber) {
+          throw paginationInvalidRequestError("has", "pageNumber")
+        }
+        if (requestSchema.shape.cursor) {
+          throw paginationInvalidRequestError("has", "cursor")
+        }
+      } else {
+        throw new Error(
+          `Request handler "${requestHandler.id}" of source "${source.id}" has unsupported paginationType ` +
+          `${paginationType}`
+        )
       }
-    })
-
-    this.sources[source.name] = {
-      ...source,
-      requestHandlers
     }
+
+    this.sourceMap[source.id] = source
   }
 
-  getSource(sourceName: string): Source {
-    const source = this.sources[sourceName];
+  getSource(sourceId: string): Source {
+    const source = this.sourceMap[sourceId];
     if (!source) {
       throw new Error(
-        `Attempted to query an unknown source. If "${sourceName}" is provided by a plugin please make sure that ` +
+        `Attempted to query an unknown source. If "${sourceId}" is provided by a plugin please make sure that ` +
           `plugin is loaded first before attempting to query.`
       );
     }
     return source;
   }
 
-  getRequestHandler(sourceName: string, queryType: string): RequestHandler {
-    const source = this.getSource(sourceName);
-    const handler = source.requestHandlers.find(handler => handler.name === queryType)
+  getRequestHandler(sourceId: string, queryType: string): RequestHandler {
+    const source = this.getSource(sourceId);
+    const handler = source.requestHandlers.find(handler => handler.id === queryType)
     if (!handler) {
       throw new Error(
-        `The source "${sourceName}" does not provide a request handler for the query type "${queryType}".`
+        `The source "${sourceId}" does not provide a request handler for the query type "${queryType}".`
       );
     }
     return handler
   }
 
-  getRequestSchema(sourceName: string, queryType: string): InstanceType<typeof z.ZodObject> {
-    return this.getRequestHandler(sourceName, queryType).requestSchema
+  getRequestSchema(sourceId: string, queryType: string) {
+    return this.getRequestHandler(sourceId, queryType).requestSchema
   }
 
-  getResponseSchema(sourceName: string, queryType: string): InstanceType<typeof z.ZodObject> {
-    return this.getRequestHandler(sourceName, queryType).responseSchema
+  getResponseSchema(sourceId: string, queryType: string) {
+    return this.getRequestHandler(sourceId, queryType).responseSchema
   }
 }

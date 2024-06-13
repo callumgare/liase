@@ -1,11 +1,11 @@
-import { sourceName } from "./constants.js";
-import singleMediaCapability from "./requestHandlers/singleMedia.js";
-import mediaSearchCapability from "./requestHandlers/mediaSearch.js";
+import { sourceId } from "./shared.js";
+import singleMediaReqHandler from "./requestHandlers/singleMedia.js";
+import mediaSearchReqHandler from "./requestHandlers/mediaSearch.js";
 import { Source } from "@/src/schemas/source.js";
 
-const source: Source = {
-  name: sourceName,
-  requestHandlers: [singleMediaCapability, mediaSearchCapability],
-};
-
-export default source;
+export default {
+  id: sourceId,
+  displayName: "GIPHY",
+  description: "giphy.com is a large database of gifs",
+  requestHandlers: [singleMediaReqHandler, mediaSearchReqHandler],
+} satisfies Source

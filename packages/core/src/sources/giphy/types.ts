@@ -1,7 +1,7 @@
 import {z} from "zod"
-import { sourceName } from "./constants.js";
+import { sourceId } from "./shared.js";
 
-export const giphyFileSchema = z.object({
+export const fileSchema = z.object({
   type: z.enum(["thumbnail", "full"]),
   url: z.string().url(),
   ext: z.string().regex(/^\w+$/),
@@ -13,21 +13,24 @@ export const giphyFileSchema = z.object({
   height: z.number().int(),
 }).strict();
 
-export type GiphyFile = z.infer<typeof giphyFileSchema>
+export type File = z.infer<typeof fileSchema>
 
-export const giphyMediaSchema = z.object({
-  source: z.literal(sourceName),
+export const mediaSchema = z.object({
+  mediaFinderSource: z.literal(sourceId),
   id: z.string(),
   title: z.string(),
   url: z.string(),
   dateUploaded: z.date(),
   usernameOfUploader: z.string(),
-  files: z.array(giphyFileSchema)
+  files: z.tuple([
+    fileSchema.extend({type: z.literal("full")}),
+    fileSchema.extend({type: z.literal("thumbnail")}),
+  ])
 }).strict()
 
-export type GiphyMedia = z.infer<typeof giphyMediaSchema>
+export type Media = z.infer<typeof mediaSchema>
 
-export const giphyResponseSchema = z.object({
+export const responseSchema = z.object({
   page: z.object({
     paginationType: z.literal("cursor"),
     cursor: z.number().int(),
@@ -35,8 +38,10 @@ export const giphyResponseSchema = z.object({
     totalMedia: z.number().int(),
     isLastPage: z.boolean(),
     url: z.string(),
+    pageFetchLimitReached: z.boolean(),
   }).strict(),
-  media: z.array(giphyMediaSchema),
+  media: z.array(mediaSchema),
+  request: z.record(z.unknown())
 }).strict()
 
-export type GiphyResponse = z.infer<typeof giphyResponseSchema>
+export type Response = z.infer<typeof responseSchema>

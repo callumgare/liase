@@ -1,13 +1,14 @@
 import { ZodError, z } from "zod";
-import deepmerge from "deepmerge";
-import { fromZodError } from 'zod-validation-error';
 
 import MediaFinder from "./MediaFinder.js"
 import { queryOptionsSchema, QueryOptions } from "@/src/schemas/queryOptions.js";
 import { finderOptionsSchema } from "@/src/schemas/finderOptions.js";
 import { genericRequestSchema, GenericRequest, GenericRequestInput } from "@/src/schemas/request.js"
-import { genericResponseSchema, GenericResponse } from "@/src/schemas/response.js"
+import { GenericResponse } from "@/src/schemas/response.js"
 import { requestHandlerSchema } from "@/src/schemas/requestHandler.js";
+import { generateResponse } from "./generateResponse.js";
+import { GenericSecrets } from "./schemas/secrets.js";
+import { FriendlyZodError } from "./utils.js";
 
 
 const propsSchema = z.object({
@@ -28,8 +29,9 @@ export default class MediaFinderQuery extends MediaFinder {
       parsedProps = propsSchema.parse(props)
     } catch (err) {
       if (err instanceof ZodError) {
-        console.log("MediaFinderQueryProps:", props)
-        throw Error(fromZodError(err, {prefix: "MediaFinder argument invalid"}).message);
+        const error = new FriendlyZodError(err, {message: "MediaFinder argument invalid", inputData: props})
+        console.error(error.formattedErrorInfo)
+        process.exit(1)
       }
       throw err
     }
@@ -75,8 +77,9 @@ export default class MediaFinderQuery extends MediaFinder {
       handlerRequestSchema.parse(this.#request)
     } catch (err) {
       if (err instanceof ZodError) {
-        console.info("Request:", this.#request)
-        throw Error(fromZodError(err, {prefix: "Request is invalid"}).message);
+        const error = new FriendlyZodError(err, {message: "Request is invalid", inputData: this.#request})
+        console.error(error.formattedErrorInfo)
+        process.exit(1)
       }
       throw err
     }
@@ -87,86 +90,56 @@ export default class MediaFinderQuery extends MediaFinder {
       }
     } catch (err) {
       if (err instanceof ZodError) {
-        throw Error(fromZodError(err, {prefix: "Secrets are invalid"}).message);
+        const error = new FriendlyZodError(err, {message: "Secrets are invalid", inputData: this.#queryOptions.secrets})
+        console.error(error.formattedErrorInfo)
+        process.exit(1)
       }
       throw err
     }
 
-    const validateResponse = (
-      responseFromHandler: GenericResponse,
-      sourceIndependentReponseDetails: Record<string, unknown>,
-    ): GenericResponse => {
-      const handlerResponseSchema = handler.responseSchema
-    
-      let response = deepmerge<GenericResponse>(responseFromHandler, sourceIndependentReponseDetails)
-    
-      try {
-        handlerResponseSchema.parse(response)
-      } catch (err) {
-        if (err instanceof ZodError) {
-          console.info("Response:", response)
-          throw Error(fromZodError(err, {prefix: "Response does not match expected result"}).message);
+    let pageFetchedCount = 0;
+    const maxPagesToFetch = this.#queryOptions.fetchCountLimit;
+    while (pageFetchedCount < maxPagesToFetch) {
+      pageFetchedCount++
+      const parsedRequest = handler.requestSchema.parse(this.#request)
+      const parsedSecrets: GenericSecrets = (
+        handler.secretsSchema?.parse(this.#queryOptions.secrets) as GenericSecrets | undefined
+      ) ?? {}
+      const pageFetchLimitReached = handler.paginationType === "none" ? undefined : pageFetchedCount === maxPagesToFetch
+      const response = await generateResponse(
+        {
+          requestHandler: handler,
+          request: parsedRequest,
+          secrets: parsedSecrets,
+          pageFetchLimitReached,
+          source: this.getSource(parsedRequest.source),
+          proxyUrls: this.#queryOptions.proxyUrls,
+          cachingProxyPort: this.#queryOptions.cachingProxyPort,
         }
-        throw err
-      }
-    
-      try {
-        response = genericResponseSchema.parse(response)
-      } catch (err) {
-        if (err instanceof ZodError) {
-          console.info("Response:", response)
-          console.info("Media:", response.media?.[0])
-          throw Error(fromZodError(err, {prefix: "Response is invalid"}).message);
-        }
-        throw err
-      }
-    
-      for (const [index, media] of Object.entries(response.media)) {
-        if (media.source !== this.#request.source) {
-          throw Error(`Request was for source ${this.#request.source} but media number ${index} has source set to ${media.source}`)
-        }
-      }
-    
-      return response
-    }
-
-    if (handler.paginationType === "none") {
-      yield handler.run({request: this.#request, secrets: this.#queryOptions.secrets})
-        .then(result => validateResponse(result, {request: this.request}))
-    } else {
-      let pageFetchedCount = 0;
-      const maxPagesToFetch = this.#queryOptions.fetchCountLimit;
-      while (pageFetchedCount < maxPagesToFetch) {
-        pageFetchedCount++
-        const response = validateResponse(
-          await handler.run({request: this.#request, secrets: this.#queryOptions.secrets}),
-          {
-            page: {
-              fetchCountLimitHit: pageFetchedCount === maxPagesToFetch
-            },
-            request: this.request
-          },
-        )
-        if (!response.page) {
-          throw Error(`Request was for a ${handler.paginationType} page but response was not a page`)
-        }
-        if (handler.paginationType !== response.page.paginationType) {
-          throw Error(`Request was for a ${handler.paginationType} page but response page type was ${response.page.paginationType}`)
-        }
-        if (response.page.paginationType === "offset") {
-          delete this.#request.cursor
+      )
+      if (handler.paginationType === "offset") {
+        // if paginationType is "offset" then pageNumber must exist due to a check in validateResponse
+        // in generateResponse.ts but hard to prove that to typescript so we just add an if statement here
+        // to stop typescript complaining
+        if (response.page && 'pageNumber' in response.page) {
           this.#request.pageNumber = response.page.pageNumber + 1
+        }
 
-        } else if (handler.paginationType === "cursor") {
-          delete this.#request.pageNumber
+      } else if (handler.paginationType === "cursor") {
+        // Same situation as in earlier if statement
+        if (response.page && 'nextCursor' in response.page) {
           this.#request.cursor = response.page.nextCursor
         }
+      }
 
-        yield response;
+      yield response;
 
-        if ('isLastPage' in response && response.isLastPage) {
-          break;
-        }
+      if (handler.paginationType === "none") {
+        break
+      }
+
+      if (response.page?.isLastPage) {
+        break;
       }
     }
   }
