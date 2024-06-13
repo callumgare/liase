@@ -187,7 +187,7 @@ export function zodSchemaToSimpleSchema(zodSchema: ZodFirstPartySchemaTypes): Si
     zodSchema instanceof z.ZodUnknown || zodSchema instanceof z.ZodNever || zodSchema instanceof z.ZodVoid ||
     zodSchema instanceof z.ZodTuple || zodSchema instanceof z.ZodRecord || zodSchema instanceof z.ZodMap ||
     zodSchema instanceof z.ZodFunction || zodSchema instanceof z.ZodLazy || zodSchema instanceof z.ZodVoid ||
-    zodSchema instanceof z.ZodPromise
+    zodSchema instanceof z.ZodPromise || zodSchema instanceof z.ZodReadonly || zodSchema instanceof z.ZodSymbol
   ) {
     simpleSchema = {
       ...defaultProps,
