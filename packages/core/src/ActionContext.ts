@@ -1,8 +1,12 @@
+import { RequestHandler } from "./schemas/requestHandler.js";
 import { guessMediaInfoFromUrl } from "./actionHelpers.js";
 import { loadUrl } from "./loadUrl.js";
 import { Action } from "./schemas/constructor.js";
+import { GenericRequest } from "./schemas/request.js";
+import { GenericSecrets } from "./schemas/secrets.js";
 import { ConstructorExecutionContext } from "./types.js";
 import {decodeHTML} from "entities"
+import { generateResponse, getResponseSchemaBasedOnRequest } from "./generateResponse.js";
 
 export class ActionContext extends Function {
   constructor(args: {
@@ -106,15 +110,11 @@ export class ActionContext extends Function {
     return Object.freeze(this.#constructorContext.requestHandler);
   }
 
-  get source() {
-    return Object.freeze(this.#constructorContext.source);
-  }
-
   get pageFetchLimitReached() {
     return this.#constructorContext.pageFetchLimitReached;
   }
 
-  loadUrl = (
+  loadUrl = async (
     url: Parameters<typeof loadUrl>[0],
     options?: Parameters<typeof loadUrl>[1]
   ) => loadUrl(
@@ -126,6 +126,31 @@ export class ActionContext extends Function {
       ...options,
     }
   )
+
+  loadRequest = async (
+    requestHandler: RequestHandler,
+    request: Omit<GenericRequest, "source" | "queryType"> & Partial<Pick<GenericRequest, "source" | "queryType">>,
+    {
+      secrets = {},
+    }: {
+      secrets?: GenericSecrets
+    } = {}
+  ) => {
+    const sourceId = request.source ?? this.#constructorContext.sourceId
+    const fullRequest = {
+      ...request,
+      source: sourceId,
+      queryType: request.queryType ?? requestHandler.id
+    }
+    const constructorContext = {
+      request: fullRequest,
+      secrets,
+      requestHandler,
+      responseSchema: getResponseSchemaBasedOnRequest(requestHandler.responseSchema, fullRequest),
+      sourceId,
+    }
+    return generateResponse(constructorContext)
+  }
 
   guessMediaInfoFromUrl = guessMediaInfoFromUrl
 

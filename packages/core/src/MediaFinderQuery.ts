@@ -6,7 +6,7 @@ import { finderOptionsSchema } from "@/src/schemas/finderOptions.js";
 import { genericRequestSchema, GenericRequest, GenericRequestInput } from "@/src/schemas/request.js"
 import { GenericResponse } from "@/src/schemas/response.js"
 import { requestHandlerSchema } from "@/src/schemas/requestHandler.js";
-import { generateResponse } from "./generateResponse.js";
+import { generateResponse, getResponseSchemaBasedOnRequest } from "./generateResponse.js";
 import { GenericSecrets } from "./schemas/secrets.js";
 import { FriendlyZodError } from "./utils.js";
 
@@ -113,7 +113,7 @@ export default class MediaFinderQuery extends MediaFinder {
           secrets: parsedSecrets,
           responseSchema: this.getResponseSchema(),
           pageFetchLimitReached,
-          source: this.getSource(parsedRequest.source),
+          sourceId: this.getSource(parsedRequest.source).id,
           proxyUrls: this.#queryOptions.proxyUrls,
           cachingProxyPort: this.#queryOptions.cachingProxyPort,
         }
@@ -155,25 +155,6 @@ export default class MediaFinderQuery extends MediaFinder {
 
   getResponseSchema(): z.ZodObject<z.ZodRawShape, z.UnknownKeysParam, z.ZodTypeAny, unknown, unknown> {
     const responseSchemaOrResponseSchemaArray = super.getResponseSchema(this.#request.source, this.#request.queryType)
-    let responseSchema
-    if (Array.isArray(responseSchemaOrResponseSchemaArray)) {
-      for (const responseSchemaDetails of responseSchemaOrResponseSchemaArray) {
-        if (responseSchemaDetails.requestMatcher) {
-          const {success} = responseSchemaDetails.requestMatcher.safeParse(this.#request)
-          if (success) {
-            responseSchema = responseSchemaDetails.schema
-            break
-          }
-        } else {
-          responseSchema = responseSchemaDetails.schema
-        }
-      }
-    } else {
-      responseSchema = responseSchemaOrResponseSchemaArray
-    }
-    if (!responseSchema) {
-      throw Error("Could not find matching response schema")
-    }
-    return responseSchema
+    return getResponseSchemaBasedOnRequest(responseSchemaOrResponseSchemaArray, this.#request)
   }
 }
