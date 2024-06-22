@@ -34,7 +34,16 @@ export const requestHandlerSchema = z.object({
     >
   ),
   secretsSchema: z.instanceof(z.ZodObject).optional(),
-  responseSchema: z.instanceof(z.ZodObject),
+  responseSchema: z.union([
+    z.instanceof(z.ZodObject),
+    z.array(
+      z.object({
+        requestMatcher: z.instanceof(z.ZodObject).optional(),
+        description: z.string().optional(),
+        schema: z.instanceof(z.ZodObject)
+      }).strict()
+    )
+  ]),
   paginationType: z.enum(["offset", "cursor", "none"]).default("none"),
   responseConstructor: ConstructorSchema
 }).strict()

@@ -29,7 +29,7 @@ function validateResponse(
 ): GenericResponse {
   const errorMessage = `The response returned from the request handler "${context.requestHandler.id}" of the source "${context.source.id}" is invalid`
   const parsedResponse = zodParseOrThrow(genericResponseSchema, response, {errorMessage})
-  zodParseOrThrow(context.requestHandler.responseSchema, response, {errorMessage})
+  zodParseOrThrow(context.responseSchema, response, {errorMessage})
 
   assert.deepEqual(context.request, parsedResponse.request)
 

@@ -111,6 +111,7 @@ export default class MediaFinderQuery extends MediaFinder {
           requestHandler: handler,
           request: parsedRequest,
           secrets: parsedSecrets,
+          responseSchema: this.getResponseSchema(),
           pageFetchLimitReached,
           source: this.getSource(parsedRequest.source),
           proxyUrls: this.#queryOptions.proxyUrls,
@@ -152,7 +153,27 @@ export default class MediaFinderQuery extends MediaFinder {
     return super.getRequestSchema(this.#request.source, this.#request.queryType)
   }
 
-  getResponseSchema(): z.infer<typeof requestHandlerSchema.shape.responseSchema> {
-    return super.getResponseSchema(this.#request.source, this.#request.queryType)
+  getResponseSchema(): z.ZodObject<z.ZodRawShape, z.UnknownKeysParam, z.ZodTypeAny, unknown, unknown> {
+    const responseSchemaOrResponseSchemaArray = super.getResponseSchema(this.#request.source, this.#request.queryType)
+    let responseSchema
+    if (Array.isArray(responseSchemaOrResponseSchemaArray)) {
+      for (const responseSchemaDetails of responseSchemaOrResponseSchemaArray) {
+        if (responseSchemaDetails.requestMatcher) {
+          const {success} = responseSchemaDetails.requestMatcher.safeParse(this.#request)
+          if (success) {
+            responseSchema = responseSchemaDetails.schema
+            break
+          }
+        } else {
+          responseSchema = responseSchemaDetails.schema
+        }
+      }
+    } else {
+      responseSchema = responseSchemaOrResponseSchemaArray
+    }
+    if (!responseSchema) {
+      throw Error("Could not find matching response schema")
+    }
+    return responseSchema
   }
 }

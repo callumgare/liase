@@ -41,7 +41,7 @@ export default class MediaFinder {
 
     // Validate request handlers
     for (const requestHandler of source.requestHandlers) {
-      const {paginationType, requestSchema} = requestHandler
+      const {paginationType, requestSchema, responseSchema} = requestHandler
 
       const errorMessage = `Could not load source "${source.id}" as the request handler "${requestHandler.id}" is invalid`
       zodParseOrThrow(requestHandlerSchema, requestHandler, {errorMessage})
@@ -79,6 +79,24 @@ export default class MediaFinder {
           `Request handler "${requestHandler.id}" of source "${source.id}" has unsupported paginationType ` +
           `${paginationType}`
         )
+      }
+
+      if (Array.isArray(responseSchema)) {
+        const nonDefaultSchemaDetails = responseSchema.slice(0, -1)
+        if (nonDefaultSchemaDetails.some(schemaDetails => !schemaDetails.description)) {
+          throw Error(
+            `Some response schema elements are missing "description" field for request handler ` +
+            `"${requestHandler.id}" of source "${source.id}". ("description" is mandatory in all ` +
+            `except the last response schema element.`
+          )
+        }
+        if (nonDefaultSchemaDetails.some(schemaDetails => !schemaDetails.requestMatcher)) {
+          throw Error(
+            `Some response schema elements are missing "requestMatcher" field for request handler ` +
+            `"${requestHandler.id}" of source "${source.id}". ("requestMatcher" is mandatory in all ` +
+            `except the last response schema element.`
+          )
+        }
       }
     }
 

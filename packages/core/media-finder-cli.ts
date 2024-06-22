@@ -1,4 +1,4 @@
-#!/usr/bin/env npx tsx --no-warnings
+#!/usr/bin/env npx -y tsx@latest
 import { Command, Option } from 'commander';
 import open from 'open';
 import { MediaFinder, Source, RequestHandler, createMediaFinderQuery } from "./src/index.js";
@@ -129,8 +129,21 @@ showSchemaCommand
       "response": "responseSchema"
     }[options.schemaType]
 
-    const {source, queryType, ...otherProps } = zodSchemaToSimpleSchema(requestHandler[schemaPropKey]).children
-    console.dir(otherProps, { depth: null })
+    let arrayOfSchemas
+    const schemaOrArrayOfSchema = requestHandler[schemaPropKey]
+    if (Array.isArray(schemaOrArrayOfSchema)) {
+      arrayOfSchemas = schemaOrArrayOfSchema.map(schemaDetails => schemaDetails.schema)
+    } else {
+      arrayOfSchemas = schemaOrArrayOfSchema
+    }
+
+    for (const [index, schema] of arrayOfSchemas.entries()) {
+      const simpleSchema = zodSchemaToSimpleSchema(schema).children
+      console.dir(simpleSchema, { depth: null })
+      if ((index+1) < arrayOfSchemas.length) {
+        console.log("\nOr\n")
+      }
+    }
   })
 
 program.addCommand(showSchemaCommand)
