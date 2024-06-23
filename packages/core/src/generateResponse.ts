@@ -2,14 +2,20 @@
 import assert from "node:assert";
 import { GenericResponse, genericResponseSchema } from "./schemas/response.js";
 import { executeConstructor, executeActions } from "./constructorExecution.js";
-import { ConstructorExecutionError, zodParseOrThrow } from "./utils.js";
+import { ConstructorExecutionError, FriendlyZodError, zodParseOrThrow } from "./utils.js";
 import { ConstructorExecutionContext } from "./types.js";
 import { ActionContext } from "./ActionContext.js";
 import { GenericRequest } from "./schemas/request.js";
-import { RequestHandler } from "./schemas/requestHandler.js";
+import { RequestHandler, requestHandlerSchema } from "./schemas/requestHandler.js";
+import { z } from "zod";
 
 
 export async function generateResponse(constructorContext: ConstructorExecutionContext): Promise<GenericResponse> {
+  // If the requestHandler's requestSchema sets any defaults add them to the request
+  constructorContext = {
+    ...constructorContext,
+    request: requestWithDefaults(constructorContext.request, constructorContext.requestHandler.requestSchema)
+  }
   const actionContext = new ActionContext({constructorContext, executeActions, path: []})
   let res
   try {
@@ -87,4 +93,20 @@ export function getResponseSchemaBasedOnRequest(
     throw Error("Could not find matching response schema")
   }
   return responseSchema
+}
+
+export function requestWithDefaults(
+  request: GenericRequest,
+  requestSchema: z.infer<typeof requestHandlerSchema.shape.requestSchema>
+): GenericRequest {
+  try {
+    return requestSchema.parse(request)
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      const error = new FriendlyZodError(err, {message: "Request is invalid", inputData: request})
+      console.error(error.formattedErrorInfo)
+      process.exit(1)
+    }
+    throw err
+  }
 }

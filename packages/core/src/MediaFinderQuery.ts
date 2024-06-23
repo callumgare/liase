@@ -6,7 +6,7 @@ import { finderOptionsSchema } from "@/src/schemas/finderOptions.js";
 import { genericRequestSchema, GenericRequest, GenericRequestInput } from "@/src/schemas/request.js"
 import { GenericResponse } from "@/src/schemas/response.js"
 import { requestHandlerSchema } from "@/src/schemas/requestHandler.js";
-import { generateResponse, getResponseSchemaBasedOnRequest } from "./generateResponse.js";
+import { generateResponse, getResponseSchemaBasedOnRequest, requestWithDefaults } from "./generateResponse.js";
 import { GenericSecrets } from "./schemas/secrets.js";
 import { FriendlyZodError } from "./utils.js";
 
@@ -45,6 +45,12 @@ export default class MediaFinderQuery extends MediaFinder {
     return {...this.#request};
   }
 
+  get requestWithDefaults(): GenericRequest {
+    const requestSchema = this.getRequestSchema()
+
+    return requestWithDefaults(this.#request, requestSchema)
+  }
+
   set request(request: GenericRequestInput) {
     this.changeRequest(request);
   }
@@ -70,19 +76,7 @@ export default class MediaFinderQuery extends MediaFinder {
 
   async *getIterator(): AsyncIterator<GenericResponse> {
     const handler = this.getRequestHandler()
-    const handlerRequestSchema = this.getRequestSchema()
     const handlerSecretsSchema = handler.secretsSchema
-
-    try {
-      handlerRequestSchema.parse(this.#request)
-    } catch (err) {
-      if (err instanceof ZodError) {
-        const error = new FriendlyZodError(err, {message: "Request is invalid", inputData: this.#request})
-        console.error(error.formattedErrorInfo)
-        process.exit(1)
-      }
-      throw err
-    }
 
     try {
       if (handlerSecretsSchema) {
@@ -101,7 +95,7 @@ export default class MediaFinderQuery extends MediaFinder {
     const maxPagesToFetch = this.#queryOptions.fetchCountLimit;
     while (pageFetchedCount < maxPagesToFetch) {
       pageFetchedCount++
-      const parsedRequest = handler.requestSchema.parse(this.#request)
+      const parsedRequest = this.requestWithDefaults
       const parsedSecrets: GenericSecrets = (
         handler.secretsSchema?.parse(this.#queryOptions.secrets) as GenericSecrets | undefined
       ) ?? {}
@@ -154,7 +148,8 @@ export default class MediaFinderQuery extends MediaFinder {
   }
 
   getResponseSchema(): z.ZodObject<z.ZodRawShape, z.UnknownKeysParam, z.ZodTypeAny, unknown, unknown> {
-    const responseSchemaOrResponseSchemaArray = super.getResponseSchema(this.#request.source, this.#request.queryType)
-    return getResponseSchemaBasedOnRequest(responseSchemaOrResponseSchemaArray, this.#request)
+    const request = this.requestWithDefaults
+    const responseSchemaOrResponseSchemaArray = super.getResponseSchema(request.source, request.queryType)
+    return getResponseSchemaBasedOnRequest(responseSchemaOrResponseSchemaArray, request)
   }
 }
