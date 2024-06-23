@@ -322,6 +322,15 @@ export function zodParseOrThrow<Output, Def extends z.ZodTypeDef, Input>(
 
 
 type ValueType = "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function" | "array"
+
+export const getType = (value: unknown): ValueType => {
+  if (Array.isArray(value)) {
+    return "array"
+  } else {
+    return typeof value
+  }
+}
+
 function getPathInfo (
   inputData: unknown,
   path: (string | number)[]
@@ -332,13 +341,6 @@ function getPathInfo (
   longestExistingPath: (string | number)[],
   typeAtLongestExistingPath: ValueType,
 } {
-  const getType = (value: unknown) => {
-    if (Array.isArray(value)) {
-      return "array"
-    } else {
-      return typeof value
-    }
-  }
   return path.reduce<any>(
     (accumulator: any, currentArrayValue: string | number) => {
       const exists = typeof accumulator.value !== "undefined" && currentArrayValue in accumulator.value
@@ -515,4 +517,28 @@ export function getPromiseWithResolvers<Expected = unknown>() {
     resolve,
     reject
   }
+}
+
+export type ObjectEntry<BaseType> = [keyof BaseType, BaseType[keyof BaseType]];
+
+// Takes an object and if any property values are promises it will wait until they're resolved.
+export async function waitForAllPropertiesToResolve<ObjectWithPromises>(
+  object: { [key in keyof ObjectWithPromises]: ObjectWithPromises[key] }
+): Promise<{ [key in keyof ObjectWithPromises]: Awaited<ObjectWithPromises[key]> }> {
+  // So that we can use Promise.all() to resolve every prop in object we first convert
+  // object to an array of entries, then we swap each entry with a promise that resolves
+  // to the entry. That way we can can use Promise.all() on it to get us back to an array
+  // of entries (but now with any promises resolved), then use Object.fromEntry() to
+  // re-assemble the entries back into an object.
+  const entriesAsPromises = Object.entries(object)
+    .map(entry => {
+      const [entryKey, entryValue] = entry
+      if (entryValue instanceof Promise) {
+        return entryValue.then( (resolvedEntryValue: any) => ([entryKey, resolvedEntryValue]) )
+      } else {
+        return new Promise(resolve => resolve(entry as [any, any]))
+      }
+    }) as Promise<ObjectEntry<ObjectWithPromises>>[]
+  const entriesResolved = await Promise.all(entriesAsPromises)
+  return Object.fromEntries(entriesResolved) as { [key in keyof ObjectWithPromises]: Awaited<ObjectWithPromises[key]> }
 }

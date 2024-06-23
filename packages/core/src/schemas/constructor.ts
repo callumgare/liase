@@ -7,6 +7,7 @@ export type Action = ((context: ActionContext) => any)
 export type Constructor = {
   _arrayMap?: Action,
   _setup?: Action,
+  _include?: Action,
 } & {
   [key: string]: Constructor | Constructor[] | Action | Primitives
 }
@@ -20,6 +21,7 @@ const ActionSchema: z.ZodType<Action> = z.function()
 // export const ConstructorSchema: z.ZodType<Constructor> = z.object({
 //   _arrayMap: ActionSchema.optional(),
 //   _setup: ActionSchema.optional(),
+//   _include: ActionSchema.optional(),
 // }).and(
 //   z.record(
 //     z.string(),

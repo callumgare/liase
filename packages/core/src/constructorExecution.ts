@@ -1,7 +1,7 @@
 import { ActionContext } from "./ActionContext.js";
 import {Constructor, Action} from "./schemas/constructor.js"
 import { DomSelection } from "./DomSelection.js";
-import { ConstructorExecutionError, formatObjectPath } from "./utils.js";
+import { ConstructorExecutionError, formatObjectPath, getType, waitForAllPropertiesToResolve } from "./utils.js";
 
 const log: string[] = []
 
@@ -35,13 +35,43 @@ export async function executeConstructor(
     context = await executeAction(constructor._setup, context, [...pathInContainingConstructor, "_setup"])
   }
 
+  const returnObject: {[key: string]: any} = {}
+
+  if (constructor._include) {
+    const resultContext = await executeAction(constructor._include, context, [...pathInContainingConstructor, "_include"])
+    const resultValue = resultContext.get('')
+
+    if (resultValue.constructor !== Object) {
+      throw handleExecutionError(
+        Error(`_include must return a plain object but instead received: ${getType(resultValue)}`),
+        context,
+        pathInContainingConstructor,
+      )
+    }
+
+    Object.assign(returnObject, resultValue)
+
+    // We don't want _include to override any value _setup has written to $.get('') but we do
+    // want to keep any values it has written to other non-'' keys.
+    const contextState = resultContext.getAll()
+    if ('' in contextState) {
+      delete contextState['']
+    }
+    if (context.has('')) {
+      contextState[''] = context.get('')
+    }
+
+    context = context.clone({
+      data: contextState
+    })
+  }
+
   const constructorReturnKeys = Object.fromEntries(
     Object.entries(constructor).filter(
       // Filter out constructor instruction keys
       ([key]) => !key.match(/^_[^_]/)
     )
   )
-  const returnObject: {[key: string]: any} = {}
 
   for (const key of Object.keys(constructorReturnKeys)) {
     const value = constructorReturnKeys[key]
@@ -70,15 +100,7 @@ export async function executeConstructor(
     }
   }
 
-  return Promise.all(
-    Object.entries(returnObject)
-      // Return value of returnObject prop which is a promise so that
-      // Promise.all() can wait on it, but add a .then() to promise to
-      // make the promise actually return the entry of returnObject prop
-      // so that we can reassemble it back into an object using Object.fromEntry()
-      // after all promises have resolved
-      .map( entry => entry[1].then((value: any) => ([entry[0],value])) )
-  ).then(entries => Object.fromEntries(entries))
+  return waitForAllPropertiesToResolve(returnObject)
 }
 
 async function executeAction(action: Action, context: ActionContext, pathInContainingConstructor: (string | number)[]): Promise<ActionContext> {
