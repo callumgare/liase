@@ -69,6 +69,18 @@ export function createBasicTestsForRequestHandlers<
         const response = await mediaQuery.getNext();
         responses.push(response)
 
+        if ((i+1) < numOfPagesToExpect) {
+          // If we're expecting more pages then isLastPage should not be "true"
+          expect(response?.page?.isLastPage, `Expected to receive another response after ${getOrdinal(i+1)} but page.isLastPage is set to "true"`).not.toBe(true)
+        } else if (numOfPagesToExpect < numOfPagesToLoad) {
+          // If this is the last expected page of content but we've explicitly requested to load more pages after this
+          // assume that this is the last page and thus isLastPage should not be "false"
+          expect(response?.page?.isLastPage, `Expected to not receive another response after ${getOrdinal(i+1)} but page.isLastPage is set to "false"`).not.toBe(false)
+        } else {
+          // It's easy to calculate the number of expected assertions if we include this dummy assertion
+          expect(true).toBe(true)
+        }
+
         if (i < numOfPagesToExpect) {
           expect(response, `Expected a response for the ${getOrdinal(i+1)} request but response was null`).not.toBe(null)
         } else {
@@ -93,7 +105,7 @@ export function createBasicTestsForRequestHandlers<
         expect(idsOfMedia).toSatisfy(hasNoDuplicates, "Media with the same ID appears in multiple responses")
       }
       expect.assertions(
-        numOfPagesToLoad + (query.duplicateMediaPossible ? 0 : 1) + customResponseTestExpectedAssertions
+        (numOfPagesToLoad * 2) + (query.duplicateMediaPossible ? 0 : 1) + customResponseTestExpectedAssertions
       );
     })
   }
