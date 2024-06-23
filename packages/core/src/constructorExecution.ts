@@ -1,4 +1,4 @@
-import { ActionContext } from "./ActionContext.js";
+import { ActionContext, excludeFieldSymbol } from "./ActionContext.js";
 import {Constructor, Action} from "./schemas/constructor.js"
 import { DomSelection } from "./DomSelection.js";
 import { ConstructorExecutionError, formatObjectPath, getType, waitForAllPropertiesToResolve } from "./utils.js";
@@ -77,30 +77,54 @@ export async function executeConstructor(
     const value = constructorReturnKeys[key]
     const newKey = key.replace(/^__/, "_") // Unescape _ if starts with escaped _
 
+    // Value may or may not be an array so it's easier to normalise to an array, process each
+    // element, then return the whole array if it was originally an array or just the first element
+    // if was originally a non-array value.
+    const valueAsAnArray = [value].flat(1)
+
+    const valueAsAnArrayOfPromises = valueAsAnArray.map((valueElement, i) => {
+      // For we only care about recording the index if the value is actually an array
+      // rather than a non-array that we normalised to an array earlier
+      const newPathInContainingConstructor = Array.isArray(value)
+        ? [...pathInContainingConstructor, newKey, i]
+        : [...pathInContainingConstructor, newKey]
+
+      if (typeof valueElement === "object" && !(valueElement instanceof Date) && valueElement !== null) {
+        return executeConstructor(valueElement, context, newPathInContainingConstructor)
+          .catch(error => handleExecutionError(error, context, newPathInContainingConstructor))
+      } else if (typeof valueElement === "function") {
+        return executeAction(valueElement, context, newPathInContainingConstructor)
+          .then(context => context.lastResult())
+          .then(result => (result instanceof DomSelection) ? result.text : result)
+          .catch(error => handleExecutionError(error, context, newPathInContainingConstructor))
+      } else {
+        // We return valueElement wrapped in a promise to match all the other cases above which
+        // return a promise. By having all returns be promises we can later use Promise.all() to
+        // resolve all elements.
+        return Promise.resolve(valueElement)
+      }
+    })
+
     if (Array.isArray(value)) {
-      returnObject[newKey] = Promise.all(
-        value.map((constructor, i) =>
-          executeConstructor(constructor, context, [...pathInContainingConstructor, newKey, i])
-            .catch(error => handleExecutionError(error, context, [...pathInContainingConstructor, newKey, i]))
-        )
-      )
-    } else if (typeof value === "object" && !(value instanceof Date) && value !== null) {
-      returnObject[newKey] = executeConstructor(value, context, [...pathInContainingConstructor, newKey])
-        .catch(error => handleExecutionError(error, context, [...pathInContainingConstructor, newKey]))
-    } else if (typeof value === "function") {
-      returnObject[newKey] = executeAction(value, context, [...pathInContainingConstructor, newKey])
-        .then(context => context.lastResult())
-        .then(result => (result instanceof DomSelection) ? result.text : result)
-        .catch(error => handleExecutionError(error, context, [...pathInContainingConstructor, newKey]))
+      returnObject[newKey] = Promise.all(valueAsAnArrayOfPromises)
     } else {
-      // We return value wrapped in a promise to match all the other cases above which
-      // return a promise. By having all returns be promises it's easier later on to
-      // go though and resolve all at once.
-      returnObject[newKey] = Promise.resolve(value)
+      returnObject[newKey] = valueAsAnArrayOfPromises[0]
     }
   }
 
-  return waitForAllPropertiesToResolve(returnObject)
+  const awaitedReturnObject = await waitForAllPropertiesToResolve(returnObject)
+
+  // Remove any fields/array elements who's value is the ExcludeField symbol
+  for (const key of Object.keys(awaitedReturnObject)) {
+    const value = awaitedReturnObject[key]
+    if (Array.isArray(value)) {
+      awaitedReturnObject[key] = value.filter(element => element !== excludeFieldSymbol)
+    } else if (value === excludeFieldSymbol) {
+      delete awaitedReturnObject[key]
+    }
+  }
+
+  return awaitedReturnObject
 }
 
 async function executeAction(action: Action, context: ActionContext, pathInContainingConstructor: (string | number)[]): Promise<ActionContext> {

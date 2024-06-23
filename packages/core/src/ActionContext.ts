@@ -8,6 +8,8 @@ import { ConstructorExecutionContext } from "./types.js";
 import {decodeHTML} from "entities"
 import { generateResponse, getResponseSchemaBasedOnRequest } from "./generateResponse.js";
 
+export const excludeFieldSymbol = Symbol("ExcludeField");
+
 export class ActionContext extends Function {
   constructor(args: {
     constructorContext: ConstructorExecutionContext,
@@ -155,4 +157,6 @@ export class ActionContext extends Function {
   guessMediaInfoFromUrl = guessMediaInfoFromUrl
 
   decodeHTML = (value: string) => decodeHTML(value)
+
+  excludeField = excludeFieldSymbol
 }

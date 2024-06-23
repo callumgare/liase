@@ -9,7 +9,7 @@ export type Constructor = {
   _setup?: Action,
   _include?: Action,
 } & {
-  [key: string]: Constructor | Constructor[] | Action | Primitives
+  [key: string]: Constructor | Action | Primitives | Array<Constructor | Action | Primitives>
 }
 
 const ActionSchema: z.ZodType<Action> = z.function()
@@ -26,8 +26,8 @@ const ActionSchema: z.ZodType<Action> = z.function()
 //   z.record(
 //     z.string(),
 //     z.lazy(() => z.union([
-//       ConstructorSchema, z.array(ConstructorSchema), ActionSchema, zodPrimitives
-//     ]) )
+//       ConstructorSchema, ActionSchema, zodPrimitives, z.array(z.union([ConstructorSchema, ActionSchema, zodPrimitives]))
+//     ]))
 //   )
 // )
 //
@@ -37,6 +37,6 @@ const ActionSchema: z.ZodType<Action> = z.function()
 export const ConstructorSchema: z.ZodType<Constructor> = z.record(
   z.string(),
   z.lazy(() => z.union([
-    ConstructorSchema, z.array(ConstructorSchema), ActionSchema, zodPrimitives
+    ConstructorSchema, ActionSchema, zodPrimitives, z.array(z.union([ConstructorSchema, ActionSchema, zodPrimitives]))
   ]) )
 )
