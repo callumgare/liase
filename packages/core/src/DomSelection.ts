@@ -8,6 +8,7 @@ export abstract class DomSelection {
   abstract get text(): Promise<string>
   abstract get nativeSelector(): Cheerio<AnyNode>
   abstract get selectedNodes(): DomSelection[]
+  abstract get jsonLd(): Record<string, unknown>
 }
 
 export class CheerioDomSelection extends DomSelection {
@@ -36,5 +37,17 @@ export class CheerioDomSelection extends DomSelection {
 
   get selectedNodes () {
     return this.#nativeSelector.toArray().map(element => new CheerioDomSelection(load(element).root()))
+  }
+
+  get jsonLd (): Record<string, unknown> {
+    const jsonLdText = this.#nativeSelector.find('script[type="application/ld+json"]').text()
+    let jsonLdJson
+    try {
+      jsonLdJson = JSON.parse(jsonLdText)
+    } catch(error) {
+      console.error("Text is not valid JSON:", jsonLdText)
+      throw error
+    }
+    return jsonLdJson
   }
 }
