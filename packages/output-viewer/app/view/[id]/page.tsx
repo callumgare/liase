@@ -12,11 +12,12 @@ export default async function Page({ params }: { params: { id: string } }) {
   const output = await loadOutput(params.id)
 
   return <div className={style.root}>
-    <ul>
-      {output?.media.map(media => (
+    {output && <ul>
+      {output.media.map(media => (
         <li key={media.id}><MediaPreview media={media} /></li>
       ))}
-    </ul>
+    </ul>}
+    {!output && <div>No output find, possibly output has expired</div>}
     <details>
       <summary>Raw output</summary>
       <pre>{JSON.stringify(output, null, 2)}</pre>

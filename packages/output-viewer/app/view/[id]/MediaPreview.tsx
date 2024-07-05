@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { GenericFile, GenericMedia } from "media-finder"
+import VideoPlayer, {MuxPlayerRefAttributes} from '@mux/mux-player-react';
+
+import style from "./MediaPreview.module.css";
 
 type File = GenericFile & {displayElm: "video" | "img"}
 
@@ -24,7 +27,10 @@ export default function MediaPreview({media}: {media: GenericMedia}) {
 
     const file = files.find(file => file.type === displayedFileType)
 
+    const {mediaRef, containerRef, lockSize} = useMediaSizeLockWhenLoading()
+
     function toggleToNextDisplayFileType() {
+        lockSize()
         setDisplayedFileType(
             fileTypes.at(
                 (fileTypes.indexOf(displayedFileType) + 1) % fileTypes.length
@@ -32,13 +38,10 @@ export default function MediaPreview({media}: {media: GenericMedia}) {
         )
     }
 
-    const [mediaRef, containerRef] = useMediaSizeLockWhenLoading()
 
     function renderFile(file: File) {
         if (file.displayElm === "video") {
-            return <video ref={mediaRef} key={file.url} autoPlay={true}>
-                <source src={file.url} />
-            </video>
+            return <VideoPlayer ref={mediaRef} src={file.url}  />
         } else if (file.displayElm === "img") {
             // eslint-disable-next-line @next/next/no-img-element -- We can't use <Image /> since we're loading third-party images and generally have no idea what size they are
             return <img ref={mediaRef} key={file.url} src={file.url} alt="" />
@@ -49,72 +52,98 @@ export default function MediaPreview({media}: {media: GenericMedia}) {
         }
 
     }
-    return <div onClick={toggleToNextDisplayFileType} ref={elm => {containerRef.current = elm}}>
-        {file && renderFile(file)}
-    </div>
+    return (
+        <div
+            onClick={toggleToNextDisplayFileType}
+            ref={elm => {containerRef.current = elm}}
+            className={style.root}
+        >
+            {file && renderFile(file)}
+        </div>
+    )
 }
 
 
 const useMediaLoaded = () => {
-    const [loaded, setLoaded] = useState(false)
-    const refLoaded = useRef(false)
+    const [loadedState, setLoadedState] = useState(false)
+    const loadedRef = useRef(loadedState)
+    const [mediaSrcState, setMediaSrcState] = useState<string>()
+    const mediaSrcRef = useRef(mediaSrcState)
 
-    const onLoad = () => {
-        if (!refLoaded.current) {
-            refLoaded.current = true
-            setLoaded(true)
+    const setLoaded = (loaded: boolean) => {
+        if (loadedRef.current !== loaded) {
+            loadedRef.current = loaded
+            setLoadedState(loaded)
         }
     }
 
-    const onUnload = () => {
-        if (refLoaded.current) {
-            refLoaded.current = false
-            setLoaded(false)
+    const setMediaSrc = (src?: string) => {
+        if (mediaSrcRef.current !== src) {
+            mediaSrcRef.current = src
+            setMediaSrcState(src)
         }
     }
 
-    const ref = useCallback((mediaElm: HTMLVideoElement | HTMLImageElement | null) => {
+    const previousRefValue = useRef<MuxPlayerRefAttributes | HTMLImageElement | null>(null)
+
+    const mediaRef = useCallback((mediaElm: MuxPlayerRefAttributes | HTMLImageElement | null) => {
+        if (mediaElm === previousRefValue.current) {
+            return
+        }
         // If node is null then the component it was attached to was unmounted
         if (mediaElm !== null) {
+            setMediaSrc(mediaElm.src)
             if (mediaElm instanceof HTMLImageElement) {
-                mediaElm.addEventListener('load', () => onLoad)
+                mediaElm.addEventListener('load', () => setLoaded(true))
                 mediaElm.addEventListener('error', (error) => console.error("Error when loading media:", error))
                 const intervalId = setInterval(
                     () => {
                         if (mediaElm.naturalHeight) {
-                            onLoad()
+                            setLoaded(true)
                             clearInterval(intervalId)
                         }
                     },
                     100
                 )
                 if (mediaElm?.complete) {
-                    onLoad()
+                    setLoaded(true)
                 } else if (mediaElm?.complete === false) {
-                    onUnload()
+                    setLoaded(false)
                 }
 
-            } else if (mediaElm instanceof HTMLVideoElement) {
-                mediaElm.addEventListener("loadedmetadata", onLoad)
+            } else {
+                setMediaSrc(mediaElm.src)
+                mediaElm.addEventListener("loadedmetadata", () => setLoaded(true))
 
                 if (mediaElm.readyState >= HTMLMediaElement.HAVE_METADATA) {
-                    onLoad();
+                    setLoaded(true);
                 } else if (mediaElm.readyState < HTMLMediaElement.HAVE_METADATA) {
-                    onUnload()
+                    setLoaded(false)
                 }
             }
+        } else {
+            setMediaSrc(undefined)
+            setLoaded(false)
         }
+        previousRefValue.current = mediaElm
     }, []);
 
-    return [ref, loaded] as const
+    return {mediaRef, loaded: loadedState, mediaSrc: mediaSrcState}
 }
 
 
 const useMediaSizeLockWhenLoading = () => {
-    const [mediaRef, mediaLoaded] = useMediaLoaded()
+    const {mediaRef, loaded: mediaLoaded, mediaSrc} = useMediaLoaded()
 
     const containerRef = useRef<HTMLElement | null>(null)
     const lockedContainerSizeRef = useRef({width: 0, height: 0})
+
+    function lockSize() {
+        if (containerRef.current) {
+            if (lockedContainerSizeRef.current.width) containerRef.current.style.width = `${lockedContainerSizeRef.current.width}px`
+            if (lockedContainerSizeRef.current.height) containerRef.current.style.height = `${lockedContainerSizeRef.current.height}px`
+        }
+    }
 
     useEffect(() => {
         if (containerRef.current) {
@@ -126,12 +155,10 @@ const useMediaSizeLockWhenLoading = () => {
                 lockedContainerSizeRef.current.width = containerSize.width
                 lockedContainerSizeRef.current.height = containerSize.height
             } else {
-                containerRef.current.style.width = `${lockedContainerSizeRef.current.width}px`
-                containerRef.current.style.height = `${lockedContainerSizeRef.current.height}px`
-                containerRef.current.style.opacity = `0`
+                lockSize()
             }
         }
-    }, [mediaLoaded])
+    }, [mediaLoaded, mediaSrc])
 
-    return [mediaRef, containerRef, mediaLoaded] as const
+    return {mediaRef, containerRef, lockSize, mediaLoaded} as const
 }
