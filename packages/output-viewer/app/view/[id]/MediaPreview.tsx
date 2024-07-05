@@ -33,7 +33,10 @@ export default function MediaPreview({media}: {media: GenericMedia}) {
         lockSize()
         setDisplayedFileType(
             fileTypes.at(
-                (fileTypes.indexOf(displayedFileType) + 1) % fileTypes.length
+                Math.min(
+                    fileTypes.indexOf(displayedFileType) + 1,
+                    fileTypes.length - 1
+                )
             )
         )
     }

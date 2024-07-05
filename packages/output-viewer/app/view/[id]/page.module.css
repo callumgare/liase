@@ -10,8 +10,9 @@
     align-items: center;
 
     & li {
-      & video, & img {
+      & video, & img, & mux-player {
         max-height: 400px;
+        height: 10000px; /* Needed to ensure the video element in mux-player respects max-height for some reason */
         display: block;
       }
     }
