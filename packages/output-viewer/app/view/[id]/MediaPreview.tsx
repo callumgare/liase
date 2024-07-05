@@ -9,33 +9,41 @@ import style from "./MediaPreview.module.css";
 type File = GenericFile & {displayElm: "video" | "img"}
 
 export default function MediaPreview({media}: {media: GenericMedia}) {
-    const fileTypeOrder = ["thumbnail", "full", "main"]
+    const fileTypeOrder = ["full", "main", "thumbnail"]
     const files: File[] = media.files.map(file => ({
         ...file,
         displayElm: (file.video && file.ext !== "gif") ? "video" : "img"
     }))
 
-    let fileTypes: any = new Set(files.map(file => file.type))
-    fileTypes = [...fileTypes]
-    fileTypes.sort((a: any, b: any) => (
-        (fileTypeOrder.indexOf(a) !== -1 ? fileTypeOrder.indexOf(a) : fileTypeOrder.length)
+    files.sort((a: any, b: any) => (
+        (fileTypeOrder.indexOf(a.type) !== -1 ? fileTypeOrder.indexOf(a.type) : fileTypeOrder.length)
         -  
-        (fileTypeOrder.indexOf(b) !== -1 ? fileTypeOrder.indexOf(b) : fileTypeOrder.length)
+        (fileTypeOrder.indexOf(b.type) !== -1 ? fileTypeOrder.indexOf(b.type) : fileTypeOrder.length)
     ))
 
-    const [displayedFileType, setDisplayedFileType] = useState(fileTypes[0])
+    let displayElms: any = new Set(files.map(file => file.displayElm))
+    displayElms = [...displayElms]
 
-    const file = files.find(file => file.type === displayedFileType)
+    const displayElmsOrder = ["img", "video"]
+    displayElms.sort((a: any, b: any) => (
+        (displayElmsOrder.indexOf(a) !== -1 ? displayElmsOrder.indexOf(a) : displayElmsOrder.length)
+        -  
+        (displayElmsOrder.indexOf(b) !== -1 ? displayElmsOrder.indexOf(b) : displayElmsOrder.length)
+    ))
+
+    const [displayedElm, setDisplayedElm] = useState(displayElms[0])
+
+    const file = files.find(file => file.displayElm === displayedElm)
 
     const {mediaRef, containerRef, lockSize} = useMediaSizeLockWhenLoading()
 
     function toggleToNextDisplayFileType() {
         lockSize()
-        setDisplayedFileType(
-            fileTypes.at(
+        setDisplayedElm(
+            displayElms.at(
                 Math.min(
-                    fileTypes.indexOf(displayedFileType) + 1,
-                    fileTypes.length - 1
+                    displayElms.indexOf(displayedElm) + 1,
+                    displayElms.length - 1
                 )
             )
         )
@@ -44,7 +52,7 @@ export default function MediaPreview({media}: {media: GenericMedia}) {
 
     function renderFile(file: File) {
         if (file.displayElm === "video") {
-            return <VideoPlayer ref={mediaRef} src={file.url}  />
+            return <VideoPlayer ref={mediaRef} src={file.url} autoPlay={displayElms.indexOf(displayedElm) > 0} />
         } else if (file.displayElm === "img") {
             // eslint-disable-next-line @next/next/no-img-element -- We can't use <Image /> since we're loading third-party images and generally have no idea what size they are
             return <img ref={mediaRef} key={file.url} src={file.url} alt="" />
