@@ -1,0 +1,19 @@
+.root {
+  padding: 1em;
+
+  & ul {
+    display: flex;
+    flex-wrap: wrap;
+    list-style-type: none;
+    gap: 1em;
+    justify-content: center;
+    align-items: center;
+
+    & li {
+      & video, & img {
+        max-height: 400px;
+        display: block;
+      }
+    }
+  }
+}
