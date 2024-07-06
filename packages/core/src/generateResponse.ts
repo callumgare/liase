@@ -16,6 +16,7 @@ export async function generateResponse(constructorContext: ConstructorExecutionC
     ...constructorContext,
     request: requestWithDefaults(constructorContext.request, constructorContext.requestHandler.requestSchema)
   }
+  Error.stackTraceLimit = 50;
   const actionContext = new ActionContext({constructorContext, executeActions, path: []})
   let res
   try {

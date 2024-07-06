@@ -1,6 +1,8 @@
 import pluralize from "pluralize";
 import { z, ZodFirstPartySchemaTypes, Primitive, ZodFirstPartyTypeKind } from "zod";
 import { ActionContext } from "./ActionContext.js";
+import chalk from "chalk"
+import util from "node:util"
 
 type SimpleSchema = (
   {
@@ -244,6 +246,30 @@ export const formatObjectPath = (path: (string | number)[]) => "$" + path
   .map(segment => typeof segment === "number" ? `[${segment}]` : `.${segment}`)
   .join("")
 
+
+export const formatObjectPathAsTree = (path: (string | number)[], indent: number = 0) => path
+  .reduce<string[]>(
+    (segments, segment) => {
+      if (typeof segment === "number") {
+        const formattedSegment = `[${segment}]`
+        if (segments.length) {
+          segments[segments.length - 1] += formattedSegment
+        } else {
+          segments.push(formattedSegment)
+        }
+      } else {
+        segments.push(segment)
+      }
+      return segments
+    },
+    []
+  )
+  .map(segment => (typeof segment === "number" ? `[${segment}]` : `${segment}`))
+  .map(segment => chalk.bold(segment))
+  .map((segment, index) => (index ? "  ".repeat(index) + chalk.dim("↳ ") : "") + segment)
+  .map(segment => " ".repeat(indent) + segment)
+  .join("\n")
+
 const capitalisedFirstLetter = (string: string) => string[0].toUpperCase() + string.substring(1);
 
 const returnType = (v: unknown) => typeof v
@@ -294,9 +320,17 @@ export class ConstructorExecutionError extends Error {
   }
 
   getFormattedErrorInfo() {
+    const stack = this.cause instanceof Error ? this.cause.stack?.replace(this.cause.toString() + "\n", "") : undefined
+    const lastConstructorProp = this.errorOccurredAtPath[this.errorOccurredAtPath.length - 1]
+    const errorLocation = stack?.split("\n").find(line => line.startsWith(`    at ${lastConstructorProp}`))?.match(/\((.*)\)/)?.[1]
     return [
-      this.message,
-      `  Error occurred at: ${formatObjectPath(this.errorOccurredAtPath)}`
+      chalk.dim(`Request:\n${JSON.stringify(this.context.request, null, 2)}`),
+      '',
+      this.cause instanceof Error ? chalk.dim(`Full stack trace:\n${stack}`) : this.message,
+      '',
+      chalk.red("Error:") + " " + chalk.bold(this.message),
+      "  Occurred when rendering the following response constructor property: \n" +
+        ` ${formatObjectPathAsTree(this.errorOccurredAtPath, 4)} (${chalk.blue(errorLocation)})`,
     ].join("\n");
   }
 }
@@ -368,6 +402,16 @@ type FriendlyZodErrorOptions = {
   message?: string,
   inputData?: unknown,
 }
+
+type FriendlyZodErrorIssue = {
+  zodIssue: z.ZodIssue,
+  depth: number,
+  formattedMessage: string
+}
+type FriendlyZodErrorIssuesTree = {
+  issues: FriendlyZodErrorIssue[],
+  children: Record<string | number, FriendlyZodErrorIssuesTree>
+}
 export class FriendlyZodError extends Error {
   #inputData
   cause: z.ZodError
@@ -382,7 +426,7 @@ export class FriendlyZodError extends Error {
   }
 
 
-  formatZodIssue(issue: z.ZodIssue): string {
+  formatZodIssue(issue: z.ZodIssue, includePath = true): string {
     const {path, ...detailWithoutPath} = issue
     const formattedPath = formatObjectPath(path)
     let pathInfo = getPathInfo(this.#inputData, path)
@@ -391,7 +435,7 @@ export class FriendlyZodError extends Error {
     if (issue.code === "invalid_type") {
       if (pathInfo.exists) {
         const includeValue = ["string", "number"].includes(pathInfo.type)
-        issueMessage = `Expected ${formattedPath} to be an ${issue.expected} but ` +
+        issueMessage = `Expected ${includePath ? formattedPath + " to be an": ""}${issue.expected} but ` +
           (includeValue ? `the received value ${JSON.stringify(pathInfo.value)} was` : "received") +
           ` a ${issue.received}.`
       } else {
@@ -408,26 +452,34 @@ export class FriendlyZodError extends Error {
         const formattedValue = includeValue ? JSON.stringify(pathInfo.value) : `is a ${pathInfo.type}`
         return `"${key}" (value ${formattedValue})`
       })
-      issueMessage = `Unexpected ${pluralize("key", keys.length)} found at ${formattedPath}: ${keys.join(", ")}`
+      issueMessage = `Unexpected ${pluralize("key", keys.length)} found${includePath ? " at " + formattedPath: ""}: ${keys.join(", ")}`
     } else if (issue.code === "invalid_string") {
-      issueMessage = `${formattedPath} failed ${issue.validation} validation, received ${JSON.stringify(pathInfo.value)}`
+      issueMessage = `${includePath ? formattedPath + " failed": "Failed"} ${issue.validation} validation, received ${JSON.stringify(pathInfo.value)}`
     } else if (issue.code === "too_small" || issue.code === "too_big") {
       let condition, threshold
       if (issue.code === "too_small") {
-        threshold = issue.inclusive ?
-          issue.minimum
-          : (typeof issue.minimum === "number" ? issue.minimum + 1 : issue.minimum + BigInt(1))
-        condition = issue.exact ? "" : "at least"
+        threshold = issue.minimum
+        if (issue.exact) {
+          condition = ""
+        } else if (issue.inclusive) {
+          condition = "a minimum of"
+        } else {
+          condition = "more than"
+        }
       } else if (issue.code === "too_big") {
-        threshold = issue.inclusive ?
-          issue.maximum
-          : (typeof issue.maximum === "number" ? issue.maximum + 1 : issue.maximum + BigInt(1))
-        condition = issue.exact ? "" : "less than"
+        threshold = issue.maximum
+        if (issue.exact) {
+          condition = ""
+        } else if (issue.inclusive) {
+          condition = "a maximum of"
+        } else {
+          condition = "less than"
+        }
       }
 
       if (issue.type === "number" || issue.type === "bigint" || issue.type === "date") {
         const capitalisedType = capitaliseType(issue.type)
-        issueMessage = `${capitalisedType} at ${formattedPath} must be ${condition}` +
+        issueMessage = `${capitalisedType} ${includePath ? "at " + formattedPath + " ": ""}must be ${condition}` +
           ` ${threshold} but was ${pathInfo.value}.`
       } else {
         const nameForTypeElement = ({
@@ -437,41 +489,138 @@ export class FriendlyZodError extends Error {
         })[issue.type]
         const capitalisedType = capitaliseType(issue.type)
         const length = (pathInfo.value as Array<unknown>).length
-        issueMessage = `${capitalisedType} at ${formattedPath} must have ${condition}` +
+        issueMessage = `${capitalisedType} ${includePath ? " at " + formattedPath + " ": ""}must have ${condition}` +
           ` ${threshold} ${nameForTypeElement}(s) but the received ${issue.type} had ${length}.`
       }
+    } else if (issue.code === "invalid_date") {
+      issueMessage = `Expected date ${includePath ? "at " + formattedPath + " ": ""}but received value ${JSON.stringify(pathInfo.value)} is not a valid date.`
     } else {
       pathInfo = getPathInfo(this.#inputData, path)
-      issueMessage = `Issue with ${formattedPath}: ${JSON.stringify(detailWithoutPath)} - ${JSON.stringify(pathInfo.value)}`
+      issueMessage = `Issue with${includePath ? " " + formattedPath: ""}: ${JSON.stringify(detailWithoutPath)} - ${JSON.stringify(pathInfo.value)}`
     }
-    return `- ${issueMessage}`
+    return `${issueMessage}`
   }
 
-  formatZodErrorIssues(error: z.ZodError = this.cause, depth = 0): string {
+  formatZodErrorIssues(error: z.ZodError = this.cause, depth = 0, includePath = true): FriendlyZodErrorIssue[] {
     const indentSize = 2
-    const lines: string[] = []
+    const formattedIssues: FriendlyZodErrorIssue[] = []
     for (const issue of error.issues) {
-      lines.push(" ".repeat(depth * indentSize) + this.formatZodIssue(issue))
 
       if (issue.code === 'invalid_union') {
-        lines.push(
-          ...issue.unionErrors.map(error => this.formatZodErrorIssues(error, depth + 1))
-        )
+        formattedIssues.push({
+          formattedMessage: " ".repeat(depth * indentSize) + "Invalid union:",
+          zodIssue: issue,
+          depth,
+        })
+        for (const error of issue.unionErrors) {
+          formattedIssues.push( ...this.formatZodErrorIssues(error, depth + 1, includePath) )
+        }
       } else if (issue.code === "invalid_arguments") {
-        lines.push( this.formatZodErrorIssues(issue.argumentsError, depth + 1) )
+        formattedIssues.push({
+          formattedMessage: " ".repeat(depth * indentSize) + "Invalid arguments:",
+          zodIssue: issue,
+          depth,
+        })
+        formattedIssues.push( ...this.formatZodErrorIssues(issue.argumentsError, depth + 1, includePath) )
       } else if (issue.code === "invalid_return_type") {
-        lines.push( this.formatZodErrorIssues(issue.returnTypeError, depth + 1) )
+        formattedIssues.push({
+          formattedMessage: " ".repeat(depth * indentSize) + "Invalid return type:",
+          zodIssue: issue,
+          depth,
+        })
+        formattedIssues.push( ...this.formatZodErrorIssues(issue.returnTypeError, depth + 1, includePath) )
+      } else {
+        formattedIssues.push({
+          formattedMessage: " ".repeat(depth * indentSize) + this.formatZodIssue(issue, includePath),
+          zodIssue: issue,
+          depth,
+        })
+
       }
     }
-    return lines.join("\n")
+    return formattedIssues
+  }
+
+
+  formatZodErrorIssuesAsDotPoints(error: z.ZodError = this.cause, depth = 0, indentSize = 2): string {
+    return this.formatZodErrorIssues(error)
+      .map(friendlyZodIssue => `${" ".repeat((depth + friendlyZodIssue.depth) * indentSize)}- ${friendlyZodIssue.formattedMessage}`)
+      .join("\n")
+  }
+
+  formatZodErrorIssuesAsTree(error: z.ZodError = this.cause): FriendlyZodErrorIssuesTree {
+    const issuesTree: FriendlyZodErrorIssuesTree = {
+      issues: [],
+      children: {}
+    }
+    for (const friendlyZodIssue of this.formatZodErrorIssues(error, 0, false)) {
+      let issueSubtree = issuesTree
+      const path = friendlyZodIssue.zodIssue.path
+        .reduce<string[]>(
+          (segments, segment) => {
+            if (typeof segment === "number") {
+              const formattedSegment = `[${segment}]`
+              if (segments.length) {
+                segments[segments.length - 1] += formattedSegment
+              } else {
+                segments.push(formattedSegment)
+              }
+            } else {
+              segments.push(segment)
+            }
+            return segments
+          },
+          []
+        )
+      for (const pathSegment of path) {
+        if (!(pathSegment in issueSubtree.children)) {
+          issueSubtree.children[pathSegment] = {
+            issues: [],
+            children: {}
+          }
+        }
+        issueSubtree = issueSubtree.children[pathSegment]
+      }
+      issueSubtree.issues.push(friendlyZodIssue)
+    }
+    return issuesTree
+  }
+
+  formatZodErrorIssuesAsTreeString(error: z.ZodError = this.cause, depth = 0, indentSize = 2): string {
+    function formatSubtree(issuesTree: FriendlyZodErrorIssuesTree, depth: number) {
+      const lines: string[] = []
+      const baseIndentation = " ".repeat(depth * indentSize)
+      for (const friendlyZodIssue of issuesTree.issues) {
+        const indentation = baseIndentation + " ".repeat(friendlyZodIssue.depth * indentSize)
+        lines.push(
+          indentation + "- " + friendlyZodIssue.formattedMessage.replace(/^\s+/, "")
+        )
+      }
+      for (const [index, key] of Object.keys(issuesTree.children).entries()) {
+        const issuesSubtree = issuesTree.children[key]
+        if (index) {
+          lines.push("")
+        }
+        lines.push(baseIndentation + chalk.bold(key))
+        const subtreeLines = formatSubtree(issuesSubtree, depth + 1)
+        if (subtreeLines.length) {
+          lines.push(formatSubtree(issuesSubtree, depth + 1))
+        }
+      }
+      return lines.join("\n")
+    }
+
+    const issuesTree = this.formatZodErrorIssuesAsTree(error)
+    return formatSubtree(issuesTree, depth)
   }
 
   get formattedErrorInfo() {
     return [
       this.message,
-      ...(this.#inputData ? [`Input data: \n${JSON.stringify(this.#inputData, null, 2)}`] : []),
+      ...(this.#inputData ? [`Input data: \n${util.inspect(this.#inputData, {depth: null, colors: true})}`] : []),
+      "",
       `The following ${this.cause.issues.length > 1 ? "issues were" : "issue was"} found:`,
-      this.formatZodErrorIssues(this.cause, 1),
+      this.formatZodErrorIssuesAsTreeString(this.cause, 1),
     ].join("\n");
   }
 }
