@@ -9,6 +9,10 @@ export const genericMediaSchema = z.object({
   ),
   files: z.array(genericFileSchema),
   url: z.string().url().optional().describe(""),
+  nameOfUploader: z.string().optional().describe(
+    "The name of the account which uploaded the media to the source (not necessarily the same as the person who " +
+      "created the media)."
+  ),
   usernameOfUploader: z.string().optional().describe(
     "The username of the account which uploaded the media to the source (not necessarily the same as the person who " +
       "created the media)."

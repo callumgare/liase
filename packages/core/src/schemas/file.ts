@@ -11,6 +11,8 @@ export const genericFileSchema = z.object({
   fileSize: z.number().int().optional(),
   width: z.number().int().optional(),
   height: z.number().int().optional(),
-}).strict();
+  urlExpires: z.union([z.date(), z.boolean()]).optional(),
+  urlRefreshDetails: z.any().optional(),
+}).passthrough();
 
 export type GenericFile = z.infer<typeof genericFileSchema>
