@@ -40,9 +40,13 @@ runCommand
   .addOption(sourceOption)
   .addOption(requestHandlerOption)
   .addOption(
-    (new Option('-f, --outputFormat <output format>'))
-      .choices(["pretty", "json", "online"])
-      .default("pretty")
+    new Option(
+      '-f, --outputFormat <output format>',
+      `"JSON" will format the output as JSON, "pretty" will format the output in a more human readable way with syntax highlighting, ` +
+        `"online" will open a webpage with the results visible. Default is "pretty" unless output is being piped in which case the default is "json".`
+    )
+      .choices(["json", "pretty", "online"])
+      .default(process.stdout.isTTY ? "pretty" : "json")
   )
   .action(async (options) => {
     const {requestHandler: queryType, outputFormat, ...request} = options
