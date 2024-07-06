@@ -54,6 +54,9 @@ export async function loadUrl(
   let response
   if (crawlerType === "cheerio") {
     const crawler = getCrawler(crawlerType, {proxyUrls})
+    if (!crawler.running) {
+      throw Error("Crawlee not running")
+    }
     await crawler.addRequests([request])
     const crawleeContext = await responsePromise as CheerioCrawlingContext<any, any>
     response = {
@@ -103,7 +106,7 @@ function getCrawler<
   } satisfies BasicCrawlerOptions
 
   if (crawlerType === "cheerio") {
-    if (!_initedCrawlers.cheerio) {
+    if (!_initedCrawlers.cheerio || _initedCrawlers.cheerio.running === false) {
       _initedCrawlers.cheerio = new CheerioCrawler(crawlerConstructorOptions, crawleeConfig)
       _initedCrawlers.cheerio.run()
     }
