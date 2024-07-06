@@ -5,8 +5,8 @@ import { queryOptionsSchema, QueryOptions } from "@/src/schemas/queryOptions.js"
 import { finderOptionsSchema } from "@/src/schemas/finderOptions.js";
 import { genericRequestSchema, GenericRequest, GenericRequestInput } from "@/src/schemas/request.js"
 import { GenericResponse } from "@/src/schemas/response.js"
-import { requestHandlerSchema } from "@/src/schemas/requestHandler.js";
-import { generateResponse, getResponseSchemaBasedOnRequest, requestWithDefaults } from "./generateResponse.js";
+import { requestHandlerSchema, RequestHandler } from "@/src/schemas/requestHandler.js";
+import { generateResponse, getResponseDetailsBasedOnRequest, requestWithDefaults } from "./generateResponse.js";
 import { GenericSecrets } from "./schemas/secrets.js";
 import { FriendlyZodError } from "./utils.js";
 
@@ -105,7 +105,7 @@ export default class MediaFinderQuery extends MediaFinder {
           requestHandler: handler,
           request: parsedRequest,
           secrets: parsedSecrets,
-          responseSchema: this.getResponseSchema(),
+          responseDetails: this.getResponseDetails(),
           pageFetchLimitReached,
           sourceId: this.getSource(parsedRequest.source).id,
           proxyUrls: this.#queryOptions.proxyUrls,
@@ -148,8 +148,12 @@ export default class MediaFinderQuery extends MediaFinder {
   }
 
   getResponseSchema(): z.ZodObject<z.ZodRawShape, z.UnknownKeysParam, z.ZodTypeAny, unknown, unknown> {
+    return this.getResponseDetails().schema
+  }
+
+  getResponseDetails(): RequestHandler['responses'][0] {
     const request = this.requestWithDefaults
-    const responseSchemaOrResponseSchemaArray = super.getResponseSchema(request.source, request.queryType)
-    return getResponseSchemaBasedOnRequest(responseSchemaOrResponseSchemaArray, request)
+    const responses = this.getRequestHandler().responses
+    return getResponseDetailsBasedOnRequest(responses, request)
   }
 }

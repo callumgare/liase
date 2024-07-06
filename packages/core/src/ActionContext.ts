@@ -6,7 +6,7 @@ import { GenericRequest } from "./schemas/request.js";
 import { GenericSecrets } from "./schemas/secrets.js";
 import { ConstructorExecutionContext } from "./types.js";
 import {decodeHTML} from "entities"
-import { generateResponse, getResponseSchemaBasedOnRequest } from "./generateResponse.js";
+import { generateResponse, getResponseDetailsBasedOnRequest } from "./generateResponse.js";
 
 export const excludeFieldSymbol = Symbol("ExcludeField");
 
@@ -150,7 +150,7 @@ export class ActionContext extends Function {
       request: fullRequest,
       secrets,
       requestHandler,
-      responseSchema: getResponseSchemaBasedOnRequest(requestHandler.responseSchema, fullRequest),
+      responseDetails: getResponseDetailsBasedOnRequest(requestHandler.responses, fullRequest),
       sourceId,
     }
     return generateResponse(constructorContext)

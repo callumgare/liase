@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ConstructorSchema, Constructor } from "./constructor.js"
+import { ConstructorSchema } from "./constructor.js"
 
 export const requestHandlerSchema = z.object({
   id: z.string().regex(/^[a-z-]+$/),
@@ -34,21 +34,16 @@ export const requestHandlerSchema = z.object({
     >
   ),
   secretsSchema: z.instanceof(z.ZodObject).optional(),
-  responseSchema: z.union([
-    z.instanceof(z.ZodObject),
-    z.array(
-      z.object({
-        requestMatcher: z.instanceof(z.ZodObject).optional(),
-        description: z.string().optional(),
-        schema: z.instanceof(z.ZodObject)
-      }).strict()
-    )
-  ]),
   paginationType: z.enum(["offset", "cursor", "none"]).default("none"),
-  responseConstructor: ConstructorSchema
+  responses: z.array(
+    z.object({
+      requestMatcher: z.instanceof(z.ZodObject).optional(),
+      description: z.string().optional(),
+      schema: z.instanceof(z.ZodObject),
+      constructor: ConstructorSchema,
+    }).strict()
+  ).min(1)
 }).strict()
 
-export type RequestHandler = Omit<z.infer<typeof requestHandlerSchema>, "responseConstructor"> &
-  {responseConstructor: Constructor}
-export type RequestHandlerInput = Omit<z.input<typeof requestHandlerSchema>, "responseConstructor"> &
-  {responseConstructor: Constructor}
+export type RequestHandler = z.infer<typeof requestHandlerSchema>
+export type RequestHandlerInput = z.input<typeof requestHandlerSchema>

@@ -128,8 +128,4 @@ export default class MediaFinder {
   getRequestSchema(sourceId: string, queryType: string) {
     return this.getRequestHandler(sourceId, queryType).requestSchema
   }
-
-  getResponseSchema(sourceId: string, queryType: string) {
-    return this.getRequestHandler(sourceId, queryType).responseSchema
-  }
 }

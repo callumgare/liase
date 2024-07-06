@@ -19,7 +19,7 @@ export async function generateResponse(constructorContext: ConstructorExecutionC
   const actionContext = new ActionContext({constructorContext, executeActions, path: []})
   let res
   try {
-    res = await executeConstructor(constructorContext.requestHandler.responseConstructor, actionContext)
+    res = await executeConstructor(constructorContext.responseDetails.constructor, actionContext)
   } catch(error) {
     if (error instanceof ConstructorExecutionError) {
       console.error(error.getFormattedErrorInfo())
@@ -37,7 +37,7 @@ function validateResponse(
 ): GenericResponse {
   const errorMessage = `The response returned from the request handler "${context.requestHandler.id}" of the source "${context.sourceId}" is invalid`
   const parsedResponse = zodParseOrThrow(genericResponseSchema, response, {errorMessage})
-  zodParseOrThrow(context.responseSchema, response, {errorMessage})
+  zodParseOrThrow(context.responseDetails.schema, response, {errorMessage})
 
   assert.deepEqual(context.request, parsedResponse.request)
 
@@ -69,30 +69,26 @@ function validateResponse(
   return parsedResponse
 }
 
-export function getResponseSchemaBasedOnRequest(
-  responseSchemaOrResponseSchemaArray: RequestHandler['responseSchema'],
+export function getResponseDetailsBasedOnRequest(
+  responses: RequestHandler['responses'],
   request: GenericRequest,
 ) {
-  let responseSchema
-  if (Array.isArray(responseSchemaOrResponseSchemaArray)) {
-    for (const responseSchemaDetails of responseSchemaOrResponseSchemaArray) {
-      if (responseSchemaDetails.requestMatcher) {
-        const {success} = responseSchemaDetails.requestMatcher.safeParse(request)
-        if (success) {
-          responseSchema = responseSchemaDetails.schema
-          break
-        }
+  const response = responses.find(response => {
+    if (response.requestMatcher) {
+      const {success} = response.requestMatcher.safeParse(request)
+      if (success) {
+        return response
       } else {
-        responseSchema = responseSchemaDetails.schema
+        return undefined
       }
+    } else {
+      return response
     }
-  } else {
-    responseSchema = responseSchemaOrResponseSchemaArray
+  })
+  if (!response) {
+    throw Error("Could not find matching response details")
   }
-  if (!responseSchema) {
-    throw Error("Could not find matching response schema")
-  }
-  return responseSchema
+  return response
 }
 
 export function requestWithDefaults(

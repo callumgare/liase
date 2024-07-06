@@ -17,11 +17,15 @@ export default {
   secretsSchema: z.object({
       apiKey: z.string(),
     }).strict(),
-  responseSchema: responseSchema.omit({page: true}),
   paginationType: "none",
-  responseConstructor: {
-    _setup: $ => Giphy($.secrets.apiKey).id($.request.id),
-    media: mediaResponseConstructor,
-    request: $ => $.request
-  }
+  responses: [
+    {
+      schema: responseSchema.omit({page: true}),
+      constructor: {
+        _setup: $ => Giphy($.secrets.apiKey).id($.request.id),
+        media: mediaResponseConstructor,
+        request: $ => $.request
+      }
+    }
+  ]
 } as const satisfies RequestHandler;

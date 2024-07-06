@@ -26,26 +26,30 @@ export default {
   secretsSchema: z.object({
       apiKey: z.string(),
     }).strict(),
-  responseSchema,
   paginationType: "cursor",
-  responseConstructor: {
-    _setup: $ =>
-      Giphy($.secrets.apiKey).search({
-        q: $.request.searchText,
-        limit: $.request.pageSize,
-        rating: $.request.contentRating,
-        offset: $.request.cursor,
-      }),
-    page: {
-      paginationType: () => "cursor",
-      cursor: $ => $().pagination.offset,
-      nextCursor: $ => $().pagination.offset + $().pagination.count,
-      totalMedia: $ => $().pagination.total_count,
-      isLastPage: $ => ($().pagination.count + $().pagination.offset) >= $().pagination.total_count,
-      url: $ => `https://giphy.com/search/${encodeURIComponent($.request.searchText)}`,
-      pageFetchLimitReached: $ => $.pageFetchLimitReached
-    },
-    media: mediaResponseConstructor,
-    request: $ => $.request,
-  },
+  responses: [
+    {
+      schema: responseSchema,
+      constructor: {
+        _setup: $ =>
+          Giphy($.secrets.apiKey).search({
+            q: $.request.searchText,
+            limit: $.request.pageSize,
+            rating: $.request.contentRating,
+            offset: $.request.cursor,
+          }),
+        page: {
+          paginationType: () => "cursor",
+          cursor: $ => $().pagination.offset,
+          nextCursor: $ => $().pagination.offset + $().pagination.count,
+          totalMedia: $ => $().pagination.total_count,
+          isLastPage: $ => ($().pagination.count + $().pagination.offset) >= $().pagination.total_count,
+          url: $ => `https://giphy.com/search/${encodeURIComponent($.request.searchText)}`,
+          pageFetchLimitReached: $ => $.pageFetchLimitReached
+        },
+        media: mediaResponseConstructor,
+        request: $ => $.request,
+      },
+    }
+  ]
 } as const satisfies RequestHandler;

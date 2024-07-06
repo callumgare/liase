@@ -42,20 +42,24 @@ export default {
         queryType: z.string(),
         id: z.string(),
       }).strict(),
-      responseSchema: exampleResponseSchema.omit({page: true}),
       paginationType: "none",
-      responseConstructor: {
-        _setup: $ => $.loadUrl("https://example.com/"),
-        media: [
-          {
-            mediaFinderSource: () => sourceId,
-            id: "1234",
-            title: $ => $.request.id === "test-getWebpage" ? $().root.select("h1") : "Media Title",
-            files: []
+      responses: [
+        {
+          schema: exampleResponseSchema.omit({page: true}),
+          constructor: {
+            _setup: $ => $.loadUrl("https://example.com/"),
+            media: [
+              {
+                mediaFinderSource: () => sourceId,
+                id: "1234",
+                title: $ => $.request.id === "test-getWebpage" ? $().root.select("h1") : "Media Title",
+                files: []
+              }
+            ],
+            request: $ => $.request
           }
-        ],
-        request: $ => $.request
-      }
+        }
+      ]
     },
     {
       id: "search-media",
@@ -67,25 +71,29 @@ export default {
         searchText: z.string(),
         pageNumber: z.number().default(1),
       }).strict(),
-      responseSchema: exampleResponseSchema,
       paginationType: "offset",
-      responseConstructor: {
-        page: {
-          paginationType: "offset",
-          pageNumber: $ => $.request.pageNumber ?? 1,
-          isLastPage: $ => $.request.pageNumber >= 2,
-          pageFetchLimitReached: $ => $.pageFetchLimitReached
-        },
-        media: [
-          {
-            mediaFinderSource: sourceId,
-            id: $ => `${$.request.pageNumber}-a`,
-            title: "Media Title",
-            files: []
+      responses: [
+        {
+          schema: exampleResponseSchema,
+          constructor: {
+            page: {
+              paginationType: "offset",
+              pageNumber: $ => $.request.pageNumber ?? 1,
+              isLastPage: $ => $.request.pageNumber >= 2,
+              pageFetchLimitReached: $ => $.pageFetchLimitReached
+            },
+            media: [
+              {
+                mediaFinderSource: sourceId,
+                id: $ => `${$.request.pageNumber}-a`,
+                title: "Media Title",
+                files: []
+              }
+            ],
+            request: $ => $.request,
           }
-        ],
-        request: $ => $.request,
-      }
+        }
+      ]
     },
   ],
 } as const satisfies Source
