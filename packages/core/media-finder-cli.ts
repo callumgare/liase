@@ -2,6 +2,9 @@
 import { Command, Option } from 'commander';
 import open from 'open';
 import 'dotenv-flow/config'
+import http, { Server } from "node:http"
+import {ProxyServer} from "@refactorjs/http-proxy";
+
 import { MediaFinder, Source, RequestHandler, createMediaFinderQuery } from "./src/index.js";
 import { zodSchemaToSimpleSchema } from "./src/utils.js"
 
@@ -66,8 +69,24 @@ runCommand
     } else if (outputFormat === "json") {
       console.log(JSON.stringify(response, null, 2))
     } else if (outputFormat === "online") {
-      const mediaUrlList = response.media?.map(media => media.files[0]?.url).join("\n")
-      open(`https://medialistviewer.glitch.me/?data=${encodeURIComponent(mediaUrlList)}`)
+
+      const {origin: proxyOrigin} = await startProxyServer()
+
+      for (const media of response.media || []) {
+        for (const file of media.files || []) {
+          file.url = proxyOrigin + "/" + file.url
+        }
+      }
+
+      const res = await fetch(`https://mediafinderviewer.cals.cafe/api/output`, {
+      method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(response),
+      })
+      const {viewerUrl} = await res.json()
+      open(viewerUrl)
     } else {
       throw Error(`Unknown output format "${outputFormat}"`)
     }
@@ -222,4 +241,46 @@ function getRequestHandlerFromArgs(): {source?: Source, requestHandler?: Request
   const requestHandler: RequestHandler = source?.requestHandlers.find(handler => handler.id === requestHandlerId)
 
   return {source, requestHandler}
+}
+
+
+function startProxyServer(): Promise<{origin: string, server: Server}> {
+  const proxy = new ProxyServer();
+
+  proxy.on('proxyRes', function (proxyRes, req, res) {
+    res.setHeader("Access-Control-Allow-Origin", "*")
+    proxyRes.pipe(res)
+  })
+  const server = http.createServer((req, res) => {
+      const targetUrlString = req.url?.replace(/^\//, "") || ""
+      let targetUrl
+      try {
+          targetUrl = new URL(targetUrlString)
+      } catch (error) {
+          res.statusCode = 400
+          res.end(`Invalid url "${targetUrlString}"`)
+          return
+      }
+      req.url = targetUrl.pathname + targetUrl.search
+      proxy.web(req, res, ({ target: targetUrl.origin, changeOrigin: true, secure: false, selfHandleResponse: true }))
+  })
+
+  process.on('SIGINT', function() {
+    server.close()
+  });
+
+  return new Promise((resolve, reject) => {
+    server.on("error", reject);
+    server.on("listening", () => {
+      const address = server.address()
+      const formattedAddress = typeof address === "object" ? `http://localhost:${address.port}` : address
+      resolve({
+        server,
+        origin: formattedAddress
+      })
+    });
+
+    server.listen()
+  })
+
 }
