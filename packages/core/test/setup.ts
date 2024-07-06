@@ -48,8 +48,25 @@ function startClientToCacheProxy(cachingProxyServerAddress: string): http.Server
       throw Error(`Received request without ${realOriginHeaderName} header`)
     }
     req.headers.host = new URL(realOrigin).hostname
-    req.url = realOrigin + req.url
-    proxyToCachingProxy.web(req, res, { target: cachingProxyServerAddress, toProxy: true, prependPath: false });
+    if (!req.url) {
+      throw Error("Invalid request url")
+    }
+    const url = new URL(req.url, realOrigin)
+    // no search query since for some reason @refactorjs/http-proxy seems to add it twice if
+    // set in the request url. So instead we add it to the target
+    req.url = url.origin + url.pathname
+    proxyToCachingProxy.web(
+      req,
+      res,
+      {
+        target: {
+          host: new URL(cachingProxyServerAddress).hostname,
+          port: new URL(cachingProxyServerAddress).port,
+          searchParams: url.searchParams,
+        },
+        toProxy: true
+      }
+    );
   }).listen(0);
 }
 

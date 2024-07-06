@@ -40,7 +40,7 @@ export async function loadUrl(
   const additionalHeaders: Record<string, string> = {}
   if (cachingProxyPort) {
     const targetUrl = new URL(url)
-    url = `http://localhost:${cachingProxyPort}${targetUrl.pathname}`
+    url = `http://localhost:${cachingProxyPort}${targetUrl.pathname}${targetUrl.search}`
     additionalHeaders["x-real-origin"] = targetUrl.origin
   }
   const request = new Request({
