@@ -35,8 +35,16 @@ export class CheerioDomSelection extends DomSelection {
     return new Promise<string>(resolve => resolve(this.#nativeSelector.text()))
   }
 
+  map(mapFunction: (node: CheerioDomSelection, index: number) => any) {
+    return this.selectedNodes.map(mapFunction)
+  }
+
   get selectedNodes () {
     return this.#nativeSelector.toArray().map(element => new CheerioDomSelection(load(element).root()))
+  }
+
+  get canonicalUrl(): string | undefined {
+    return this.select('link[rel=canonical]').attr('href')
   }
 
   get jsonLd (): Record<string, unknown> {
@@ -49,5 +57,12 @@ export class CheerioDomSelection extends DomSelection {
       throw error
     }
     return jsonLdJson
+
+  get data(): string {
+    return this.#nativeSelector.data()
+  }
+
+  get value (): string {
+    return this.#nativeSelector.val()
   }
 }
