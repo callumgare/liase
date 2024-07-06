@@ -19,7 +19,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: npm clean-install
-      - run: npm run test
+        # Use "-u" to ignore snapshot mis-matches. Sites may occasionally return different values over time or depending on requester specific details like geographical location. When making changes it's useful to see snapshot differences but we don't really want the CI to fail when there are differences given that our Zod schema passing ensures the ultimate response from media-finder is valid.
+      - run: npm run test -- -u
 
   release:
     name: Publish Package
