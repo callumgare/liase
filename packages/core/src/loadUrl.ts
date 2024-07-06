@@ -1,7 +1,7 @@
 import { CheerioDomSelection, DomSelection } from "./DomSelection.js";
 import { HttpCrawler, CheerioCrawler, Request, Configuration, LogLevel, CheerioCrawlingContext, BasicCrawlerOptions, ProxyConfiguration } from 'crawlee';
 import { getPromiseWithResolvers, getUniqueId } from "./utils.js";
-import { Cheerio, Document } from 'cheerio';
+import { CheerioAPI } from 'cheerio';
 
 const crawleeConfig = new Configuration({
   "logLevel": LogLevel.WARNING,
@@ -57,7 +57,7 @@ export async function loadUrl(
     await crawler.addRequests([request])
     const crawleeContext = await responsePromise as CheerioCrawlingContext<any, any>
     response = {
-      root: new CheerioDomSelection(crawleeContext.$.root() as Cheerio<Document>),
+      root: new CheerioDomSelection(crawleeContext.$ as CheerioAPI),
       statusCode: crawleeContext.response.statusCode
     }
   } else {

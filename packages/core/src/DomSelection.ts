@@ -1,11 +1,11 @@
-import { AnyNode, Cheerio, load } from "cheerio"
+import { AnyNode, Cheerio, CheerioAPI } from "cheerio"
 
 export abstract class DomSelection {
   // eslint-disable-next-line no-use-before-define -- We have to use DomSelection before it's defined because it's recursive
   abstract select: (selector: string) => DomSelection
   abstract attr: (attr: string) => string | undefined
   abstract exists: (selector: string) => boolean
-  abstract get text(): Promise<string>
+  abstract get text(): string | Promise<string>
   abstract get nativeSelector(): Cheerio<AnyNode>
   abstract get selectedNodes(): DomSelection[]
   abstract get firstJsonLd(): Record<string, any>
@@ -15,17 +15,15 @@ export abstract class DomSelection {
 export class CheerioDomSelection extends DomSelection {
   #nativeSelector
   #cachedJsonLdArray: Array<Record<string, any>> | undefined
+  #$: CheerioAPI
 
-  constructor(cheerioNode: Cheerio<AnyNode>) {
-    if (cheerioNode?.cheerio !== "[cheerio object]"){
-      console.error("Value:", cheerioNode)
-      throw Error(`Trying to convert non-cheerio value`)
-    }
+  constructor(cheerioAPI: CheerioAPI, cheerioNode?: Cheerio<AnyNode>) {
     super()
-    this.#nativeSelector = cheerioNode
+    this.#nativeSelector = cheerioNode ?? cheerioAPI.root()
+    this.#$ = cheerioAPI
   }
 
-  select = (selector: string) => new CheerioDomSelection( this.nativeSelector.find(selector) )
+  select = (selector: string) => new CheerioDomSelection(this.#$, this.nativeSelector.find(selector))
   attr = (attr: string) => this.#nativeSelector.attr(attr)
   exists = (selector: string) => Boolean(this.#nativeSelector.find(selector).length)
 
@@ -34,15 +32,15 @@ export class CheerioDomSelection extends DomSelection {
   }
 
   get text () {
-    return new Promise<string>(resolve => resolve(this.#nativeSelector.text()))
+    return this.#nativeSelector.text()
   }
 
   map(mapFunction: (node: CheerioDomSelection, index: number) => any) {
     return this.selectedNodes.map(mapFunction)
   }
 
-  get selectedNodes () {
-    return this.#nativeSelector.toArray().map(element => new CheerioDomSelection(load(element).root()))
+  get selectedNodes(): Array<CheerioDomSelection> {
+    return this.#nativeSelector.toArray().map(node => new CheerioDomSelection(this.#$, this.#$(node)))
   }
 
   get firstJsonLd (): Record<string, unknown> {
