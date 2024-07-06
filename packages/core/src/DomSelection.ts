@@ -40,7 +40,7 @@ export class CheerioDomSelection extends DomSelection {
   }
 
   get selectedNodes(): Array<CheerioDomSelection> {
-    return this.#nativeSelector.toArray().map(node => new CheerioDomSelection(this.#$, this.#$(node)))
+    return this.#nativeSelector.toArray().map((node: any) => new CheerioDomSelection(this.#$, this.#$(node)))
   }
 
   get firstJsonLd (): Record<string, unknown> {
