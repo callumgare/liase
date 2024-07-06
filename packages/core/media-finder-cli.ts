@@ -1,6 +1,7 @@
-#!/usr/bin/env npx -y tsx@latest
+#!/usr/bin/env npx -y tsx
 import { Command, Option } from 'commander';
 import open from 'open';
+import 'dotenv-flow/config'
 import { MediaFinder, Source, RequestHandler, createMediaFinderQuery } from "./src/index.js";
 import { zodSchemaToSimpleSchema } from "./src/utils.js"
 

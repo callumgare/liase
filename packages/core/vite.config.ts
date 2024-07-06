@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from 'vitest/config'
 import path from "path";
 
 export default defineConfig({
@@ -8,6 +8,7 @@ export default defineConfig({
     },
   },
   test: {
-    globalSetup: "./test/setup.ts"
+    globalSetup: "./test/setup.ts",
+    setupFiles: ['dotenv-flow/config'],
   },
 });
