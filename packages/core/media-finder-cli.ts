@@ -73,7 +73,27 @@ if (requestHandler) {
   const requestOpts = Object.entries(zodSchemaToSimpleSchema(requestHandler.requestSchema).children);
   for (const [name, requestOption] of requestOpts) {
     if (["source", "queryType"].includes(name)) continue;
-    const flagDetails = requestOption.type === "boolean" ? `--${name}` : `--${name} <${requestOption.type}>`
+
+    let valueType
+    let valueParser
+    let choices
+
+    if (Array.isArray(requestOption.type) && requestOption.type.every(subtype => subtype.type === "literal")) {
+      choices = requestOption.type.map(unionSubtype => unionSubtype.value)
+
+      // Add all subtypes to a set to work out the list of unique subtypes
+      const unionSubtypes = new Set( requestOption.type.map(subtype => subtype.valueType) )
+
+      valueType = [...unionSubtypes].join(" | ")
+    } else {
+      valueType = requestOption.type
+    }
+
+    if (valueType === "number") {
+      valueParser = parseFloat
+    }
+
+    const flagDetails = valueType === "boolean" ? `--${name}` : `--${name} <${valueType}>`
     const description = [
       requestOption.description,
       requestOption.optional ? undefined : "(required)"
@@ -84,21 +104,12 @@ if (requestHandler) {
     if (requestOption.default !== undefined) {
       option.default(requestOption.default)
     }
-    option
-      .makeOptionMandatory(!requestOption.optional)
-    if (requestOption.type === "number") {
-      option.argParser(parseFloat)
-    } else if (Array.isArray(requestOption.type) && requestOption.type.every(subtype => subtype.type === "literal")) {
-      option.choices(
-        requestOption.type.map(unionSubtype => unionSubtype.value)
-      )
-      // Type of union subtypes if all subtypes are of the same type (e.g union is all strings or all numbers)
-      const sharedUnionSubtype = requestOption.type.every(
-        subtype => subtype.valueType === requestOption.type[0]?.valueType
-      )
-      if (sharedUnionSubtype === "number") {
-        option.argParser(parseFloat)
-      }
+    option.makeOptionMandatory(!requestOption.optional)
+    if (valueParser) {
+      option.argParser(valueParser)
+    }
+    if (choices) {
+      option.choices(choices)
     }
     runCommand.addOption(option)
   }
