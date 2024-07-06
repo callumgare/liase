@@ -1,5 +1,5 @@
 import { ActionContext, excludeFieldSymbol } from "./ActionContext.js";
-import {Constructor, Action} from "./schemas/constructor.js"
+import {Constructor, Action, ConstructorObject} from "./schemas/constructor.js"
 import { DomSelection } from "./DomSelection.js";
 import { ConstructorExecutionError, formatObjectPath, getType, waitForAllPropertiesToResolve } from "./utils.js";
 
@@ -10,24 +10,37 @@ export async function executeConstructor(
   context: ActionContext,
   pathInContainingConstructor: (string | number)[] = []
 ): Promise<any> {
-  const {_arrayMap, ...constructorWithoutArrayMap} = constructor
-  if (_arrayMap) {
-    context = await executeAction(_arrayMap, context, [...pathInContainingConstructor, "_arrayMap"])
-    let elementsToMap: any[]
-    const data = context.get()
-    if (Array.isArray(data)) {
-      elementsToMap = data
-    } else if (data instanceof DomSelection) {
-      elementsToMap = data.selectedNodes
-    } else {
-      throw Error(`_arrayMap must return either an array or a DomSelection but instead returned:\n${data}`)
-    }
+  try {
+    if (!Array.isArray(constructor) && typeof constructor === "object" && !(constructor instanceof Date) && constructor !== null) {
+      return executeConstructorObject(constructor, context, pathInContainingConstructor)
 
-    return Promise.all(
-      elementsToMap.map((data, i) =>
-        executeConstructor(constructorWithoutArrayMap, context.clone().set('', data), [...pathInContainingConstructor, i])
-          .catch(error => handleExecutionError(error, context, [...pathInContainingConstructor, i]))
-      )
+    } else if (Array.isArray(constructor)) {
+      return executeConstructorArray(constructor, context, pathInContainingConstructor)
+
+    } else if (typeof constructor === "function") {
+      return executeAction(constructor, context, pathInContainingConstructor)
+        .then(context => context.lastResult())
+        .then(result => (result instanceof DomSelection) ? result.text : result)
+
+    } else {
+      return constructor
+    }
+  } catch(error) {
+    handleExecutionError(error, context, pathInContainingConstructor)
+  }
+}
+
+
+export async function executeConstructorObject(
+  constructor: ConstructorObject,
+  context: ActionContext,
+  pathInContainingConstructor: (string | number)[] = []
+): Promise<any> {
+  if (constructor._arrayMap) {
+    handleExecutionError(
+      new Error(`Constuctor with "_arrayMap" used outside of an array context`),
+      context,
+      [...pathInContainingConstructor, "_arrayMap"]
     )
   }
 
@@ -45,7 +58,7 @@ export async function executeConstructor(
       throw handleExecutionError(
         Error(`_include must return a plain object but instead received: ${getType(resultValue)}`),
         context,
-        pathInContainingConstructor,
+        [...pathInContainingConstructor, "_include"],
       )
     }
 
@@ -77,54 +90,69 @@ export async function executeConstructor(
     const value = constructorReturnKeys[key]
     const newKey = key.replace(/^__/, "_") // Unescape _ if starts with escaped _
 
-    // Value may or may not be an array so it's easier to normalise to an array, process each
-    // element, then return the whole array if it was originally an array or just the first element
-    // if was originally a non-array value.
-    const valueAsAnArray = [value].flat(1)
-
-    const valueAsAnArrayOfPromises = valueAsAnArray.map((valueElement, i) => {
-      // For we only care about recording the index if the value is actually an array
-      // rather than a non-array that we normalised to an array earlier
-      const newPathInContainingConstructor = Array.isArray(value)
-        ? [...pathInContainingConstructor, newKey, i]
-        : [...pathInContainingConstructor, newKey]
-
-      if (typeof valueElement === "object" && !(valueElement instanceof Date) && valueElement !== null) {
-        return executeConstructor(valueElement, context, newPathInContainingConstructor)
-          .catch(error => handleExecutionError(error, context, newPathInContainingConstructor))
-      } else if (typeof valueElement === "function") {
-        return executeAction(valueElement, context, newPathInContainingConstructor)
-          .then(context => context.lastResult())
-          .then(result => (result instanceof DomSelection) ? result.text : result)
-          .catch(error => handleExecutionError(error, context, newPathInContainingConstructor))
-      } else {
-        // We return valueElement wrapped in a promise to match all the other cases above which
-        // return a promise. By having all returns be promises we can later use Promise.all() to
-        // resolve all elements.
-        return Promise.resolve(valueElement)
-      }
-    })
-
-    if (Array.isArray(value)) {
-      returnObject[newKey] = Promise.all(valueAsAnArrayOfPromises)
-    } else {
-      returnObject[newKey] = valueAsAnArrayOfPromises[0]
-    }
+    returnObject[newKey] = executeConstructor(value, context, [...pathInContainingConstructor, key])
   }
+
+
 
   const awaitedReturnObject = await waitForAllPropertiesToResolve(returnObject)
 
   // Remove any fields/array elements who's value is the ExcludeField symbol
   for (const key of Object.keys(awaitedReturnObject)) {
     const value = awaitedReturnObject[key]
-    if (Array.isArray(value)) {
-      awaitedReturnObject[key] = value.filter(element => element !== excludeFieldSymbol)
-    } else if (value === excludeFieldSymbol) {
+    if (value === excludeFieldSymbol) {
       delete awaitedReturnObject[key]
     }
   }
 
   return awaitedReturnObject
+}
+
+export async function executeConstructorArray(
+  constructor: Array<Constructor>,
+  context: ActionContext,
+  pathInContainingConstructor: (string | number)[] = []
+): Promise<Array<any>> {
+  const resultArray = []
+  for(const [i, element] of constructor.entries()) {
+    const arrayElementPathInContainingConstructor = [...pathInContainingConstructor, i]
+    // If valueElement is a constructor with a _arrayMap property, get the array returned by _arrayMap and
+    // loop over each element
+    if (!Array.isArray(element) && typeof element === "object" && !(element instanceof Date) && element !== null && element._arrayMap) {
+      const {_arrayMap, ...constructorWithoutArrayMap} = element
+      context = await executeAction(_arrayMap, context, [...arrayElementPathInContainingConstructor, "_arrayMap"])
+      let elementsToMap: any[]
+      const data = context.get()
+      if (Array.isArray(data)) {
+        elementsToMap = data
+      } else if (data instanceof DomSelection) {
+        elementsToMap = data.selectedNodes
+      } else {
+        throw handleExecutionError(
+          new Error(`_arrayMap must return either an array or a DomSelection but instead returned:\n${data}`),
+          context,
+          [...pathInContainingConstructor, "_arrayMap"]
+        )
+      }
+      for (const elementToMap of elementsToMap) {
+        resultArray.push(
+          executeConstructorObject(
+            constructorWithoutArrayMap,
+            context.clone().set('', elementToMap),
+            arrayElementPathInContainingConstructor
+          )
+        )
+      }
+    } else {
+      resultArray.push(
+        executeConstructor(element, context, arrayElementPathInContainingConstructor)
+      )
+    }
+  }
+
+  const awaitedReturnArray = await Promise.all(resultArray)
+  // Remove any array elements who's value is the ExcludeField symbol
+  return awaitedReturnArray.filter(element => element !== excludeFieldSymbol)
 }
 
 async function executeAction(action: Action, context: ActionContext, pathInContainingConstructor: (string | number)[]): Promise<ActionContext> {
