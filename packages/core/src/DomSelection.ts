@@ -8,11 +8,13 @@ export abstract class DomSelection {
   abstract get text(): Promise<string>
   abstract get nativeSelector(): Cheerio<AnyNode>
   abstract get selectedNodes(): DomSelection[]
-  abstract get jsonLd(): Record<string, unknown>
+  abstract get firstJsonLd(): Record<string, any>
+  abstract get jsonLd(): Array<Record<string, any>>
 }
 
 export class CheerioDomSelection extends DomSelection {
   #nativeSelector
+  #cachedJsonLdArray: Array<Record<string, any>> | undefined
 
   constructor(cheerioNode: Cheerio<AnyNode>) {
     if (cheerioNode?.cheerio !== "[cheerio object]"){
@@ -43,20 +45,30 @@ export class CheerioDomSelection extends DomSelection {
     return this.#nativeSelector.toArray().map(element => new CheerioDomSelection(load(element).root()))
   }
 
+  get firstJsonLd (): Record<string, unknown> {
+    return this.jsonLd[0]
+  }
+
   get canonicalUrl(): string | undefined {
     return this.select('link[rel=canonical]').attr('href')
   }
 
-  get jsonLd (): Record<string, unknown> {
-    const jsonLdText = this.#nativeSelector.find('script[type="application/ld+json"]').text()
-    let jsonLdJson
-    try {
-      jsonLdJson = JSON.parse(jsonLdText)
-    } catch(error) {
-      console.error("Text is not valid JSON:", jsonLdText)
-      throw error
+  get jsonLd(): Array<Record<string, unknown>> {
+    if (!this.#cachedJsonLdArray) {
+      this.#cachedJsonLdArray = this.select('script[type="application/ld+json"]')
+        .map(ldJsonElm => ldJsonElm.text)
+        .map(ldJsonText => {
+          try {
+            return JSON.parse(ldJsonText)
+          } catch(error) {
+            console.error("Text is not valid JSON:", ldJsonText)
+            throw error
+          }
+        })
     }
-    return jsonLdJson
+
+    return this.#cachedJsonLdArray
+  }
 
   get data(): string {
     return this.#nativeSelector.data()
