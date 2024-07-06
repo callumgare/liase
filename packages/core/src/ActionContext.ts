@@ -158,5 +158,27 @@ export class ActionContext extends Function {
 
   decodeHTML = (value: string) => decodeHTML(value)
 
+  durationStringToNumber = (duration: string) => {
+    const match = duration
+      .match(/^\s*(?:(?:(\d+)[:D])?(\d{1,2})[:H])?(\d{1,2})[:M](\d{2})[S]?\s*$/)
+
+    if (!match) {
+      throw Error(`The value "${duration}" is not a valid duration string`)
+    }
+
+    const [, ...segments] = match
+    let totalSeconds = 0
+    if (typeof segments[0] === "string") {
+      totalSeconds += parseInt(segments[0]) * 24 * 60 * 60
+    }
+    if (typeof segments[1] === "string") {
+      totalSeconds += parseInt(segments[1]) * 60 * 60
+    }
+    totalSeconds += parseInt(segments[2]) * 60
+    totalSeconds += parseInt(segments[3])
+
+    return totalSeconds
+  }
+
   excludeField = excludeFieldSymbol
 }
