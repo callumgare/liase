@@ -83,12 +83,14 @@ export class ActionContext extends Function {
     return this.#resultHistory[this.#resultHistory.length - 1]
   }
 
-  clone({path, data}: {path?: (string | number)[], data?:  Record<string, any>} = {}) {
+  clone(
+    {path, appendToPath, data}: {path?: (string | number)[], appendToPath?: (string | number)[], data?: Record<string, any>} = {}
+  ) {
     return new ActionContext({
       constructorContext: this.#constructorContext,
       initialData: data ? {...data} : {...this.#dataStore},
       executeActions: this.#executeActions,
-      path: path ?? this.#path
+      path: (path ?? this.#path).concat(appendToPath ?? [])
     })
   }
 
@@ -181,4 +183,8 @@ export class ActionContext extends Function {
   }
 
   excludeField = excludeFieldSymbol
+
+  get path() {
+    return this.#path
+  }
 }

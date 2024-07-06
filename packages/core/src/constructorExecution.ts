@@ -7,18 +7,17 @@ const log: string[] = []
 
 export async function executeConstructor(
   constructor: Constructor,
-  context: ActionContext,
-  pathInContainingConstructor: (string | number)[] = []
+  context: ActionContext
 ): Promise<any> {
   try {
     if (!Array.isArray(constructor) && typeof constructor === "object" && !(constructor instanceof Date) && constructor !== null) {
-      return executeConstructorObject(constructor, context, pathInContainingConstructor)
+      return executeConstructorObject(constructor, context)
 
     } else if (Array.isArray(constructor)) {
-      return executeConstructorArray(constructor, context, pathInContainingConstructor)
+      return executeConstructorArray(constructor, context)
 
     } else if (typeof constructor === "function") {
-      return executeAction(constructor, context, pathInContainingConstructor)
+      return executeAction(constructor, context)
         .then(context => context.lastResult())
         .then(result => (result instanceof DomSelection) ? result.text : result)
 
@@ -26,39 +25,38 @@ export async function executeConstructor(
       return constructor
     }
   } catch(error) {
-    handleExecutionError(error, context, pathInContainingConstructor)
+    handleExecutionError(error, context)
   }
 }
 
 
 export async function executeConstructorObject(
   constructor: ConstructorObject,
-  context: ActionContext,
-  pathInContainingConstructor: (string | number)[] = []
+  context: ActionContext
 ): Promise<any> {
+  const topLevelPath = context.path
+
   if (constructor._arrayMap) {
     handleExecutionError(
-      new Error(`Constuctor with "_arrayMap" used outside of an array context`),
-      context,
-      [...pathInContainingConstructor, "_arrayMap"]
+      new Error(`Constructor with "_arrayMap" used outside of an array context`),
+      context.clone({appendToPath: ["_arrayMap"]}),
     )
   }
 
   if (constructor._setup) {
-    context = await executeAction(constructor._setup, context, [...pathInContainingConstructor, "_setup"])
+    context = await executeAction(constructor._setup, context.clone({path: [...topLevelPath, "_setup"]}))
   }
 
   const returnObject: {[key: string]: any} = {}
 
   if (constructor._include) {
-    const resultContext = await executeAction(constructor._include, context, [...pathInContainingConstructor, "_include"])
+    const resultContext = await executeAction(constructor._include, context.clone({path: [...topLevelPath, "_include"]}))
     const resultValue = resultContext.get('')
 
     if (resultValue.constructor !== Object) {
       throw handleExecutionError(
         Error(`_include must return a plain object but instead received: ${getType(resultValue)}`),
-        context,
-        [...pathInContainingConstructor, "_include"],
+        resultContext
       )
     }
 
@@ -66,16 +64,8 @@ export async function executeConstructorObject(
 
     // We don't want _include to override any value _setup has written to $.get('') but we do
     // want to keep any values it has written to other non-'' keys.
-    const contextState = resultContext.getAll()
-    if ('' in contextState) {
-      delete contextState['']
-    }
-    if (context.has('')) {
-      contextState[''] = context.get('')
-    }
-
     context = context.clone({
-      data: contextState
+      data: {...resultContext.getAll(), '': context.get('')}
     })
   }
 
@@ -90,10 +80,8 @@ export async function executeConstructorObject(
     const value = constructorReturnKeys[key]
     const newKey = key.replace(/^__/, "_") // Unescape _ if starts with escaped _
 
-    returnObject[newKey] = executeConstructor(value, context, [...pathInContainingConstructor, key])
+    returnObject[newKey] = executeConstructor(value, context.clone({path: [...topLevelPath, key]}))
   }
-
-
 
   const awaitedReturnObject = await waitForAllPropertiesToResolve(returnObject)
 
@@ -110,19 +98,19 @@ export async function executeConstructorObject(
 
 export async function executeConstructorArray(
   constructor: Array<Constructor>,
-  context: ActionContext,
-  pathInContainingConstructor: (string | number)[] = []
+  context: ActionContext
 ): Promise<Array<any>> {
   const resultArray = []
   for(const [i, element] of constructor.entries()) {
-    const arrayElementPathInContainingConstructor = [...pathInContainingConstructor, i]
+    const elementContext = context.clone({appendToPath: [i]})
+
     // If valueElement is a constructor with a _arrayMap property, get the array returned by _arrayMap and
     // loop over each element
     if (!Array.isArray(element) && typeof element === "object" && !(element instanceof Date) && element !== null && element._arrayMap) {
       const {_arrayMap, ...constructorWithoutArrayMap} = element
-      context = await executeAction(_arrayMap, context, [...arrayElementPathInContainingConstructor, "_arrayMap"])
+      const arrayMapContext = await executeAction(_arrayMap, elementContext.clone({appendToPath: ["_arrayMap"]}))
       let elementsToMap: any[]
-      const data = context.get()
+      const data = arrayMapContext.get()
       if (Array.isArray(data)) {
         elementsToMap = data
       } else if (data instanceof DomSelection) {
@@ -130,22 +118,20 @@ export async function executeConstructorArray(
       } else {
         throw handleExecutionError(
           new Error(`_arrayMap must return either an array or a DomSelection but instead returned:\n${data}`),
-          context,
-          [...pathInContainingConstructor, "_arrayMap"]
+          arrayMapContext
         )
       }
       for (const elementToMap of elementsToMap) {
         resultArray.push(
           executeConstructorObject(
             constructorWithoutArrayMap,
-            context.clone().set('', elementToMap),
-            arrayElementPathInContainingConstructor
+            elementContext.clone().set('', elementToMap),
           )
         )
       }
     } else {
       resultArray.push(
-        executeConstructor(element, context, arrayElementPathInContainingConstructor)
+        executeConstructor(element, elementContext)
       )
     }
   }
@@ -155,11 +141,11 @@ export async function executeConstructorArray(
   return awaitedReturnArray.filter(element => element !== excludeFieldSymbol)
 }
 
-async function executeAction(action: Action, context: ActionContext, pathInContainingConstructor: (string | number)[]): Promise<ActionContext> {
-  log.push(`Executing action for ${formatObjectPath(pathInContainingConstructor)}`)
+async function executeAction(action: Action, context: ActionContext): Promise<ActionContext> {
+  log.push(`Executing action for ${formatObjectPath(context.path)}`)
   // Actions can be run in parallel and we don't want the execution of one action to modify the context
   // object and non-deterministically effect the execution of a different action
-  context = context.clone({path: pathInContainingConstructor})
+  context = context.clone()
   try {
     const result = await action(context)
     if (result instanceof ActionContext) { // Needed for .chain() to be able to update context by returning cloned context
@@ -173,27 +159,26 @@ async function executeAction(action: Action, context: ActionContext, pathInConta
     }
     await context.waitForAllPromisesToResolve()
   } catch(error) {
-    handleExecutionError(error, context, pathInContainingConstructor)
+    handleExecutionError(error, context)
   }
   return context
 }
 
-export async function executeActions(actions: Action[], context: ActionContext, path: (string | number)[]): Promise<ActionContext> {
-  const parentPath = path.slice(0, -1)
-  const lastPathSegment = path[path.length - 1]
+export async function executeActions(actions: Action[], context: ActionContext): Promise<ActionContext> {
+  const parentPath = context.path.slice(0, -1)
+  const lastPathSegment = context.path[context.path.length - 1]
   for (const [i, action] of actions.entries()) {
-    context = await executeAction(action, context, [...parentPath, `${lastPathSegment} (chain step ${i + 1})`])
+    context = await executeAction(action, context.clone({path: [...parentPath, `${lastPathSegment} (chain step ${i + 1})`]}))
   }
   return context
 }
 
-function handleExecutionError(error: unknown, context: ActionContext, pathInContainingConstructor: (string | number)[]) {
+function handleExecutionError(error: unknown, context: ActionContext) {
   if (error instanceof ConstructorExecutionError) {
     throw error
   }
   throw new ConstructorExecutionError({
     cause: (error instanceof Error) ? error : undefined,
-    errorOccurredAtPath: pathInContainingConstructor,
     context,
     log
   })

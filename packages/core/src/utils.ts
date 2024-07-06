@@ -274,7 +274,6 @@ const capitaliseType = (type: TypeOfTypes | "array" | "set" | "date"): string =>
 
 type ConstructorExecutionErrorOptions = {
   cause?: Error,
-  errorOccurredAtPath: (string | number)[],
   log: string[],
   message?: string,
   context: ActionContext,
@@ -284,10 +283,10 @@ export class ConstructorExecutionError extends Error {
   log
   context
 
-  constructor({message, cause, context, errorOccurredAtPath, log}: ConstructorExecutionErrorOptions) {
+  constructor({message, cause, context, log}: ConstructorExecutionErrorOptions) {
     super(message ?? cause?.message ?? "Error when executing constructor", {cause});
 
-    this.errorOccurredAtPath = errorOccurredAtPath
+    this.errorOccurredAtPath = context.path
     this.log = log
     this.context = context
 
