@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { genericRequestSchema } from "./request.js";
 
 export const genericFileSchema = z.object({
   type: z.union([z.literal("full"), z.literal("thumbnail"), z.string()]).describe(""),
@@ -12,7 +13,8 @@ export const genericFileSchema = z.object({
   width: z.number().int().optional(),
   height: z.number().int().optional(),
   urlExpires: z.union([z.date(), z.boolean()]).optional(),
-  urlRefreshDetails: z.any().optional(),
+  urlRefreshDetails: genericRequestSchema.optional(),
+  duration: z.number().optional(),
 }).passthrough();
 
 export type GenericFile = z.infer<typeof genericFileSchema>
