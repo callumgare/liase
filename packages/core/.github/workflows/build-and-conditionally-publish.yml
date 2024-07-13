@@ -49,11 +49,6 @@ jobs:
       - name: Build
         run: npm run build
 
-      # The version committed to the repo is a string letting people know it's set on release. This causes semantic-release
-      # to fail so we set it to something valid here.
-      - name: Set version to a valid string
-        run: npm pkg set version=1.0.0
-
       - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
         run: npm audit signatures
 

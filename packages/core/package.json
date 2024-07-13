@@ -1,6 +1,6 @@
 {
   "name": "media-finder",
-  "version": "<version set when releasing>",
+  "version": "0.0.0-version-set-when-releasing",
   "description": "Easy way to search for media content on internet",
   "main": "dist/index.js",
   "files": [
