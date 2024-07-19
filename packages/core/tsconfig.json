@@ -8,7 +8,7 @@
     "baseUrl": "./src",
     "paths": {
       "@/src/*": ["./*"]
-    },
+    }
   },
   "include": ["src/**/*"],
   "extends": "@tsconfig/node21/tsconfig.json"

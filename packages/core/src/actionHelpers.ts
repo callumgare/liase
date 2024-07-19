@@ -1,6 +1,9 @@
 import mimeTypes from "mime-types";
 
-export function guessMediaInfoFromUrl(url: string, additionalValues: Record<string, any> = {}) {
+export function guessMediaInfoFromUrl(
+  url: string,
+  additionalValues: Record<string, any> = {},
+) {
   let ext = additionalValues?.ext || url.match(/\.(\w+)(?:\?[^?]*)?$/)?.[1];
   let mimeType = additionalValues?.mimeType;
   if (!mimeType && ext && typeof ext === "string") {

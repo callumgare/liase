@@ -1,6 +1,6 @@
-import { expect } from 'vitest'
-import { createBasicTestsForRequestHandlers } from '../testUtils.js';
-import exampleSource from '../fixtures/exampleSource.js';
+import { expect } from "vitest";
+import { createBasicTestsForRequestHandlers } from "../testUtils.js";
+import exampleSource from "../fixtures/exampleSource.js";
 
 createBasicTestsForRequestHandlers({
   source: exampleSource,
@@ -21,8 +21,8 @@ createBasicTestsForRequestHandlers({
       plugins: [
         {
           sources: [exampleSource],
-        }
-      ]
-    }
-  }
-})
+        },
+      ],
+    },
+  },
+});

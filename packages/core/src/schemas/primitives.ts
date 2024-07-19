@@ -9,7 +9,6 @@ export const zodPrimitives = z.union([
   z.symbol(),
   z.undefined(),
   z.null(),
-])
+]);
 
-export type Primitives = z.infer<typeof zodPrimitives>
-
+export type Primitives = z.infer<typeof zodPrimitives>;

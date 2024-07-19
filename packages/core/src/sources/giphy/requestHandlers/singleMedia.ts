@@ -9,23 +9,27 @@ export default {
   id: "single-media",
   displayName: "Single media",
   description: "Find gif with given id",
-  requestSchema: z.object({
+  requestSchema: z
+    .object({
       source: z.string(),
       queryType: z.string(),
       id: z.string(),
-    }).strict(),
-  secretsSchema: z.object({
+    })
+    .strict(),
+  secretsSchema: z
+    .object({
       apiKey: z.string(),
-    }).strict(),
+    })
+    .strict(),
   paginationType: "none",
   responses: [
     {
-      schema: responseSchema.omit({page: true}),
+      schema: responseSchema.omit({ page: true }),
       constructor: {
-        _setup: $ => Giphy($.secrets.apiKey).id($.request.id),
+        _setup: ($) => Giphy($.secrets.apiKey).id($.request.id),
         media: mediaResponseConstructor,
-        request: $ => $.request
-      }
-    }
-  ]
+        request: ($) => $.request,
+      },
+    },
+  ],
 } as const satisfies RequestHandler;

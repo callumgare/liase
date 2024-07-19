@@ -8,4 +8,4 @@ export default {
   displayName: "GIPHY",
   description: "giphy.com is a large database of gifs",
   requestHandlers: [singleMediaReqHandler, mediaSearchReqHandler],
-} satisfies Source
+} satisfies Source;

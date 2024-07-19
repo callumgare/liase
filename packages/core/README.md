@@ -21,8 +21,8 @@ import { createMediaFinderQuery } from "media-finder";
     queryOptions: {
       secrets: {
         apiKey: process.env.GIPHY_API_KEY,
-      }
-    }
+      },
+    },
   }).getNext();
   // Prints the number of results in the first page
   console.log(`Got ${response?.media.length} gifs`);
@@ -40,8 +40,8 @@ import { createMediaFinderQuery } from "media-finder";
       fetchCountLimit: 3,
       secrets: {
         apiKey: process.env.GIPHY_API_KEY,
-      }
-    }
+      },
+    },
   });
 
   const media = [];
