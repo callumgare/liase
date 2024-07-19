@@ -9,12 +9,12 @@
   "scripts": {
     "build": "rm -rf ./dist && tsc && tsc-alias",
     "watch": "npm run build -- --watch",
-    "lint": "eslint --ext .ts,.js src",
-    "lint:fix": "eslint --fix --ext .ts,.js src",
-    "lint:prettier": "prettier --write .",
+    "lint": "eslint src && prettier .",
+    "lint:fix": "eslint --fix src && prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest watch",
-    "cli": "./media-finder-cli.ts"
+    "cli": "./media-finder-cli.ts",
+    "prepare": "husky"
   },
   "keywords": [
     "media"
@@ -28,6 +28,7 @@
     "deepmerge": "^4.3.1",
     "entities": "^4.5.0",
     "giphy-api": "^2.0.2",
+    "husky": "^9.1.1",
     "mime-types": "^2.1.28",
     "pluralize": "^8.0.0",
     "zod": "^3.21.4"
@@ -40,24 +41,25 @@
     "@types/mime-types": "^2.1.1",
     "@types/node": "^18.15.11",
     "@types/pluralize": "^0.0.33",
-    "@typescript-eslint/eslint-plugin": "^7.13.0",
-    "@typescript-eslint/parser": "^7.13.0",
     "commander": "^12.0.0",
     "copy-anything": "^4.0.2",
     "dotenv-flow": "^4.1.0",
-    "eslint": "^8.44.0",
-    "eslint-config-prettier": "^8.8.0",
+    "eslint": "^8.51.0",
+    "eslint-config-prettier": "^8.10.0",
     "eslint-config-standard": "^17.1.0",
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.1.1",
     "eslint-plugin-zod": "^1.4.0",
+    "globals": "^15.8.0",
+    "lint-staged": "^15.2.7",
     "open": "^10.1.0",
     "prettier": "2.7.1",
     "semantic-release": "^24.0.0",
     "tsc-alias": "^1.8.8",
     "tsx": "^4.15.9",
     "typescript": "^5.4.5",
+    "typescript-eslint": "^7.16.1",
     "vitest": "^1.6.0"
   },
   "optionalDependencies": {
