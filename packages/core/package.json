@@ -1,7 +1,7 @@
 {
   "name": "media-finder",
   "version": "0.0.0-version-set-when-releasing",
-  "description": "Easy way to search for media content on internet",
+  "description": "The easiest way to programmatically fetch media content details on the internet",
   "main": "dist/index.js",
   "files": [
     "dist/*"
@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest watch",
     "cli": "./media-finder-cli.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "commit": "lint-staged && commit"
   },
   "keywords": [
     "media"
@@ -34,6 +35,9 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.3.0",
+    "@commitlint/config-conventional": "^19.2.2",
+    "@commitlint/prompt-cli": "^19.3.1",
     "@loopback/http-caching-proxy": "^6.0.3",
     "@refactorjs/http-proxy": "^0.2.14",
     "@tsconfig/node21": "^21.0.3",
