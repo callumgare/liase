@@ -14,4 +14,5 @@ export type { GenericRequest } from "@/src/schemas/request.js";
 export type { GenericResponse } from "@/src/schemas/response.js";
 export type { GenericFile } from "@/src/schemas/file.js";
 export type { Source } from "@/src/schemas/source.js";
+export type { Plugin } from "@/src/schemas/plugin.js";
 export type { RequestHandler } from "@/src/schemas/requestHandler.js";

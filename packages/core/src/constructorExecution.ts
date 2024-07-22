@@ -10,7 +10,7 @@ import {
   formatObjectPath,
   getType,
   waitForAllPropertiesToResolve,
-} from "./utils.js";
+} from "./lib/utils.js";
 
 const log: string[] = [];
 

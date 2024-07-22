@@ -5,9 +5,9 @@ import {
   Primitive,
   ZodFirstPartyTypeKind,
 } from "zod";
-import { ActionContext } from "./ActionContext.js";
 import chalk from "chalk";
 import util from "node:util";
+import { capitaliseType, formatObjectPath } from "./utils.js";
 
 type SimpleSchema = (
   | {
@@ -63,6 +63,56 @@ type SimpleSchema = (
   description?: string;
 };
 
+type ZodFirstPartySchemaTypesNameMap = {
+  ZodString: z.ZodString;
+  ZodNumber: z.ZodNumber;
+  ZodNaN: z.ZodNaN;
+  ZodBigInt: z.ZodBigInt;
+  ZodBoolean: z.ZodBoolean;
+  ZodDate: z.ZodDate;
+  ZodUndefined: z.ZodUndefined;
+  ZodNull: z.ZodNull;
+  ZodAny: z.ZodAny;
+  ZodUnknown: z.ZodUnknown;
+  ZodNever: z.ZodNever;
+  ZodVoid: z.ZodVoid;
+  ZodArray: z.ZodArray<any, any>;
+  ZodObject: z.ZodObject<any, any, any>;
+  ZodUnion: z.ZodUnion<any>;
+  ZodDiscriminatedUnion: z.ZodDiscriminatedUnion<any, any>;
+  ZodIntersection: z.ZodIntersection<any, any>;
+  ZodTuple: z.ZodTuple<any, any>;
+  ZodRecord: z.ZodRecord<any, any>;
+  ZodMap: z.ZodMap<any>;
+  ZodSet: z.ZodSet<any>;
+  ZodFunction: z.ZodFunction<any, any>;
+  ZodLazy: z.ZodLazy<any>;
+  ZodLiteral: z.ZodLiteral<any>;
+  ZodEnum: z.ZodEnum<any>;
+  ZodEffects: z.ZodEffects<any, any, any>;
+  ZodNativeEnum: z.ZodNativeEnum<any>;
+  ZodOptional: z.ZodOptional<any>;
+  ZodNullable: z.ZodNullable<any>;
+  ZodDefault: z.ZodDefault<any>;
+  ZodCatch: z.ZodCatch<any>;
+  ZodPromise: z.ZodPromise<any>;
+  ZodBranded: z.ZodBranded<any, any>;
+  ZodPipeline: z.ZodPipeline<any, any>;
+  ZodReadonly: z.ZodReadonly<any>;
+  ZodSymbol: z.ZodSymbol;
+};
+
+function isZodType<T extends keyof ZodFirstPartySchemaTypesNameMap>(
+  zodSchema: ZodFirstPartySchemaTypesNameMap[keyof ZodFirstPartySchemaTypesNameMap],
+  type: T,
+): zodSchema is ZodFirstPartySchemaTypesNameMap[T] {
+  return zodSchema?.constructor?.name === type;
+}
+
+function isZodError(error: unknown): error is z.ZodError {
+  return error?.constructor?.name === "ZodError";
+}
+
 export function zodSchemaToSimpleSchema(
   zodSchema: ZodFirstPartySchemaTypes,
 ): SimpleSchema {
@@ -72,7 +122,9 @@ export function zodSchemaToSimpleSchema(
   const defaultProps = {
     ...(description ? { description } : {}),
   };
-  if (zodSchema instanceof z.ZodObject) {
+  // We don't use instanceof to match against an imported Zod class because the zod schema may be created
+  // with a different version of the Zod library and thus not be matched with instanceof
+  if (isZodType(zodSchema, "ZodObject")) {
     simpleSchema = {
       ...defaultProps,
       type: "object",
@@ -83,7 +135,7 @@ export function zodSchemaToSimpleSchema(
     )) {
       simpleSchema.children[name] = zodSchemaToSimpleSchema(zodType);
     }
-  } else if (zodSchema instanceof z.ZodIntersection) {
+  } else if (isZodType(zodSchema, "ZodIntersection")) {
     type SimpleSchemaObject = Extract<SimpleSchema, { type: "object" }>;
     const left = zodSchemaToSimpleSchema(
       zodSchema._def.left as z.AnyZodObject,
@@ -97,21 +149,21 @@ export function zodSchemaToSimpleSchema(
       type: "object",
       children: { ...left.children, ...right.children },
     };
-  } else if (zodSchema instanceof z.ZodArray) {
+  } else if (isZodType(zodSchema, "ZodArray")) {
     simpleSchema = {
       ...defaultProps,
       type: "array",
       children: zodSchemaToSimpleSchema(zodSchema._def.type),
     };
-  } else if (zodSchema instanceof z.ZodSet) {
+  } else if (isZodType(zodSchema, "ZodSet")) {
     simpleSchema = {
       ...defaultProps,
       type: "array",
       children: zodSchemaToSimpleSchema(zodSchema._def.valueType),
     };
   } else if (
-    zodSchema instanceof z.ZodUnion ||
-    zodSchema instanceof z.ZodDiscriminatedUnion
+    isZodType(zodSchema, "ZodUnion") ||
+    isZodType(zodSchema, "ZodDiscriminatedUnion")
   ) {
     const zodTypesInUnion: ZodFirstPartySchemaTypes[] = zodSchema._def.options;
     const simpleSchemaTypesInUnion = zodTypesInUnion.map(
@@ -125,32 +177,32 @@ export function zodSchemaToSimpleSchema(
     if (unionIncludesUndefined) {
       simpleSchema.optional = true;
     }
-  } else if (zodSchema instanceof z.ZodOptional) {
+  } else if (isZodType(zodSchema, "ZodOptional")) {
     simpleSchema = {
       ...defaultProps,
       ...zodSchemaToSimpleSchema(zodSchema._def.innerType),
       optional: true,
     };
-  } else if (zodSchema instanceof z.ZodString) {
+  } else if (isZodType(zodSchema, "ZodString")) {
     simpleSchema = { ...defaultProps, type: "string" };
     if (zodSchema._def.checks.length)
       simpleSchema.checks = zodSchema._def.checks;
   } else if (
-    zodSchema instanceof z.ZodNumber ||
-    zodSchema instanceof z.ZodBigInt
+    isZodType(zodSchema, "ZodNumber") ||
+    isZodType(zodSchema, "ZodBigInt")
   ) {
     simpleSchema = { ...defaultProps, type: "number" };
     if (zodSchema._def.checks.length)
       simpleSchema.checks = zodSchema._def.checks;
-  } else if (zodSchema instanceof z.ZodBoolean) {
+  } else if (isZodType(zodSchema, "ZodBoolean")) {
     simpleSchema = { ...defaultProps, type: "boolean" };
-  } else if (zodSchema instanceof z.ZodDate) {
+  } else if (isZodType(zodSchema, "ZodDate")) {
     simpleSchema = { ...defaultProps, type: "date" };
     if (zodSchema._def.checks.length)
       simpleSchema.checks = zodSchema._def.checks;
-  } else if (zodSchema instanceof z.ZodNull) {
+  } else if (isZodType(zodSchema, "ZodNull")) {
     simpleSchema = { ...defaultProps, type: "null" };
-  } else if (zodSchema instanceof z.ZodLiteral) {
+  } else if (isZodType(zodSchema, "ZodLiteral")) {
     const value = zodSchema._def.value as Primitive;
     let valueType;
     if (typeof value === "string") {
@@ -170,7 +222,7 @@ export function zodSchemaToSimpleSchema(
       value,
       valueType,
     };
-  } else if (zodSchema instanceof z.ZodEnum) {
+  } else if (isZodType(zodSchema, "ZodEnum")) {
     const enumValues: string[] = zodSchema._def.values;
     simpleSchema = {
       ...defaultProps,
@@ -181,14 +233,14 @@ export function zodSchemaToSimpleSchema(
         zodTypeName: ZodFirstPartyTypeKind.ZodLiteral,
       })),
     };
-  } else if (zodSchema instanceof z.ZodEffects) {
+  } else if (isZodType(zodSchema, "ZodEffects")) {
     simpleSchema = {
       ...defaultProps,
       ...zodSchemaToSimpleSchema(zodSchema._def.schema),
     };
-  } else if (zodSchema instanceof z.ZodNativeEnum) {
+  } else if (isZodType(zodSchema, "ZodNativeEnum")) {
     simpleSchema = { ...defaultProps, type: "number" };
-  } else if (zodSchema instanceof z.ZodNullable) {
+  } else if (isZodType(zodSchema, "ZodNullable")) {
     simpleSchema = {
       ...defaultProps,
       type: [
@@ -196,43 +248,43 @@ export function zodSchemaToSimpleSchema(
         { type: "null" },
       ],
     };
-  } else if (zodSchema instanceof z.ZodDefault) {
+  } else if (isZodType(zodSchema, "ZodDefault")) {
     simpleSchema = {
       ...defaultProps,
       ...zodSchemaToSimpleSchema(zodSchema._def.innerType),
       default: zodSchema._def.defaultValue(),
     };
-  } else if (zodSchema instanceof z.ZodCatch) {
+  } else if (isZodType(zodSchema, "ZodCatch")) {
     simpleSchema = {
       ...defaultProps,
       ...zodSchemaToSimpleSchema(zodSchema._def.innerType),
     };
-  } else if (zodSchema instanceof z.ZodBranded) {
+  } else if (isZodType(zodSchema, "ZodBranded")) {
     simpleSchema = {
       ...defaultProps,
       ...zodSchemaToSimpleSchema(zodSchema._def.type),
     };
-  } else if (zodSchema instanceof z.ZodPipeline) {
+  } else if (isZodType(zodSchema, "ZodPipeline")) {
     simpleSchema = {
       ...defaultProps,
       ...zodSchemaToSimpleSchema(zodSchema._def.in),
     };
   } else if (
-    zodSchema instanceof z.ZodAny ||
-    zodSchema instanceof z.ZodUndefined ||
-    zodSchema instanceof z.ZodNaN ||
-    zodSchema instanceof z.ZodUnknown ||
-    zodSchema instanceof z.ZodNever ||
-    zodSchema instanceof z.ZodVoid ||
-    zodSchema instanceof z.ZodTuple ||
-    zodSchema instanceof z.ZodRecord ||
-    zodSchema instanceof z.ZodMap ||
-    zodSchema instanceof z.ZodFunction ||
-    zodSchema instanceof z.ZodLazy ||
-    zodSchema instanceof z.ZodVoid ||
-    zodSchema instanceof z.ZodPromise ||
-    zodSchema instanceof z.ZodReadonly ||
-    zodSchema instanceof z.ZodSymbol
+    isZodType(zodSchema, "ZodAny") ||
+    isZodType(zodSchema, "ZodUndefined") ||
+    isZodType(zodSchema, "ZodNaN") ||
+    isZodType(zodSchema, "ZodUnknown") ||
+    isZodType(zodSchema, "ZodNever") ||
+    isZodType(zodSchema, "ZodVoid") ||
+    isZodType(zodSchema, "ZodTuple") ||
+    isZodType(zodSchema, "ZodRecord") ||
+    isZodType(zodSchema, "ZodMap") ||
+    isZodType(zodSchema, "ZodFunction") ||
+    isZodType(zodSchema, "ZodLazy") ||
+    isZodType(zodSchema, "ZodVoid") ||
+    isZodType(zodSchema, "ZodPromise") ||
+    isZodType(zodSchema, "ZodReadonly") ||
+    isZodType(zodSchema, "ZodSymbol")
   ) {
     simpleSchema = {
       ...defaultProps,
@@ -250,160 +302,6 @@ export function zodSchemaToSimpleSchema(
   return simpleSchema;
 }
 
-export function createCounter() {
-  let counter = -1;
-  return () => {
-    counter = counter === Number.MAX_SAFE_INTEGER ? 0 : counter + 1;
-    return counter;
-  };
-}
-
-// Now that getUniqueId uses a counter to ensure there are no id clashes due to having the same timestamp,
-// we don't really need to use a random int but I had fun writing these functions and don't want to get rid
-// of them. So until there's a reason to I'm not going to.
-export function getRandomIntOfScale(scale = 6) {
-  const min = 10 ** (scale - 1);
-  const max = 10 ** scale - 1;
-  return getRandomIntInRange(min, max);
-}
-
-// Both min and max are inclusive
-export function getRandomIntInRange(min = 0, max = 999_999) {
-  return Math.floor(
-    Math.random() * (Math.floor(max) - Math.ceil(min) + 1) + Math.ceil(min),
-  );
-}
-
-export const getUniqueId = (() => {
-  const counter = createCounter();
-  return () => `${Date.now()}-${counter()}-${getRandomIntOfScale(6)}`;
-})();
-
-// Used to increase readability in some places
-export function mergeInUnsetProperties(a: object, b: object) {
-  return { ...b, ...a };
-}
-
-export const formatObjectPath = (path: (string | number)[]) =>
-  "$" +
-  path
-    .map((segment) =>
-      typeof segment === "number" ? `[${segment}]` : `.${segment}`,
-    )
-    .join("");
-
-export const formatObjectPathAsTree = (
-  path: (string | number)[],
-  indent: number = 0,
-) =>
-  path
-    .reduce<string[]>((segments, segment) => {
-      if (typeof segment === "number") {
-        const formattedSegment = `[${segment}]`;
-        if (segments.length) {
-          segments[segments.length - 1] += formattedSegment;
-        } else {
-          segments.push(formattedSegment);
-        }
-      } else {
-        segments.push(segment);
-      }
-      return segments;
-    }, [])
-    .map((segment) =>
-      typeof segment === "number" ? `[${segment}]` : `${segment}`,
-    )
-    .map((segment) => chalk.bold(segment))
-    .map(
-      (segment, index) =>
-        (index ? "  ".repeat(index) + chalk.dim("↳ ") : "") + segment,
-    )
-    .map((segment) => " ".repeat(indent) + segment)
-    .join("\n");
-
-const capitalisedFirstLetter = (string: string) =>
-  string[0].toUpperCase() + string.substring(1);
-
-const returnType = (v: unknown) => typeof v;
-type TypeOfTypes = ReturnType<typeof returnType>;
-
-const capitaliseType = (
-  type: TypeOfTypes | "array" | "set" | "date",
-): string => {
-  let result;
-  switch (type) {
-    case "string":
-    case "number":
-    case "boolean":
-    case "symbol":
-    case "undefined":
-    case "object":
-    case "function":
-    case "array":
-    case "set":
-    case "date":
-      result = capitalisedFirstLetter(type);
-      break;
-    case "bigint":
-      result = "BigInt";
-      break;
-  }
-  return result;
-};
-
-type ConstructorExecutionErrorOptions = {
-  cause?: Error;
-  log: string[];
-  message?: string;
-  context: ActionContext;
-};
-export class ConstructorExecutionError extends Error {
-  errorOccurredAtPath;
-  log;
-  context;
-
-  constructor({
-    message,
-    cause,
-    context,
-    log,
-  }: ConstructorExecutionErrorOptions) {
-    super(message ?? cause?.message ?? "Error when executing constructor", {
-      cause,
-    });
-
-    this.errorOccurredAtPath = context.path;
-    this.log = log;
-    this.context = context;
-
-    Object.setPrototypeOf(this, ConstructorExecutionError.prototype);
-  }
-
-  getFormattedErrorInfo() {
-    const stack =
-      this.cause instanceof Error
-        ? this.cause.stack?.replace(this.cause.toString() + "\n", "")
-        : undefined;
-    const lastConstructorProp =
-      this.errorOccurredAtPath[this.errorOccurredAtPath.length - 1];
-    const errorLocation = stack
-      ?.split("\n")
-      .find((line) => line.startsWith(`    at ${lastConstructorProp}`))
-      ?.match(/\((.*)\)/)?.[1];
-    return [
-      chalk.dim(`Request:\n${JSON.stringify(this.context.request, null, 2)}`),
-      "",
-      this.cause instanceof Error
-        ? chalk.dim(`Full stack trace:\n${stack}`)
-        : this.message,
-      "",
-      chalk.red("Error:") + " " + chalk.bold(this.message),
-      "  Occurred when rendering the following response constructor property: \n" +
-        ` ${formatObjectPathAsTree(this.errorOccurredAtPath, 4)} (${chalk.blue(errorLocation)})`,
-    ].join("\n");
-  }
-}
-
 export function zodParseOrThrow<Output, Def extends z.ZodTypeDef, Input>(
   zodSchema: z.ZodType<Output, Def, Input>,
   input: any,
@@ -412,7 +310,10 @@ export function zodParseOrThrow<Output, Def extends z.ZodTypeDef, Input>(
   try {
     return zodSchema.parse(input);
   } catch (error) {
-    if (error instanceof z.ZodError) {
+    // We might be passing a zodSchema from a plugin with a different instance of the Zod library
+    // and thus if that gives an error it might not be an instance of the ZodError from the exact Zod library
+    // we're using. Thus we match using the constructor name to be safe.
+    if (isZodError(error)) {
       const friendlyError = new FriendlyZodError(error, {
         message: options.errorMessage,
         inputData: input,
@@ -765,76 +666,4 @@ export class FriendlyZodError extends Error {
       this.formatZodErrorIssuesAsTreeString(this.cause, 1),
     ].join("\n");
   }
-}
-
-export function hasNoDuplicates(array: unknown[]): boolean {
-  return new Set(array).size === array.length;
-}
-
-export function getOrdinal(number: number) {
-  let suffix;
-  switch (number % 10) {
-    case 1:
-      suffix = "st";
-      break;
-    case 2:
-      suffix = "nd";
-      break;
-    case 3:
-      suffix = "rd";
-      break;
-    default:
-      suffix = "th";
-  }
-  return `${number}${suffix}`;
-}
-
-export function getPromiseWithResolvers<Expected = unknown>() {
-  let resolve: (value: Expected) => void;
-  let reject: (reason?: any) => void;
-  const promise = new Promise<Expected>((...resolvers) => {
-    resolve = resolvers[0];
-    reject = resolvers[1];
-  });
-  // @ts-expect-error The point of this is to make sure the resolvers are defined
-  if (typeof resolve === "undefined" || typeof reject === "undefined") {
-    throw Error("Resolvers not set yet");
-  }
-  return {
-    promise,
-    resolve,
-    reject,
-  };
-}
-
-export type ObjectEntry<BaseType> = [keyof BaseType, BaseType[keyof BaseType]];
-
-// Takes an object and if any property values are promises it will wait until they're resolved.
-export async function waitForAllPropertiesToResolve<
-  ObjectWithPromises,
->(object: {
-  [key in keyof ObjectWithPromises]: ObjectWithPromises[key];
-}): Promise<{
-  [key in keyof ObjectWithPromises]: Awaited<ObjectWithPromises[key]>;
-}> {
-  // So that we can use Promise.all() to resolve every prop in object we first convert
-  // object to an array of entries, then we swap each entry with a promise that resolves
-  // to the entry. That way we can can use Promise.all() on it to get us back to an array
-  // of entries (but now with any promises resolved), then use Object.fromEntry() to
-  // re-assemble the entries back into an object.
-  const entriesAsPromises = Object.entries(object).map((entry) => {
-    const [entryKey, entryValue] = entry;
-    if (entryValue instanceof Promise) {
-      return entryValue.then((resolvedEntryValue: any) => [
-        entryKey,
-        resolvedEntryValue,
-      ]);
-    } else {
-      return new Promise((resolve) => resolve(entry as [any, any]));
-    }
-  }) as Promise<ObjectEntry<ObjectWithPromises>>[];
-  const entriesResolved = await Promise.all(entriesAsPromises);
-  return Object.fromEntries(entriesResolved) as {
-    [key in keyof ObjectWithPromises]: Awaited<ObjectWithPromises[key]>;
-  };
 }

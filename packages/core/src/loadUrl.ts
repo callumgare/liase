@@ -9,7 +9,7 @@ import {
   BasicCrawlerOptions,
   ProxyConfiguration,
 } from "crawlee";
-import { getPromiseWithResolvers, getUniqueId } from "./utils.js";
+import { getPromiseWithResolvers, getUniqueId } from "./lib/utils.js";
 import { CheerioAPI } from "cheerio";
 
 const crawleeConfig = new Configuration({

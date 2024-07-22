@@ -22,7 +22,7 @@ import {
   requestWithDefaults,
 } from "./generateResponse.js";
 import { GenericSecrets } from "./schemas/secrets.js";
-import { FriendlyZodError } from "./utils.js";
+import { FriendlyZodError } from "./lib/zod.js";
 
 const propsSchema = z
   .object({

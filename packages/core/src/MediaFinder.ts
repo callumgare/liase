@@ -10,7 +10,7 @@ import {
   RequestHandler,
   requestHandlerSchema,
 } from "./schemas/requestHandler.js";
-import { zodParseOrThrow } from "./utils.js";
+import { zodParseOrThrow } from "./lib/zod.js";
 
 export default class MediaFinder {
   protected sourceMap: { [sourceName: string]: Source } = {};

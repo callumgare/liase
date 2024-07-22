@@ -4,16 +4,18 @@ import open from "open";
 import "dotenv-flow/config";
 import http, { Server } from "node:http";
 import { ProxyServer } from "@refactorjs/http-proxy";
+import { tsImport } from "tsx/esm/api";
 
 import {
   MediaFinder,
   Source,
+  Plugin,
   RequestHandler,
   createMediaFinderQuery,
 } from "./src/index.js";
-import { zodSchemaToSimpleSchema } from "./src/utils.js";
+import { zodSchemaToSimpleSchema } from "./src/lib/zod.js";
 
-const { source, requestHandler } = getRequestHandlerFromArgs();
+const { source, requestHandler, plugins } = await getRequestHandlerFromArgs();
 
 const sourceOption = new Option(
   "-s, --source <source id>",
@@ -23,8 +25,12 @@ const requestHandlerOption = new Option(
   "-r, --requestHandler <request handler id>",
   "ID of the request handler",
 ).makeOptionMandatory(true);
+const pluginsOption = new Option(
+  "-p, --plugins <comma separated list of filepaths to plugins>",
+  "Plugins to load",
+).makeOptionMandatory(true);
 
-const mediaFinder = new MediaFinder();
+const mediaFinder = new MediaFinder({ plugins });
 sourceOption.choices(mediaFinder.sources.map((source) => source.id));
 
 if (source) {
@@ -45,6 +51,7 @@ runCommand
   .name("run")
   .addOption(sourceOption)
   .addOption(requestHandlerOption)
+  .addOption(pluginsOption)
   .addOption(
     new Option(
       "-f, --outputFormat <output format>",
@@ -56,6 +63,7 @@ runCommand
   )
   .action(async (options) => {
     const { requestHandler: queryType, outputFormat, ...request } = options;
+    delete request.plugins;
     request.queryType = queryType;
 
     const response = await createMediaFinderQuery({
@@ -64,6 +72,9 @@ runCommand
         secrets: {
           apiKey: process.env.GIPHY_API_KEY,
         },
+      },
+      finderOptions: {
+        plugins,
       },
     }).getNext();
 
@@ -208,10 +219,11 @@ program.parseAsync();
  * Helper functions
  **********************/
 
-function getRequestHandlerFromArgs(): {
+async function getRequestHandlerFromArgs(): Promise<{
   source?: Source;
   requestHandler?: RequestHandler;
-} {
+  plugins: Plugin[];
+}> {
   const program = new Command();
   const silenceCommand = (command) =>
     command
@@ -229,6 +241,7 @@ function getRequestHandlerFromArgs(): {
 
   let sourceId: string;
   let requestHandlerId: string;
+  let pluginFilePaths: string[];
 
   function addSubcommand(program, subcommandName) {
     const command = new Command();
@@ -236,9 +249,11 @@ function getRequestHandlerFromArgs(): {
       .name(subcommandName)
       .option("-s, --source <source id>")
       .option("-r, --requestHandler <request handler id>")
+      .option("-p, --plugins <comma separated list of filepaths to plugins>")
       .action((options) => {
         sourceId = options.source;
         requestHandlerId = options.requestHandler;
+        pluginFilePaths = options.plugins?.split(",") || [];
       });
     silenceCommand(command);
     program.addCommand(command);
@@ -254,14 +269,22 @@ function getRequestHandlerFromArgs(): {
     // We don't care if there's an error
   }
 
-  const mediaFinder = new MediaFinder();
+  const plugins = await Promise.all(
+    pluginFilePaths.map(
+      async (pluginFilePath) => await tsImport(pluginFilePath, import.meta.url),
+    ),
+  ).then((modules) => modules.map((module) => module.default));
+
+  const mediaFinder = new MediaFinder({ plugins });
+
   const source: Source =
     sourceId && mediaFinder.sources.find((source) => source.id === sourceId);
+
   const requestHandler: RequestHandler = source?.requestHandlers.find(
     (handler) => handler.id === requestHandlerId,
   );
 
-  return { source, requestHandler };
+  return { source, requestHandler, plugins };
 }
 
 function startProxyServer(): Promise<{ origin: string; server: Server }> {
