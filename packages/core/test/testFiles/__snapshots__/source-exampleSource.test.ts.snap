@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Can successfully get response from request handler "search-media" of source "example-source" 1`] = `
+exports[`Query: { "source": "example-source", "queryType": "search-media", "searchText": "search text" } 1`] = `
 {
   "media": [
     {
@@ -25,7 +25,7 @@ exports[`Can successfully get response from request handler "search-media" of so
 }
 `;
 
-exports[`Can successfully get response from request handler "search-media" of source "example-source" 2`] = `
+exports[`Query: { "source": "example-source", "queryType": "search-media", "searchText": "search text" } 2`] = `
 {
   "media": [
     {
@@ -50,9 +50,9 @@ exports[`Can successfully get response from request handler "search-media" of so
 }
 `;
 
-exports[`Can successfully get response from request handler "search-media" of source "example-source" 3`] = `null`;
+exports[`Query: { "source": "example-source", "queryType": "search-media", "searchText": "search text" } 3`] = `null`;
 
-exports[`Can successfully get response from request handler "single-media" of source "example-source" 1`] = `
+exports[`Query: { "source": "example-source", "queryType": "single-media", "id": "test-getWebpage" } 1`] = `
 {
   "media": [
     {

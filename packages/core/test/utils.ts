@@ -25,138 +25,149 @@ export function createBasicTestsForRequestHandlers<
     queryOptions?: QueryOptionsInput;
     finderOptions?: FinderOptionsInput;
     duplicateMediaPossible?: boolean;
+    timeout?: number;
   },
   Queries extends { [Key in HandlerIds]: Query | Query[] },
   QueriesShared extends Query,
 >(options: { source: S; queries: Queries; queriesShared?: QueriesShared }) {
   const { source, queries, queriesShared } = options;
   for (const requestHandler of source.requestHandlers) {
-    test(`Can successfully get response from request handler "${requestHandler.id}" of source "${source.id}"`, async () => {
-      if (!(requestHandler.id in queries)) {
-        throw Error(
-          `No query provided for request handler ${requestHandler.id}`,
-        );
-      }
-      let expectedNumOfAssertions = 0;
-      const handlerQueries = [queries[requestHandler.id as HandlerIds]].flat(1);
-      for (const query of handlerQueries) {
-        const numOfPagesToLoad = query.numOfPagesToLoad ?? 1;
-        const numOfPagesToExpect = query.numOfPagesToExpect ?? numOfPagesToLoad;
-        const isPlainObject = (value: any) =>
-          value?.constructor === Object || Array.isArray(value);
-        const deepMergeOptions = {
-          isMergeableObject: isPlainObject,
-        };
-        setCachingProxyPort(inject("cachingProxyPort"));
-        const mediaQuery = await createMediaFinderQuery({
-          request: {
-            source: source.id,
-            queryType: requestHandler.id,
-            ...query?.request,
-            ...queriesShared?.request,
-          },
-          queryOptions: deepmerge.all(
-            [
-              queriesShared?.queryOptions || {},
-              query?.queryOptions || {},
-              {
-                secrets: {
-                  ...queriesShared?.secrets,
-                  ...query?.secrets,
+    if (!(requestHandler.id in queries)) {
+      throw Error(`No query provided for request handler ${requestHandler.id}`);
+    }
+    const handlerQueries = [queries[requestHandler.id as HandlerIds]].flat(1);
+    for (const query of handlerQueries) {
+      const request = {
+        source: source.id,
+        queryType: requestHandler.id,
+        ...query?.request,
+        ...queriesShared?.request,
+      };
+
+      const timeout = query.timeout ?? queriesShared?.timeout;
+      const formattedQuery = JSON.stringify(request, null, 2).replace(
+        /\n\s*/g,
+        " ",
+      );
+
+      test(
+        `Query: ${formattedQuery}`,
+        async () => {
+          const numOfPagesToLoad = query.numOfPagesToLoad ?? 1;
+          const numOfPagesToExpect =
+            query.numOfPagesToExpect ?? numOfPagesToLoad;
+          const isPlainObject = (value: any) =>
+            value?.constructor === Object || Array.isArray(value);
+          const deepMergeOptions = {
+            isMergeableObject: isPlainObject,
+          };
+          setCachingProxyPort(inject("cachingProxyPort"));
+          const mediaQuery = await createMediaFinderQuery({
+            request,
+            queryOptions: deepmerge.all(
+              [
+                queriesShared?.queryOptions || {},
+                query?.queryOptions || {},
+                {
+                  secrets: {
+                    ...queriesShared?.secrets,
+                    ...query?.secrets,
+                  },
                 },
-              },
-            ],
-            deepMergeOptions,
-          ),
-          finderOptions: deepmerge.all(
-            [
-              queriesShared?.finderOptions || {},
-              query?.finderOptions || {},
-              {
-                plugins: [cachingNetworkPlugin],
-              },
-            ],
-            deepMergeOptions,
-          ),
-        });
+              ],
+              deepMergeOptions,
+            ),
+            finderOptions: deepmerge.all(
+              [
+                queriesShared?.finderOptions || {},
+                query?.finderOptions || {},
+                {
+                  plugins: [cachingNetworkPlugin],
+                },
+              ],
+              deepMergeOptions,
+            ),
+          });
 
-        const responses: any[] = [];
-        let customResponseTestExpectedAssertions = 0;
+          const responses: any[] = [];
+          let customResponseTestExpectedAssertions = 0;
 
-        for (let i = 0; i < numOfPagesToLoad; i++) {
-          const response = await mediaQuery.getNext();
-          responses.push(response);
+          for (let i = 0; i < numOfPagesToLoad; i++) {
+            const response = await mediaQuery.getNext();
+            responses.push(response);
 
-          if (i + 1 < numOfPagesToExpect) {
-            // If we're expecting more pages then isLastPage should not be "true"
-            expect(
-              response?.page?.isLastPage,
-              `Expected to receive another response after ${getOrdinal(
-                i + 1,
-              )} but page.isLastPage is set to "true"`,
-            ).not.toBe(true);
-          } else if (numOfPagesToExpect < numOfPagesToLoad) {
-            // If this is the last expected page of content but we've explicitly requested to load more pages after this
-            // assume that this is the last page and thus isLastPage should not be "false"
-            expect(
-              response?.page?.isLastPage,
-              `Expected to not receive another response after ${getOrdinal(
-                i + 1,
-              )} but page.isLastPage is set to "false"`,
-            ).not.toBe(false);
-          } else {
-            // It's easy to calculate the number of expected assertions if we include this dummy assertion
-            expect(true).toBe(true);
+            if (i + 1 < numOfPagesToExpect) {
+              // If we're expecting more pages then isLastPage should not be "true"
+              expect(
+                response?.page?.isLastPage,
+                `Expected to receive another response after ${getOrdinal(
+                  i + 1,
+                )} but page.isLastPage is set to "true"`,
+              ).not.toBe(true);
+            } else if (numOfPagesToExpect < numOfPagesToLoad) {
+              // If this is the last expected page of content but we've explicitly requested to load more pages after this
+              // assume that this is the last page and thus isLastPage should not be "false"
+              expect(
+                response?.page?.isLastPage,
+                `Expected to not receive another response after ${getOrdinal(
+                  i + 1,
+                )} but page.isLastPage is set to "false"`,
+              ).not.toBe(false);
+            } else {
+              // It's easy to calculate the number of expected assertions if we include this dummy assertion
+              expect(true).toBe(true);
+            }
+
+            if (i < numOfPagesToExpect) {
+              expect(
+                response,
+                `Expected a response for the ${getOrdinal(
+                  i + 1,
+                )} request but response was null`,
+              ).not.toBe(null);
+            } else {
+              expect(
+                response,
+                `Expected null as the response for the ${getOrdinal(
+                  i + 1,
+                )} request`,
+              ).toBe(null);
+            }
+
+            if ("checkResponse" in query) {
+              const result = query.checkResponse?.(response, {
+                message: `The response for the ${getOrdinal(
+                  i + 1,
+                )} request was not what was expected`,
+                pageLoadNum: i,
+              });
+              customResponseTestExpectedAssertions +=
+                typeof result === "number" ? result : 1;
+            }
           }
 
-          if (i < numOfPagesToExpect) {
-            expect(
-              response,
-              `Expected a response for the ${getOrdinal(
-                i + 1,
-              )} request but response was null`,
-            ).not.toBe(null);
-          } else {
-            expect(
-              response,
-              `Expected null as the response for the ${getOrdinal(
-                i + 1,
-              )} request`,
-            ).toBe(null);
+          if (!query.duplicateMediaPossible) {
+            const idsOfMedia = responses
+              .map((response: GenericResponse | null) => response?.media || [])
+              .flat()
+              .filter((media) => media)
+              .map((media: any) => media.id);
+
+            expect(idsOfMedia).toSatisfy(
+              hasNoDuplicates,
+              "Media with the same ID appears in multiple responses",
+            );
           }
 
-          if ("checkResponse" in query) {
-            const result = query.checkResponse?.(response, {
-              message: `The response for the ${getOrdinal(
-                i + 1,
-              )} request was not what was expected`,
-              pageLoadNum: i,
-            });
-            customResponseTestExpectedAssertions +=
-              typeof result === "number" ? result : 1;
-          }
-        }
-
-        if (!query.duplicateMediaPossible) {
-          const idsOfMedia = responses
-            .map((response: GenericResponse | null) => response?.media || [])
-            .flat()
-            .filter((media) => media)
-            .map((media: any) => media.id);
-
-          expect(idsOfMedia).toSatisfy(
-            hasNoDuplicates,
-            "Media with the same ID appears in multiple responses",
+          expect.assertions(
+            numOfPagesToLoad * 2 +
+              (query.duplicateMediaPossible ? 0 : 1) +
+              customResponseTestExpectedAssertions,
           );
-        }
-
-        expectedNumOfAssertions +=
-          numOfPagesToLoad * 2 +
-          (query.duplicateMediaPossible ? 0 : 1) +
-          customResponseTestExpectedAssertions;
-      }
-      expect.assertions(expectedNumOfAssertions);
-    });
+        },
+        timeout,
+      );
+    }
   }
 }
 

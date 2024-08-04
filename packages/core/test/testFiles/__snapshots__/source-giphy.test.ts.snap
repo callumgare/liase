@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Can successfully get response from request handler "single-media" of source "giphy" 1`] = `
+exports[`Query: { "source": "giphy", "queryType": "single-media", "id": "YsTs5ltWtEhnq" } 1`] = `
 {
   "media": [
     {
