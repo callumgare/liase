@@ -68,5 +68,8 @@
   },
   "optionalDependencies": {
     "fsevents": "^2.3.2"
+  },
+  "overrides": {
+    "conventional-changelog-conventionalcommits": ">= 8.0.0"
   }
 }
