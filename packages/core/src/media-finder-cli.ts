@@ -1,4 +1,4 @@
-#!/usr/bin/env npx -y tsx
+#!/usr/bin/env node
 import { Command, Option } from "commander";
 import open from "open";
 import "dotenv-flow/config";
@@ -10,10 +10,13 @@ import {
   MediaFinder,
   Source,
   Plugin,
+  GenericRequest,
   RequestHandler,
   createMediaFinderQuery,
-} from "./src/index.js";
-import { zodSchemaToSimpleSchema } from "./src/lib/zod.js";
+  MediaFinderQuery,
+} from "./index.js";
+import { zodSchemaToSimpleSchema } from "./lib/zod.js";
+import { z } from "zod";
 
 const { source, requestHandler, plugins } = await getRequestHandlerFromArgs();
 
@@ -62,27 +65,15 @@ runCommand
       .default(process.stdout.isTTY ? "pretty" : "json"),
   )
   .action(async (options) => {
-    const { requestHandler: queryType, outputFormat, ...request } = options;
-    delete request.plugins;
-    request.queryType = queryType;
+    const response = await getMediaFinderQuery(options).getNext();
 
-    const response = await createMediaFinderQuery({
-      request,
-      queryOptions: {
-        secrets: {
-          apiKey: process.env.GIPHY_API_KEY,
-        },
-      },
-      finderOptions: {
-        plugins,
-      },
-    }).getNext();
-
-    if (outputFormat === "pretty") {
+    if (response === null) {
+      throw Error("No response received");
+    } else if (options.outputFormat === "pretty") {
       console.dir(response, { depth: null });
-    } else if (outputFormat === "json") {
+    } else if (options.outputFormat === "json") {
       console.log(JSON.stringify(response, null, 2));
-    } else if (outputFormat === "online") {
+    } else if (options.outputFormat === "online") {
       const { origin: proxyOrigin } = await startProxyServer();
 
       for (const media of response.media || []) {
@@ -104,14 +95,16 @@ runCommand
       const { viewerUrl } = await res.json();
       open(viewerUrl);
     } else {
-      throw Error(`Unknown output format "${outputFormat}"`);
+      throw Error(`Unknown output format "${options.outputFormat}"`);
     }
   });
 
 if (requestHandler) {
-  const requestOpts = Object.entries(
-    zodSchemaToSimpleSchema(requestHandler.requestSchema).children,
-  );
+  const simpleSchema = zodSchemaToSimpleSchema(requestHandler.requestSchema);
+  if (simpleSchema.type !== "object") {
+    throw Error("Internal error: Request schema was not an object");
+  }
+  const requestOpts = Object.entries(simpleSchema.children);
   for (const [name, requestOption] of requestOpts) {
     if (["source", "queryType"].includes(name)) continue;
 
@@ -123,7 +116,9 @@ if (requestHandler) {
       Array.isArray(requestOption.type) &&
       requestOption.type.every((subtype) => subtype.type === "literal")
     ) {
-      choices = requestOption.type.map((unionSubtype) => unionSubtype.value);
+      choices = requestOption.type.map((unionSubtype) =>
+        String(unionSubtype.value),
+      );
 
       // Add all subtypes to a set to work out the list of unique subtypes
       const unionSubtypes = new Set(
@@ -177,34 +172,34 @@ showSchemaCommand
   .addOption(sourceOption)
   .addOption(requestHandlerOption)
   .addOption(
-    new Option("-t, --schemaType <schemaType>", "Type of schema to return")
+    new Option(
+      "-t, --schemaType <schemaType>",
+      'Type of schema to return. If type is "response" then any required request options must be given in order to determine which response schema will be returned',
+    )
       .choices(["request", "secrets", "response"])
       .default("response"),
   )
   .action(async (options) => {
-    const schemaPropKey = {
-      request: "requestSchema",
-      secrets: "secretsSchema",
-      response: "responseSchema",
-    }[options.schemaType];
-
-    let arrayOfSchemas;
-    const schemaOrArrayOfSchema = requestHandler[schemaPropKey];
-    if (Array.isArray(schemaOrArrayOfSchema)) {
-      arrayOfSchemas = schemaOrArrayOfSchema.map(
-        (schemaDetails) => schemaDetails.schema,
+    if (!requestHandler) {
+      throw Error(
+        "Internal error: Trying to show schema without request handler being set first",
       );
-    } else {
-      arrayOfSchemas = schemaOrArrayOfSchema;
     }
 
-    for (const [index, schema] of arrayOfSchemas.entries()) {
-      const simpleSchema = zodSchemaToSimpleSchema(schema).children;
-      console.dir(simpleSchema, { depth: null });
-      if (index + 1 < arrayOfSchemas.length) {
-        console.log("\nOr\n");
-      }
+    let schema;
+    if (options.schemaType === "request") {
+      schema = requestHandler.requestSchema;
+    } else if (options.schemaType === "secrets") {
+      schema = requestHandler.secretsSchema || z.object({}).strict();
+    } else if (options.schemaType === "response") {
+      const mediaFinderQuery = getMediaFinderQuery(options);
+      schema = mediaFinderQuery.getResponseDetails().schema;
+    } else {
+      throw Error(`Unknown schema type option "${options.schemaType}"`);
     }
+
+    const simpleSchema = zodSchemaToSimpleSchema(schema);
+    console.dir(simpleSchema, { depth: null });
   });
 
 program.addCommand(showSchemaCommand);
@@ -225,7 +220,7 @@ async function getRequestHandlerFromArgs(): Promise<{
   plugins: Plugin[];
 }> {
   const program = new Command();
-  const silenceCommand = (command) =>
+  const silenceCommand = (command: Command) =>
     command
       .helpCommand(false)
       .helpOption("")
@@ -239,11 +234,11 @@ async function getRequestHandlerFromArgs(): Promise<{
 
   silenceCommand(program);
 
-  let sourceId: string;
-  let requestHandlerId: string;
-  let pluginFilePaths: string[];
+  let sourceId: string = "";
+  let requestHandlerId: string = "";
+  let pluginFilePaths: string[] = [];
 
-  function addSubcommand(program, subcommandName) {
+  function addSubcommand(program: Command, subcommandName: string) {
     const command = new Command();
     command
       .name(subcommandName)
@@ -277,12 +272,20 @@ async function getRequestHandlerFromArgs(): Promise<{
 
   const mediaFinder = new MediaFinder({ plugins });
 
-  const source: Source =
-    sourceId && mediaFinder.sources.find((source) => source.id === sourceId);
-
-  const requestHandler: RequestHandler = source?.requestHandlers.find(
-    (handler) => handler.id === requestHandlerId,
+  const source: Source | undefined = mediaFinder.sources.find(
+    (source) => source.id === sourceId,
   );
+
+  if (sourceId && !source) {
+    throw Error(`Could not find source for "${sourceId}"`);
+  }
+
+  const requestHandler: RequestHandler | undefined =
+    source?.requestHandlers.find((handler) => handler.id === requestHandlerId);
+
+  if (source && requestHandlerId && !requestHandler) {
+    throw Error(`Could not find request handler for "${requestHandlerId}"`);
+  }
 
   return { source, requestHandler, plugins };
 }
@@ -321,6 +324,9 @@ function startProxyServer(): Promise<{ origin: string; server: Server }> {
     server.on("error", reject);
     server.on("listening", () => {
       const address = server.address();
+      if (address === null) {
+        throw Error("Could not create proxy server");
+      }
       const formattedAddress =
         typeof address === "object"
           ? `http://localhost:${address.port}`
@@ -332,5 +338,27 @@ function startProxyServer(): Promise<{ origin: string; server: Server }> {
     });
 
     server.listen();
+  });
+}
+
+function getMediaFinderQuery(
+  options: Record<string, unknown>,
+): MediaFinderQuery {
+  const { requestHandler: queryType, ...request } = options;
+  request.queryType = queryType;
+  // Delete unneeded global variables
+  delete request.plugins;
+  delete request.outputFormat;
+
+  return createMediaFinderQuery({
+    request: request as GenericRequest,
+    queryOptions: {
+      secrets: {
+        apiKey: process.env.GIPHY_API_KEY,
+      },
+    },
+    finderOptions: {
+      plugins,
+    },
   });
 }
