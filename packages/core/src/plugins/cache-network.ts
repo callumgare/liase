@@ -87,7 +87,7 @@ function startClientToCacheProxy(
 
 async function startCacheProxy(): Promise<HttpCachingProxy> {
   const cachingProxyServer = new HttpCachingProxy({
-    cachePath: path.resolve(__dirname, ".proxy-cache"),
+    cachePath: path.resolve(import.meta.dirname, ".proxy-cache"),
     ttl: 24 * 60 * 60 * 1000, // 1 day
   });
   await cachingProxyServer.start();
