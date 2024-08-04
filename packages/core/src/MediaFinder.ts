@@ -1,4 +1,4 @@
-import * as coreSources from "./sources/index.js";
+import builtInSourcesPlugin from "./plugins/built-in-sources/index.js";
 import type { Source } from "@/src/schemas/source.js";
 import type { Plugin } from "@/src/schemas/plugin.js";
 import {
@@ -11,6 +11,8 @@ import {
   requestHandlerSchema,
 } from "./schemas/requestHandler.js";
 import { zodParseOrThrow } from "./lib/zod.js";
+import { Entries } from "type-fest";
+import { MediaFinderHooks } from "./lib/hooks.js";
 
 export default class MediaFinder {
   protected sourceMap: { [sourceName: string]: Source } = {};
@@ -19,22 +21,28 @@ export default class MediaFinder {
   }
 
   _finderOptions: FinderOptions;
+  _hooks: MediaFinderHooks = {
+    loadUrl: [],
+  };
 
   constructor(finderOptions: FinderOptionsInput = {}) {
     this._finderOptions = finderOptionsSchema.parse(finderOptions);
-    this.loadSources(Object.values(coreSources));
+    this.loadPlugin(builtInSourcesPlugin);
     this._finderOptions.plugins.forEach((plugin) => this.loadPlugin(plugin));
-  }
-
-  loadSources(sources: Source[]) {
-    for (const source of sources) {
-      this.loadSource(source);
-    }
   }
 
   loadPlugin(plugin: Plugin) {
     if (plugin.sources) {
       this.loadSources(plugin.sources);
+    }
+    if (plugin.hooks) {
+      this.loadHooks(plugin.hooks);
+    }
+  }
+
+  loadSources(sources: Source[]) {
+    for (const source of sources) {
+      this.loadSource(source);
     }
   }
 
@@ -108,6 +116,16 @@ export default class MediaFinder {
     }
 
     this.sourceMap[source.id] = source;
+  }
+
+  loadHooks(hooks: NonNullable<Plugin["hooks"]>): void {
+    for (const [hookName, hook] of Object.entries(hooks) as Entries<
+      typeof hooks
+    >) {
+      if (hook) {
+        this._hooks[hookName].push(hook);
+      }
+    }
   }
 
   getSource(sourceId: string): Source {

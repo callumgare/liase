@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { createBasicTestsForRequestHandlers } from "../testUtils.js";
+import { createBasicTestsForRequestHandlers } from "../utils.js";
 import exampleSource from "../fixtures/exampleSource.js";
 
 createBasicTestsForRequestHandlers({

@@ -10,6 +10,7 @@ import {
   generateResponse,
   getResponseDetailsBasedOnRequest,
 } from "./generateResponse.js";
+import { executeHooks } from "./lib/hooks.js";
 
 export const excludeFieldSymbol = Symbol("ExcludeField");
 
@@ -140,12 +141,16 @@ export class ActionContext extends Function {
     url: Parameters<typeof loadUrl>[0],
     options?: Parameters<typeof loadUrl>[1],
   ) =>
-    loadUrl(url, {
-      proxyUrls: this.#constructorContext.proxyUrls ?? [],
-      crawlerType: "cheerio",
-      cachingProxyPort: this.#constructorContext.cachingProxyPort,
-      ...options,
-    });
+    executeHooks({ url, ...options }, [
+      ...this.#constructorContext.hooks.loadUrl,
+      ({ url, ...options }, next) =>
+        next(
+          loadUrl(url, {
+            crawlerType: "cheerio",
+            ...options,
+          }),
+        ),
+    ]);
 
   loadRequest = async (
     requestHandler: RequestHandler,
@@ -172,6 +177,7 @@ export class ActionContext extends Function {
         fullRequest,
       ),
       sourceId,
+      hooks: this.#constructorContext.hooks,
     };
     return generateResponse(constructorContext);
   };

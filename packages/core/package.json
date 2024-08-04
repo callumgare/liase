@@ -7,7 +7,7 @@
     "dist/*"
   ],
   "scripts": {
-    "build": "rm -rf ./dist && tsc && tsc-alias",
+    "build": "rm -rf ./dist && tsc && tsc -p test/tsconfig.dist.json && tsc-alias",
     "watch": "npm run build -- --watch",
     "lint": "eslint src && prettier .",
     "lint:fix": "eslint --fix src && prettier --write .",
@@ -31,6 +31,7 @@
     "giphy-api": "^2.0.2",
     "mime-types": "^2.1.28",
     "pluralize": "^8.0.0",
+    "type-fest": "^4.23.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {

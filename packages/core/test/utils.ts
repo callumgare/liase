@@ -2,8 +2,11 @@ import { Source } from "@/src/schemas/source.js";
 import { expect, test, inject } from "vitest";
 import { GenericResponse, createMediaFinderQuery } from "@/src/index.js";
 import { FinderOptionsInput } from "@/src/schemas/finderOptions.js";
-import { getOrdinal, hasNoDuplicates } from "@/src/utils.js";
+import { getOrdinal, hasNoDuplicates } from "@/src/lib/utils.js";
 import { QueryOptionsInput } from "@/src/schemas/queryOptions.js";
+import cachingNetworkPlugin, {
+  setCachingProxyPort,
+} from "@/src/plugins/cache-network.js";
 import deepmerge from "deepmerge";
 import { copy } from "copy-anything";
 
@@ -39,10 +42,12 @@ export function createBasicTestsForRequestHandlers<
       for (const query of handlerQueries) {
         const numOfPagesToLoad = query.numOfPagesToLoad ?? 1;
         const numOfPagesToExpect = query.numOfPagesToExpect ?? numOfPagesToLoad;
-        const isPlainObject = (value: any) => value?.constructor === Object;
+        const isPlainObject = (value: any) =>
+          value?.constructor === Object || Array.isArray(value);
         const deepMergeOptions = {
           isMergeableObject: isPlainObject,
         };
+        setCachingProxyPort(inject("cachingProxyPort"));
         const mediaQuery = await createMediaFinderQuery({
           request: {
             source: source.id,
@@ -54,7 +59,6 @@ export function createBasicTestsForRequestHandlers<
             [
               queriesShared?.queryOptions || {},
               query?.queryOptions || {},
-              { cachingProxyPort: inject("cachingProxyPort") },
               {
                 secrets: {
                   ...queriesShared?.secrets,
@@ -64,9 +68,14 @@ export function createBasicTestsForRequestHandlers<
             ],
             deepMergeOptions,
           ),
-          finderOptions: deepmerge(
-            queriesShared?.finderOptions || {},
-            query?.finderOptions || {},
+          finderOptions: deepmerge.all(
+            [
+              queriesShared?.finderOptions || {},
+              query?.finderOptions || {},
+              {
+                plugins: [cachingNetworkPlugin],
+              },
+            ],
             deepMergeOptions,
           ),
         });

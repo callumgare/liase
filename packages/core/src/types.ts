@@ -1,3 +1,4 @@
+import { MediaFinderHooks } from "./lib/hooks.js";
 import { GenericRequest } from "./schemas/request.js";
 import { RequestHandler } from "./schemas/requestHandler.js";
 import { GenericSecrets } from "./schemas/secrets.js";
@@ -9,6 +10,5 @@ export type ConstructorExecutionContext = {
   responseDetails: RequestHandler["responses"][0];
   pageFetchLimitReached?: boolean;
   sourceId: string;
-  proxyUrls?: string[];
-  cachingProxyPort?: number;
+  hooks: MediaFinderHooks;
 };

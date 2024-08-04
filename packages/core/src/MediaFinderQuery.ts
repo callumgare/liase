@@ -132,8 +132,7 @@ export default class MediaFinderQuery extends MediaFinder {
         responseDetails: this.getResponseDetails(),
         pageFetchLimitReached,
         sourceId: this.getSource(parsedRequest.source).id,
-        proxyUrls: this.#queryOptions.proxyUrls,
-        cachingProxyPort: this.#queryOptions.cachingProxyPort,
+        hooks: this._hooks,
       });
       if (handler.paginationType === "offset") {
         // if paginationType is "offset" then pageNumber must exist due to a check in validateResponse
