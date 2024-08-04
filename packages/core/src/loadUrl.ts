@@ -7,9 +7,8 @@ import {
   LogLevel,
   CheerioCrawlingContext,
   BasicCrawlerOptions,
-  ProxyConfiguration,
 } from "crawlee";
-import { getPromiseWithResolvers, getUniqueId } from "./utils.js";
+import { getPromiseWithResolvers, getUniqueId } from "./lib/utils.js";
 import { CheerioAPI } from "cheerio";
 
 const crawleeConfig = new Configuration({
@@ -19,8 +18,7 @@ const crawleeConfig = new Configuration({
 
 type LoadUrlOptions = {
   crawlerType: "got" | "cheerio" | "puppeteer";
-  proxyUrls: string[];
-  cachingProxyPort?: number;
+  headers?: Record<string, string>;
 };
 
 type LoadUrlResponse = {
@@ -39,9 +37,8 @@ const crawlerRequestCallbacks: Record<
 
 export async function loadUrl(
   url: string,
-  { crawlerType, proxyUrls, cachingProxyPort }: LoadUrlOptions = {
+  { crawlerType, headers }: LoadUrlOptions = {
     crawlerType: "cheerio",
-    proxyUrls: [],
   },
 ): Promise<LoadUrlResponse> {
   const {
@@ -50,15 +47,9 @@ export async function loadUrl(
     reject: responseReject,
   } = getPromiseWithResolvers();
   const requestId = getUniqueId();
-  const additionalHeaders: Record<string, string> = {};
-  if (cachingProxyPort) {
-    const targetUrl = new URL(url);
-    url = `http://localhost:${cachingProxyPort}${targetUrl.pathname}${targetUrl.search}`;
-    additionalHeaders["x-real-origin"] = targetUrl.origin;
-  }
   const request = new Request({
     url,
-    headers: { Accept: "application/json", ...additionalHeaders },
+    headers: { Accept: "application/json", ...headers },
     label: requestId,
     uniqueKey: requestId,
   });
@@ -66,7 +57,7 @@ export async function loadUrl(
 
   let response;
   if (crawlerType === "cheerio") {
-    const crawler = getCrawler(crawlerType, { proxyUrls });
+    const crawler = getCrawler(crawlerType);
     if (!crawler.running) {
       throw Error("Crawlee not running");
     }
@@ -96,13 +87,7 @@ type InitedCrawlersMap = typeof _initedCrawlers;
 function getCrawler<
   CrawlerType extends keyof InitedCrawlersMap,
   Crawler extends Exclude<InitedCrawlersMap[CrawlerType], undefined>,
->(crawlerType: CrawlerType, { proxyUrls }: { proxyUrls: string[] }): Crawler {
-  let proxyConfiguration;
-  if (proxyUrls?.length) {
-    proxyConfiguration = new ProxyConfiguration({
-      proxyUrls,
-    });
-  }
+>(crawlerType: CrawlerType): Crawler {
   const crawlerConstructorOptions = {
     async requestHandler(crawleeContext: any) {
       const { responseResolve } =
@@ -120,7 +105,6 @@ function getCrawler<
       }
       responseReject(error, crawleeContext);
     },
-    ...(proxyConfiguration ? { proxyConfiguration } : {}),
   } satisfies BasicCrawlerOptions;
 
   if (crawlerType === "cheerio") {

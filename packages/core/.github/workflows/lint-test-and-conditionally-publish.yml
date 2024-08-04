@@ -1,6 +1,11 @@
 name: Lint, test, and conditionally publish
 
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - internal-testing-*
 
 jobs:
   lint:
@@ -41,7 +46,7 @@ jobs:
 
   publish:
     name: Publish Package
-    if: (github.event_name == 'push') && (github.ref == 'refs/heads/main')
+    if: (github.event_name == 'push') && ((github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/internal-testing-'))
     runs-on: ubuntu-latest
     needs: [lint, test]
     permissions:

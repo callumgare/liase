@@ -5,9 +5,8 @@
     "declarationMap": true,
     "forceConsistentCasingInFileNames": true,
     "typeRoots": ["./node_modules/@types"],
-    "baseUrl": "./src",
     "paths": {
-      "@/src/*": ["./*"]
+      "@/src/*": ["./src/*"]
     }
   },
   "include": ["src/**/*"],

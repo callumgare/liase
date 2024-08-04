@@ -5,8 +5,6 @@ export const queryOptionsSchema = z
   .object({
     secrets: genericSecretsSchema.default({}),
     fetchCountLimit: z.number().int().default(10),
-    proxyUrls: z.array(z.string()).optional(),
-    cachingProxyPort: z.number().int().optional(),
   })
   .strict();
 

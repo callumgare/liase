@@ -1,11 +1,8 @@
 import assert from "node:assert";
 import { GenericResponse, genericResponseSchema } from "./schemas/response.js";
 import { executeConstructor, executeActions } from "./constructorExecution.js";
-import {
-  ConstructorExecutionError,
-  FriendlyZodError,
-  zodParseOrThrow,
-} from "./utils.js";
+import { ConstructorExecutionError } from "./lib/utils.js";
+import { FriendlyZodError, zodParseOrThrow } from "./lib/zod.js";
 import { ConstructorExecutionContext } from "./types.js";
 import { ActionContext } from "./ActionContext.js";
 import { GenericRequest } from "./schemas/request.js";
