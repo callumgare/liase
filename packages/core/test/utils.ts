@@ -134,8 +134,14 @@ export function createBasicTestsForRequestHandlers<
               ).toBe(null);
             }
 
-            if ("checkResponse" in query) {
-              const result = query.checkResponse?.(response, {
+            const customResponseChecks = [
+              ...(query?.checkResponse ? [query?.checkResponse] : []),
+              ...(queriesShared?.checkResponse
+                ? [queriesShared?.checkResponse]
+                : []),
+            ];
+            for (const checkResponse of customResponseChecks) {
+              const result = checkResponse(response, {
                 message: `The response for the ${getOrdinal(
                   i + 1,
                 )} request was not what was expected`,
