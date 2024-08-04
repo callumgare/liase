@@ -1,12 +1,15 @@
 {
-    "compilerOptions": {
-      "outDir": "./dist",
-      "allowJs": true,
-      "target": "es2018",
-      "module": "es2015",
-      "moduleResolution": "node",
-      "esModuleInterop": true,
-      "forceConsistentCasingInFileNames": true
-    },
-    "include": ["./src/**/*"]
-  }
+  "compilerOptions": {
+    "outDir": "./dist/",
+    "declaration": true,
+    "declarationMap": true,
+    "forceConsistentCasingInFileNames": true,
+    "typeRoots": ["./node_modules/@types"],
+    "baseUrl": "./src",
+    "paths": {
+      "@/src/*": ["./*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "extends": "@tsconfig/node21/tsconfig.json"
+}
