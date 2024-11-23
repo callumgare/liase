@@ -2,29 +2,20 @@ import { CheerioDomSelection, DomSelection } from "./DomSelection.js";
 import {
   HttpCrawler,
   CheerioCrawler,
-  Request,
   Configuration,
+  Request,
   LogLevel,
   CheerioCrawlingContext,
   BasicCrawlerOptions,
 } from "crawlee";
 import { getPromiseWithResolvers, getUniqueId } from "./lib/utils.js";
 import { CheerioAPI } from "cheerio";
+import { gotScraping, type Options as GotOptions } from "got-scraping";
 
 const crawleeConfig = new Configuration({
   logLevel: LogLevel.WARNING,
   persistStorage: false,
 });
-
-type LoadUrlOptions = {
-  crawlerType: "got" | "cheerio" | "puppeteer";
-  headers?: Record<string, string>;
-};
-
-type LoadUrlResponse = {
-  root: DomSelection;
-  statusCode: number;
-};
 
 const crawlerRequestCallbacks: Record<
   string,
@@ -35,12 +26,80 @@ const crawlerRequestCallbacks: Record<
   | undefined
 > = {};
 
+type LoadUrlOptionsPuppeteer = {
+  agent?: "puppeteer";
+  responseType?: "webpage";
+  headers?: Record<string, string>;
+};
+
+type LoadUrlOptionsGot = {
+  agent?: "got";
+  responseType?: "webpage" | "text" | "json";
+  headers?: Record<string, string>;
+  method?: GotOptions["method"];
+  body?: GotOptions["body"];
+};
+
+type LoadUrlOptions = LoadUrlOptionsPuppeteer | LoadUrlOptionsGot;
+
+type LoadUrlResponseWebpage = {
+  root: DomSelection;
+  statusCode: number;
+};
+type LoadUrlResponseJson = {
+  data: unknown;
+  statusCode: number;
+};
+
+type LoadUrlResponse = LoadUrlResponseWebpage | LoadUrlResponseJson;
+
+export async function loadUrl(url: string): Promise<LoadUrlResponseWebpage>;
 export async function loadUrl(
   url: string,
-  { crawlerType, headers }: LoadUrlOptions = {
-    crawlerType: "cheerio",
+  props:
+    | Omit<LoadUrlOptionsPuppeteer, "responseType">
+    | Omit<LoadUrlOptionsGot, "responseType">,
+): Promise<LoadUrlResponseWebpage>;
+export async function loadUrl(
+  url: string,
+  props: (LoadUrlOptionsPuppeteer | LoadUrlOptionsGot) & {
+    responseType: "webpage";
   },
+): Promise<LoadUrlResponseWebpage>;
+export async function loadUrl(
+  url: string,
+  props: LoadUrlOptionsGot & { responseType: "json" },
+): Promise<LoadUrlResponseJson>;
+
+export async function loadUrl(
+  url: string,
+  { agent, responseType, headers, ...otherProps }: LoadUrlOptions = {},
 ): Promise<LoadUrlResponse> {
+  if (!agent) {
+    if (responseType === "json") {
+      agent = "got";
+    } else if (!responseType || responseType === "webpage") {
+      agent = "got";
+    } else if (responseType === "text") {
+      agent = "got";
+    } else {
+      responseType satisfies never;
+      throw Error(`Unrecognised "responseType" value: ${responseType}`);
+    }
+  }
+  let crawlerType;
+  if (agent === "got") {
+    if (!responseType || responseType === "webpage") {
+      crawlerType = "cheerio";
+    } else {
+      crawlerType = "got";
+    }
+  } else if (agent === "puppeteer") {
+    crawlerType = "puppeteer";
+  } else {
+    agent satisfies never;
+    throw Error(`Unrecognised "agent" value: ${responseType}`);
+  }
   const {
     promise: responsePromise,
     resolve: responseResolve,
@@ -70,6 +129,21 @@ export async function loadUrl(
       root: new CheerioDomSelection(crawleeContext.$ as CheerioAPI),
       statusCode: crawleeContext.response.statusCode,
     };
+  } else if (crawlerType === "got") {
+    if (responseType === "webpage") {
+      throw Error("Can not use got crawlerType with webpage response");
+    }
+    const { body, statusCode, ok } = await gotScraping({
+      url,
+      method: "method" in otherProps ? otherProps.method : undefined,
+      body: "body" in otherProps ? otherProps.body : undefined,
+      headers,
+      responseType,
+    });
+    if (!ok) {
+      throw Error(`Got response status ${statusCode} with body: ${body}`);
+    }
+    return { data: body, statusCode };
   } else {
     throw Error(`Unknown crawler type "${crawlerType}"`);
   }

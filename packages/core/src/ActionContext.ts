@@ -137,20 +137,19 @@ export class ActionContext extends Function {
     return this.#constructorContext.pageFetchLimitReached;
   }
 
-  loadUrl = async (
-    url: Parameters<typeof loadUrl>[0],
-    options?: Parameters<typeof loadUrl>[1],
-  ) =>
+  loadUrl = (async (url, options) =>
     executeHooks({ url, ...options }, [
       ...this.#constructorContext.hooks.loadUrl,
-      ({ url, ...options }, next) =>
-        next(
-          loadUrl(url, {
-            crawlerType: "cheerio",
-            ...options,
-          }),
-        ),
-    ]);
+      (
+        {
+          url,
+          ...options
+        }: { url: Parameters<typeof loadUrl>[0] } & Parameters<
+          typeof loadUrl
+        >[1],
+        next,
+      ) => next(loadUrl(url, options)),
+    ])) as typeof loadUrl;
 
   loadRequest = async (
     requestHandler: RequestHandler,
