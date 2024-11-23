@@ -133,7 +133,7 @@ export async function loadUrl(
     if (responseType === "webpage") {
       throw Error("Can not use got crawlerType with webpage response");
     }
-    const { body, statusCode, ok } = await gotScraping({
+    const { body, statusCode, ok, retryCount } = await gotScraping({
       url,
       method: "method" in otherProps ? otherProps.method : undefined,
       body: "body" in otherProps ? otherProps.body : undefined,
@@ -144,7 +144,9 @@ export async function loadUrl(
       },
     });
     if (!ok) {
-      throw Error(`Got response status ${statusCode} with body: ${body}`);
+      throw Error(
+        `Got response status ${statusCode} (retry count: ${retryCount}) with body: ${body}`,
+      );
     }
     return { data: body, statusCode };
   } else {
