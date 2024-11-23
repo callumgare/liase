@@ -139,6 +139,9 @@ export async function loadUrl(
       body: "body" in otherProps ? otherProps.body : undefined,
       headers,
       responseType,
+      retry: {
+        methods: ["GET", "PUT", "HEAD", "DELETE", "OPTIONS", "TRACE", "POST"],
+      },
     });
     if (!ok) {
       throw Error(`Got response status ${statusCode} with body: ${body}`);
