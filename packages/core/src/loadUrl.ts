@@ -139,8 +139,26 @@ export async function loadUrl(
       body: "body" in otherProps ? otherProps.body : undefined,
       headers,
       responseType,
+      // We add "POST" to the retry methods and set everything else to their defaults
+      // https://github.com/sindresorhus/got/blob/main/documentation/7-retry.md#retry
       retry: {
         methods: ["GET", "PUT", "HEAD", "DELETE", "OPTIONS", "TRACE", "POST"],
+        limit: 2,
+        statusCodes: [408, 413, 429, 500, 502, 503, 504, 521, 522, 524],
+        errorCodes: [
+          "ETIMEDOUT",
+          "ECONNRESET",
+          "EADDRINUSE",
+          "ECONNREFUSED",
+          "EPIPE",
+          "ENOTFOUND",
+          "ENETUNREACH",
+          "EAI_AGAIN",
+        ],
+        maxRetryAfter: undefined,
+        calculateDelay: ({ computedValue }) => computedValue,
+        backoffLimit: Number.POSITIVE_INFINITY,
+        noise: 100,
       },
     });
     if (!ok) {
