@@ -1,4 +1,5 @@
 import type { GlobalSetupContext } from "vitest/node";
+import "vitest";
 import { setupCachingProxy } from "@/src/plugins/cache-network.js";
 
 export default async function (context: GlobalSetupContext) {
