@@ -10,8 +10,8 @@
     "media-finder": "dist/media-finder-cli.js"
   },
   "scripts": {
-    "build": "rm -rf ./dist && tsc && tsc -p test/tsconfig.dist.json && tsc-alias && chmod +x ./dist/media-finder-cli.js",
-    "watch": "tsc --watch",
+    "build": "rm -rf ./dist && tsc -p ./tsconfig.dist.json && tsc-alias && chmod +x ./dist/media-finder-cli.js",
+    "watch": "tsc -p ./tsconfig.dist.json --watch",
     "lint": "eslint src && prettier .",
     "lint:fix": "eslint --fix src && prettier --write .",
     "test": "vitest run",

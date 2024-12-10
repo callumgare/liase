@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "noEmit": true,
     "outDir": "./dist/",
     "declaration": true,
     "declarationMap": true,
@@ -9,6 +10,6 @@
       "@/src/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["./**/*"],
   "extends": "@tsconfig/node21/tsconfig.json"
 }

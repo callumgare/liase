@@ -1,5 +1,5 @@
 import http from "node:http";
-import { createMediaFinderQuery } from "../../dist/index.js";
+import { createMediaFinderQuery } from "../../src/index.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 import cachingNetworkPlugin from "@/src/plugins/cache-network.js";
