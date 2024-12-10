@@ -20,9 +20,4 @@ createBasicTestsForRequestHandlers({
       numOfPagesToLoad: 2,
     },
   },
-  queriesShared: {
-    secrets: {
-      apiKey: process.env.GIPHY_API_KEY,
-    },
-  },
 });
