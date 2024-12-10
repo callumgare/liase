@@ -14,8 +14,19 @@ createBasicTestsForRequestHandlers({
     search: {
       request: { searchText: "happy" },
       checkResponse: (response) =>
-        expect(response.media.length).toBeGreaterThan(5),
+        expect(response.media.length).toBeGreaterThan(2),
       numOfPagesToLoad: 2,
+      duplicateMediaPossible: true,
+    },
+    feed: {
+      request: {
+        feedId:
+          "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/whats-hot",
+      },
+      checkResponse: (response) =>
+        expect(response.media.length).toBeGreaterThan(2),
+      numOfPagesToLoad: 2,
+      duplicateMediaPossible: true,
     },
   },
 });

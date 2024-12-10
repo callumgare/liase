@@ -6,18 +6,14 @@ import { RequestHandler } from "@/src/schemas/requestHandler.js";
 import { getAgent } from "../client.js";
 
 export default {
-  id: "search",
-  displayName: "Search",
-  description: "Search network for media",
+  id: "feed",
+  displayName: "Feed",
+  description: "Get all media in a feed",
   requestSchema: z
     .object({
       source: z.string(),
       queryType: z.string(),
-      sort: z.enum(["latest", "top"]).optional(),
-      searchText: z.string().default("*"),
-      tags: z.array(z.string()).optional(),
-      since: z.union([z.date(), z.string()]).optional(),
-      until: z.union([z.date(), z.string()]).optional(),
+      feedId: z.string(),
       cursor: z.string().optional().describe("The page cursor"),
       maxPostCount: z
         .number()
@@ -42,17 +38,11 @@ export default {
       constructor: {
         _setup: async ($) => {
           const params = {
+            feed: $.request.feedId,
             ...($.request.maxPostCount
               ? { limit: $.request.maxPostCount }
               : {}),
-            ...($.request.since ? { since: $.request.since } : {}),
-            ...($.request.until ? { until: $.request.until } : {}),
             ...($.request.cursor ? { cursor: $.request.cursor } : {}),
-            ...($.request.sort ? { sort: $.request.sort } : {}),
-            q: [
-              $.request.searchText,
-              ...($.request.tags || []).map((tag: string) => `#${tag}`),
-            ].join(" "),
           };
           let res;
           try {
@@ -62,7 +52,7 @@ export default {
               password: $.secrets.password,
               serviceUrl: $.secrets.serviceUrl,
             });
-            res = await agent.app.bsky.feed.searchPosts(params);
+            res = await agent.app.bsky.feed.getFeed(params);
             if (!res.success) {
               throw Error("Unsuccessful request to Bluesky");
             }

@@ -5,7 +5,9 @@ export const sourceId = "bluesky";
 export const postsToMediaResponseConstructor = [
   {
     _arrayMap: ($) =>
-      postsToMedia($().posts).filter((bskyMedia) =>
+      postsToMedia(
+        $().posts ?? $().feed?.map((item: any) => item.post) ?? [],
+      ).filter((bskyMedia) =>
         $.request.id ? bskyMedia.id === $.request.id : true,
       ),
     mediaFinderSource: sourceId,
