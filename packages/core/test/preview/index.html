@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>media-finder preview</title>
+  </head>
+
+  <body>
+    <div id="app"></div>
+    <style>
+      #app {
+        display: flex;
+        flex-direction: column;
+        gap: 1em;
+      }
+      #request {
+        field-sizing: content;
+        width: 100%;
+        min-height: 10lh;
+      }
+      #response {
+        width: 100%;
+      }
+      .buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1em;
+
+        :first-child {
+          flex: 1 1 auto;
+        }
+      }
+      .DisplayMedia {
+        display: flex;
+        flex-wrap: wrap;
+        padding-left: 0;
+        gap: 1em;
+        justify-content: center;
+        li {
+          list-style-type: none;
+        }
+      }
+      .MediaPreview {
+        display: flex;
+        gap: 1em;
+
+        img,
+        video {
+          max-height: 200px;
+        }
+        img,
+        mux-player {
+          width: auto;
+        }
+        .info {
+          max-width: 200px;
+        }
+      }
+    </style>
+  </body>
+  <script type="importmap">
+    {
+      "imports": {
+        "@alenaksu/json-viewer": "https://unpkg.com/@alenaksu/json-viewer@2.1.0/dist/json-viewer.bundle.js",
+        "hls.js": "https://unpkg.com/hls.js@1.5.17/dist/hls.js",
+        "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+      }
+    }
+  </script>
+  <script type="module">
+    import { createApp, ref } from "vue";
+    import Page from "./components/page.js";
+
+    const app = createApp(Page);
+    app.config.compilerOptions.isCustomElement = (tag) =>
+      ["json-viewer"].includes(tag);
+    app.mount("#app");
+  </script>
+  <script type="module">
+    let buildId;
+    const pollInterval = 200;
+    setInterval(async () => {
+      const res = await fetch("/build-id", {
+        signal: AbortSignal.timeout(pollInterval),
+      }).catch(() => {});
+      if (!res) return;
+      const newBuildId = await res.json();
+      if (buildId && buildId !== newBuildId) {
+        location.reload();
+      }
+      buildId = newBuildId;
+    }, pollInterval);
+  </script>
+</html>

@@ -11,11 +11,12 @@
   },
   "scripts": {
     "build": "rm -rf ./dist && tsc && tsc -p test/tsconfig.dist.json && tsc-alias && chmod +x ./dist/media-finder-cli.js",
-    "watch": "npm run build -- --watch",
+    "watch": "tsc --watch",
     "lint": "eslint src && prettier .",
     "lint:fix": "eslint --fix src && prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest watch",
+    "preview": "test/preview/start.sh",
     "cli": "./media-finder-cli.ts",
     "prepare": "husky",
     "commit": "lint-staged && commit"
