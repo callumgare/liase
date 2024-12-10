@@ -38,6 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GIPHY_API_KEY: ${{ secrets.GIPHY_API_KEY }}
+      MEDIA_FINDER_SECRETS_FILE: ${{ vars.MEDIA_FINDER_SECRETS_FILE }}
     steps:
       - uses: actions/checkout@v4
 

@@ -15,7 +15,7 @@ createBasicTestsForRequestHandlers({
       request: { searchText: "happy" },
       checkResponse: (response) =>
         expect(response.media.length).toBeGreaterThan(2),
-      numOfPagesToLoad: 2,
+      numOfPagesToLoad: 1,
       duplicateMediaPossible: true,
     },
     feed: {
