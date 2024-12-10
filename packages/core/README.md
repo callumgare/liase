@@ -14,8 +14,8 @@ import { createMediaFinderQuery } from "media-finder";
   // Search and return immediately the first page of results
   const response = await createMediaFinderQuery({
     request: {
-      source: "GIPHY",
-      queryType: "Search",
+      source: "giphy",
+      queryType: "search",
       searchText: "cheese",
     },
     queryOptions: {
@@ -32,8 +32,8 @@ import { createMediaFinderQuery } from "media-finder";
   // Alternatively create a query object which can be modified and iterated over
   const mediaQuery = createMediaFinderQuery({
     request: {
-      source: "GIPHY",
-      queryType: "Search",
+      source: "giphy",
+      queryType: "search",
       searchText: "cake",
     },
     queryOptions: {

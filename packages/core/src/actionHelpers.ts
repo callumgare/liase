@@ -38,3 +38,31 @@ export function guessMediaInfoFromUrl(
     ...additionalValues,
   };
 }
+
+export function guessMediaInfoFromMimeType(
+  mimeType: string,
+  additionalValues: Record<string, any> = {},
+) {
+  const ext = mimeTypes.extension(mimeType) || "";
+  let video, image;
+  if (
+    mimeType.match(/^video\//) ||
+    ext.match(/^gif$/i) ||
+    mimeType === "application/vnd.apple.mpegurl"
+  ) {
+    video = true;
+    image = false;
+  } else if (mimeType.match(/^image\//)) {
+    video = false;
+    image = true;
+  } else {
+    throw new Error(`Media type not valid: ${mimeType}`);
+  }
+  return {
+    ext,
+    mimeType,
+    video,
+    image,
+    ...additionalValues,
+  };
+}

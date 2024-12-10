@@ -1,0 +1,45 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Query: { "source": "bluesky", "queryType": "single-media", "id": "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3jt6walwmos2y#bafkreidf3ystxebv33boyb5hr2ggwmlee5x53vubwelsuvmcw3tq4p36pi" } 1`] = `
+{
+  "media": [
+    {
+      "contentHash": "bafkreidf3ystxebv33boyb5hr2ggwmlee5x53vubwelsuvmcw3tq4p36pi",
+      "dateUploaded": 2023-04-12T17:36:42.427Z,
+      "files": [
+        {
+          "aspectRatio": undefined,
+          "ext": "jpeg",
+          "fileSize": 148647,
+          "image": true,
+          "mimeType": "image/jpeg",
+          "type": "full",
+          "url": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreidf3ystxebv33boyb5hr2ggwmlee5x53vubwelsuvmcw3tq4p36pi@jpeg",
+          "video": false,
+        },
+        {
+          "aspectRatio": undefined,
+          "ext": "jpeg",
+          "fileSize": undefined,
+          "image": true,
+          "mimeType": "image/jpeg",
+          "type": "thumbnail",
+          "url": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreidf3ystxebv33boyb5hr2ggwmlee5x53vubwelsuvmcw3tq4p36pi@jpeg",
+          "video": false,
+        },
+      ],
+      "id": "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3jt6walwmos2y#bafkreidf3ystxebv33boyb5hr2ggwmlee5x53vubwelsuvmcw3tq4p36pi",
+      "mediaFinderSource": "bluesky",
+      "nameOfUploader": "Bluesky",
+      "title": "How it started:",
+      "url": "https://bsky.app/profile/did:plc:z72i7hdynmk6r22z27h6tvur/post/3jt6walwmos2y",
+      "usernameOfUploader": "bsky.app",
+    },
+  ],
+  "request": {
+    "id": "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3jt6walwmos2y#bafkreidf3ystxebv33boyb5hr2ggwmlee5x53vubwelsuvmcw3tq4p36pi",
+    "queryType": "single-media",
+    "source": "bluesky",
+  },
+}
+`;

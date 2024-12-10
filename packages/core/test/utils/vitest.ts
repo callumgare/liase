@@ -9,6 +9,7 @@ import cachingNetworkPlugin, {
 } from "@/src/plugins/cache-network.js";
 import deepmerge from "deepmerge";
 import { copy } from "copy-anything";
+import { getSecrets } from "./general.js";
 
 export function createBasicTestsForRequestHandlers<
   S extends Source,
@@ -70,6 +71,7 @@ export function createBasicTestsForRequestHandlers<
                 query?.queryOptions || {},
                 {
                   secrets: {
+                    ...(await getSecrets(request)),
                     ...queriesShared?.secrets,
                     ...query?.secrets,
                   },

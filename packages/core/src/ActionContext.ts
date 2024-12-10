@@ -1,5 +1,8 @@
 import { RequestHandler } from "./schemas/requestHandler.js";
-import { guessMediaInfoFromUrl } from "./actionHelpers.js";
+import {
+  guessMediaInfoFromUrl,
+  guessMediaInfoFromMimeType,
+} from "./actionHelpers.js";
 import { loadUrl } from "./loadUrl.js";
 import { Action } from "./schemas/constructor.js";
 import { GenericRequest } from "./schemas/request.js";
@@ -193,6 +196,8 @@ export class ActionContext extends Function {
   }
 
   guessMediaInfoFromUrl = guessMediaInfoFromUrl;
+
+  guessMediaInfoFromMimeType = guessMediaInfoFromMimeType;
 
   decodeHTML = (value: string) => decodeHTML(value);
 

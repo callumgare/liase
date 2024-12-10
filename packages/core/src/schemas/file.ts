@@ -15,9 +15,16 @@ export const genericFileSchema = z
     fileSize: z.number().int().optional(),
     width: z.number().int().optional(),
     height: z.number().int().optional(),
+    aspectRatio: z
+      .union([
+        z.number(),
+        z.object({ height: z.number(), width: z.number() }).strict(),
+      ])
+      .optional(),
     urlExpires: z.union([z.date(), z.boolean()]).optional(),
     urlRefreshDetails: genericRequestSchema.optional(),
     duration: z.number().optional(),
+    contentHash: z.union([z.string(), z.number()]).optional(),
   })
   .passthrough();
 

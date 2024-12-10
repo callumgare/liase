@@ -73,6 +73,7 @@ export const genericMediaSchema = z
       .number()
       .optional()
       .describe("The play time of the media in seconds"),
+    contentHash: z.union([z.string(), z.number()]).optional(),
   })
   .passthrough();
 
