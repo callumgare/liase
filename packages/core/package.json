@@ -36,10 +36,11 @@
     "entities": "^4.5.0",
     "giphy-api": "^2.0.2",
     "mime-types": "^2.1.28",
+    "node-fetch-cache": "^5.0.2",
     "open": "^10.1.0",
     "pluralize": "^8.0.0",
-    "type-fest": "^4.23.0",
     "tsx": "^4.15.9",
+    "type-fest": "^4.23.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {

@@ -2,6 +2,7 @@ export type Hook = (input: any, next: (output: any) => any) => any;
 
 export type MediaFinderHooks = {
   loadUrl: Array<Hook>;
+  getFetchClient: Array<Hook>;
 };
 
 export async function executeHooks(input: any, hooks: Array<Hook>) {

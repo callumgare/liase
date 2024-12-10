@@ -1,12 +1,57 @@
 import { Plugin } from "@/src/schemas/plugin.js";
 import { HttpCachingProxy } from "@loopback/http-caching-proxy";
+import NodeFetchCache, { FileSystemCache } from "node-fetch-cache";
 import path from "path";
 import http from "http";
 import { ProxyServer } from "@refactorjs/http-proxy"; // The most popular node http proxy library, and the
 // one this is a refactor of, has essentially been unmaintained for the past 4 years and has some
 // serious bugs.
+import { Request as NodeFetchRequest } from "node-fetch";
 
 let cachingProxyPort: number;
+
+const cacheDir = path.resolve(import.meta.dirname, ".proxy-cache");
+
+const cachingFetch = NodeFetchCache.create({
+  cache: new FileSystemCache({
+    cacheDirectory: cacheDir,
+    ttl: 60 * 60 * 1000, // Cache for 1 hour
+  }),
+});
+
+// NodeFetchCache is meant to be a superset of node-fetch but it seems there are a few request formats
+// it can't handle. So if we attempt to convert any unsupported requests before passing to NodeFetchCache.
+const cachingFetchWrapper = (
+  resource: Parameters<typeof fetch>[0] | NodeFetchRequest,
+  options: Parameters<typeof cachingFetch>[1],
+  ...otherArgs: any[]
+) => {
+  // Convert resource if no compatible
+  if (resource instanceof URL) {
+    resource = resource.href;
+  } else if (resource instanceof Request) {
+    const { url, headers, body, ...options } = resource;
+    if (body) {
+      throw Error();
+    }
+    resource = new NodeFetchRequest(url, {
+      body,
+      headers: Object.fromEntries(headers.entries()),
+      ...options,
+    });
+  }
+  // Convert options if no compatible
+  if (
+    options?.body instanceof Uint8Array &&
+    !(options?.body instanceof Buffer)
+  ) {
+    options = {
+      ...options,
+      body: Buffer.from(options.body),
+    };
+  }
+  return cachingFetch(resource, options, ...otherArgs);
+};
 
 export default {
   hooks: {
@@ -21,6 +66,8 @@ export default {
       }
       return next(options);
     },
+    getFetchClient: (fetchClient, next) =>
+      next(fetchClient ?? cachingFetchWrapper),
   },
 } satisfies Plugin;
 
@@ -87,7 +134,7 @@ function startClientToCacheProxy(
 
 async function startCacheProxy(): Promise<HttpCachingProxy> {
   const cachingProxyServer = new HttpCachingProxy({
-    cachePath: path.resolve(import.meta.dirname, ".proxy-cache"),
+    cachePath: cacheDir,
     ttl: 24 * 60 * 60 * 1000, // 1 day
   });
   await cachingProxyServer.start();

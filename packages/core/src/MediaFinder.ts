@@ -23,6 +23,7 @@ export default class MediaFinder {
   _finderOptions: FinderOptions;
   _hooks: MediaFinderHooks = {
     loadUrl: [],
+    getFetchClient: [],
   };
 
   constructor(finderOptions: FinderOptionsInput = {}) {

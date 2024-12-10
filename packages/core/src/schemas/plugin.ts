@@ -13,6 +13,7 @@ export const pluginSchema = z
     hooks: z
       .object({
         loadUrl: hookSchema,
+        getFetchClient: hookSchema,
       })
       .strict()
       .optional(),

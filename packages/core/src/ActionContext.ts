@@ -181,6 +181,17 @@ export class ActionContext extends Function {
     return generateResponse(constructorContext);
   };
 
+  get hooks() {
+    return this.#constructorContext.hooks;
+  }
+
+  async getFetchClient() {
+    return await executeHooks(null, [
+      ...this.hooks.getFetchClient,
+      (fetchClient, next) => next(fetchClient ?? fetch),
+    ]);
+  }
+
   guessMediaInfoFromUrl = guessMediaInfoFromUrl;
 
   decodeHTML = (value: string) => decodeHTML(value);
