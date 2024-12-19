@@ -92,6 +92,7 @@ function handleMediaQueryRequest(
 			const query = await getMediaFinderQuery({
 				request: mediaFinderRequest,
 				secretsSet,
+				loadPluginsFromArgs: true,
 			});
 			response = await query.getNext();
 		} catch (error) {
