@@ -10,14 +10,13 @@
     "media-finder": "dist/media-finder-cli.js"
   },
   "scripts": {
-    "build": "rm -rf ./dist && tsc -p ./tsconfig.dist.json && tsc-alias && chmod +x ./dist/media-finder-cli.js",
+    "build": "rm -rf ./dist && tsc -p ./tsconfig.dist.json && tsc-alias",
     "watch": "tsc -p ./tsconfig.dist.json --watch",
     "lint": "eslint src && prettier .",
     "lint:fix": "eslint --fix src && prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest watch",
     "preview": "test/preview/start.sh",
-    "cli": "./media-finder-cli.ts",
     "prepare": "husky",
     "commit": "lint-staged && commit"
   },

@@ -24,5 +24,3 @@ export async function getSecrets(request: GenericRequest) {
   }
   return {};
 }
-
-// const cake: number = "fdsafas"

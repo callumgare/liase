@@ -53,3 +53,7 @@ import { createMediaFinderQuery } from "media-finder";
   console.log(`Got ${media.length} gifs in total`);
 })();
 ```
+
+## Other
+
+Media Finder can also be used with the [media-finder-cli tool](https://github.com/callumgare/media-finder-cli).
