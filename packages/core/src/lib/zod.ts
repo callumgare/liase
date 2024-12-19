@@ -318,8 +318,7 @@ export function zodParseOrThrow<Output, Def extends z.ZodTypeDef, Input>(
         message: options.errorMessage,
         inputData: input,
       });
-      console.error(friendlyError.formattedErrorInfo);
-      process.exit(1);
+      throw friendlyError;
     }
     throw error;
   }
@@ -653,7 +652,7 @@ export class FriendlyZodError extends Error {
     return formatSubtree(issuesTree, depth);
   }
 
-  get formattedErrorInfo() {
+  get formattedErrorInfo(): string {
     return [
       this.message,
       ...(this.#inputData
@@ -665,5 +664,9 @@ export class FriendlyZodError extends Error {
       `The following ${this.cause.issues.length > 1 ? "issues were" : "issue was"} found:`,
       this.formatZodErrorIssuesAsTreeString(this.cause, 1),
     ].join("\n");
+  }
+
+  [util.inspect.custom]() {
+    return this.formattedErrorInfo;
   }
 }

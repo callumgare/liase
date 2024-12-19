@@ -48,8 +48,7 @@ export default class MediaFinderQuery extends MediaFinder {
           message: "MediaFinder argument invalid",
           inputData: props,
         });
-        console.error(error.formattedErrorInfo);
-        process.exit(1);
+        throw error;
       }
       throw err;
     }
@@ -106,8 +105,7 @@ export default class MediaFinderQuery extends MediaFinder {
           message: "Secrets are invalid",
           inputData: this.#queryOptions.secrets,
         });
-        console.error(error.formattedErrorInfo);
-        process.exit(1);
+        throw error;
       }
       throw err;
     }

@@ -1,7 +1,6 @@
 import assert from "node:assert";
 import { GenericResponse, genericResponseSchema } from "./schemas/response.js";
 import { executeConstructor, executeActions } from "./constructorExecution.js";
-import { ConstructorExecutionError } from "./lib/utils.js";
 import { FriendlyZodError, zodParseOrThrow } from "./lib/zod.js";
 import { ConstructorExecutionContext } from "./types.js";
 import { ActionContext } from "./ActionContext.js";
@@ -29,20 +28,10 @@ export async function generateResponse(
     executeActions,
     path: [],
   });
-  let res;
-  try {
-    res = await executeConstructor(
-      constructorContext.responseDetails.constructor,
-      actionContext,
-    );
-  } catch (error) {
-    if (error instanceof ConstructorExecutionError) {
-      console.error(error.getFormattedErrorInfo());
-      process.exit(1);
-    } else {
-      throw error;
-    }
-  }
+  const res = await executeConstructor(
+    constructorContext.responseDetails.constructor,
+    actionContext,
+  );
   return validateResponse(res, constructorContext);
 }
 
@@ -130,8 +119,7 @@ export function requestWithDefaults(
         message: "Request is invalid",
         inputData: request,
       });
-      console.error(error.formattedErrorInfo);
-      process.exit(1);
+      throw error;
     }
     throw err;
   }
