@@ -145,3 +145,7 @@ async function startCacheProxy(): Promise<HttpCachingProxy> {
 export function setCachingProxyPort(port: number) {
   cachingProxyPort = port;
 }
+
+export function cachingProxyDetected() {
+  return typeof cachingProxyPort === "number";
+}
