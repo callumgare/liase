@@ -4,7 +4,10 @@ import {
 	type Plugin,
 	createMediaFinderQuery,
 } from "media-finder";
-import cachingNetworkPlugin from "media-finder/dist/plugins/cache-network.js";
+import cachingNetworkPlugin, {
+	setupCachingProxy,
+	cachingProxyDetected,
+} from "media-finder/dist/plugins/cache-network.js";
 import { getMediaFinderDetailsFromArgs } from "./media-finder-details.js";
 import { getSecretsSets } from "./secrets.js";
 
@@ -25,6 +28,13 @@ export async function getMediaFinderQuery({
 		plugins.push(...mediaFinderDetails.plugins);
 	}
 	if (!noCachingPlugin) {
+		if (!cachingProxyDetected()) {
+			const { cleanup } = await setupCachingProxy();
+
+			process.on("SIGINT", cleanup);
+			process.on("SIGQUIT", cleanup);
+			process.on("SIGTERM", cleanup);
+		}
 		plugins.push(cachingNetworkPlugin);
 	}
 	let secrets = {};
