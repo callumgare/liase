@@ -1,6 +1,6 @@
 {
 	"name": "media-finder-cli",
-	"version": "0.0.1",
+	"version": "0.0.0-version-set-when-releasing",
 	"main": "dist/index.js",
 	"files": ["dist/*"],
 	"bin": {
