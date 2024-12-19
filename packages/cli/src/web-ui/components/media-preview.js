@@ -104,7 +104,7 @@ export default {
         playsinline="true"
         muted="true"
         :poster="imageFile?.url"
-        :style="{'aspect-ratio': videoFile.aspectRatio.width + ' / ' + videoFile.aspectRatio.height}"
+        :style="videoFile.aspectRatio ? {'aspect-ratio': videoFile.aspectRatio.width + ' / ' + videoFile.aspectRatio.height} : {}"
         controls="true"
       ></video>
       <img
