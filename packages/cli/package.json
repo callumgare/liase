@@ -1,0 +1,55 @@
+{
+	"name": "media-finder-cli",
+	"version": "0.0.1",
+	"main": "dist/index.js",
+	"files": ["dist/*"],
+	"bin": {
+		"mf": "dist/index.js"
+	},
+	"scripts": {
+		"build": "rm -rf ./dist && tsc -p ./tsconfig.dist.json && cp -r src/web-ui dist",
+		"lint": "biome check",
+		"lint:fix": "biome check --fix",
+		"prepare": "husky"
+	},
+	"type": "module",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/callumgare/media-finder-cli.git"
+	},
+	"author": "Callum Gare <callum@gare.au>",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/callumgare/media-finder-cli/issues"
+	},
+	"homepage": "https://github.com/callumgare/media-finder-cli#readme",
+	"description": "",
+	"dependencies": {
+		"@loopback/http-caching-proxy": "^2.1.15",
+		"@refactorjs/http-proxy": "^0.2.14",
+		"@types/mime-types": "^2.1.4",
+		"ansi-to-html": "^0.7.2",
+		"commander": "^12.1.0",
+		"mime-types": "^2.1.35",
+		"open": "^10.1.0",
+		"zod": "^3.24.1"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@commitlint/cli": "^19.6.1",
+		"@commitlint/config-conventional": "^19.6.0",
+		"@commitlint/prompt-cli": "^19.6.1",
+		"@tsconfig/node21": "^21.0.3",
+		"husky": "^9.1.7",
+		"lint-staged": "^15.2.11",
+		"semantic-release": "^24.2.0",
+		"tsx": "^4.19.2",
+		"typescript": "^5.7.2"
+	},
+	"peerDependencies": {
+		"media-finder": "^3.6.1"
+	},
+	"overrides": {
+		"conventional-changelog-conventionalcommits": ">= 8.0.0"
+	}
+}
