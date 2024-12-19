@@ -11,7 +11,7 @@ export async function getRunCommand(): Promise<Command> {
 	const runCommand = new Command();
 	const mediaFinderDetails = await getMediaFinderDetailsFromArgs();
 	const { sourceOption, requestHandlerOption, pluginsOption } =
-		await getSharedMediaFinderOptions(mediaFinderDetails);
+		getSharedMediaFinderOptions(mediaFinderDetails);
 	runCommand
 		.name("run")
 		.addOption(sourceOption)

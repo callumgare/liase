@@ -11,7 +11,7 @@ export async function getShowSchemaCommand(): Promise<Command> {
 	const showSchemaCommand = new Command();
 	const mediaFinderDetails = await getMediaFinderDetailsFromArgs();
 	const { sourceOption, requestHandlerOption, pluginsOption } =
-		await getSharedMediaFinderOptions(mediaFinderDetails);
+		getSharedMediaFinderOptions(mediaFinderDetails);
 	const { requestHandler } = mediaFinderDetails;
 	showSchemaCommand
 		.name("show-schema")

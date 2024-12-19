@@ -67,6 +67,7 @@ export async function getMediaFinderDetailsFromArgs(): Promise<MediaFinderDetail
 
 		addSubcommand(program, "run");
 		addSubcommand(program, "show-schema");
+		addSubcommand(program, "web-ui");
 
 		try {
 			program.parse();

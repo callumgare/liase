@@ -5,13 +5,21 @@ import util from "node:util";
 import AnsiToHtml from "ansi-to-html";
 import { Command } from "commander";
 import mimeTypes from "mime-types";
+import { getSharedMediaFinderOptions } from "../lib/media-finder-details.js";
 import { getMediaFinderQuery } from "../lib/media-finder-query.js";
 import { getSecretsSets } from "../lib/secrets.js";
 
-export const webUiCommand = new Command();
-webUiCommand.name("web-ui").action(async () => {
-	await startServer();
-});
+export async function getWebUiCommand(): Promise<Command> {
+	const webUiCommand = new Command();
+	const { pluginsOption } = getSharedMediaFinderOptions({ plugins: [] });
+	webUiCommand
+		.name("web-ui")
+		.addOption(pluginsOption)
+		.action(async () => {
+			await startServer();
+		});
+	return webUiCommand;
+}
 
 function startServer(): Promise<void> {
 	const buildId = Date.now();
