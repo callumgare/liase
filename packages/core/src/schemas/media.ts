@@ -8,7 +8,7 @@ export const genericMediaSchema = z
       .regex(/^[a-z-]+$/)
       .describe("The id of the media-finder source which found the media"),
     id: z
-      .string()
+      .union([z.string(), z.number()])
       .describe(
         "The ID value used to identify a media. This value will be unique amount the other media available from the " +
           "source but two media from different sources could possibly share the same id.",
