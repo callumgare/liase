@@ -1,5 +1,6 @@
 import { ActionContext } from "../ActionContext.js";
 import chalk from "chalk";
+import util from "node:util";
 
 export function createCounter() {
   let counter = -1;
@@ -152,6 +153,10 @@ export class ConstructorExecutionError extends Error {
       "  Occurred when rendering the following response constructor property: \n" +
         ` ${formatObjectPathAsTree(this.errorOccurredAtPath, 4)} (${chalk.blue(errorLocation)})`,
     ].join("\n");
+  }
+
+  [util.inspect.custom]() {
+    return this.getFormattedErrorInfo();
   }
 }
 
