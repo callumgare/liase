@@ -56,7 +56,7 @@ export const genericMediaSchema = z
         "The percentage of likes to dislikes that this media has received",
       ),
     dateUploaded: z
-      .date()
+      .union([z.date(), z.string()])
       .optional()
       .describe("The date that the media was uploaded"),
     relativeDateUploaded: z
@@ -64,6 +64,26 @@ export const genericMediaSchema = z
       .optional()
       .describe(
         'The relative time since the media was uploaded. e.g. "Two weeks ago"',
+      ),
+    dateOriginallyPublished: z
+      .union([z.date(), z.string()])
+      .optional()
+      .describe("The date that the media was first published"),
+    relativeDateOriginallyPublished: z
+      .string()
+      .optional()
+      .describe(
+        'The relative time since the media was first published. e.g. "Two weeks ago"',
+      ),
+    dateLastUpdated: z
+      .union([z.date(), z.string()])
+      .optional()
+      .describe("The date that the media was last updated"),
+    relativeDateLastUpdated: z
+      .string()
+      .optional()
+      .describe(
+        'The relative time since the media was last updated. e.g. "Two weeks ago"',
       ),
     description: z
       .string()
