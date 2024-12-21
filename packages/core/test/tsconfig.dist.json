@@ -1,0 +1,12 @@
+{
+  "//": "We compile and distribute the test dir as other plugins use the shared testing functions. Unfortunately we can't just include the utils directory as it relies on a type in setup.ts to be valid.",
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "../dist/test",
+    "paths": {
+      "@/src/*": ["../dist/*"]
+    }
+  },
+  "include": ["./**/*"]
+}
