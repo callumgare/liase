@@ -1,6 +1,5 @@
 import { ActionContext } from "../ActionContext.js";
 import chalk from "chalk";
-import util from "node:util";
 
 export function createCounter() {
   let counter = -1;
@@ -46,9 +45,19 @@ export const formatObjectPath = (path: (string | number)[]) =>
 
 export const formatObjectPathAsTree = (
   path: (string | number)[],
-  indent: number = 0,
-) =>
-  path
+  options: {
+    lineIndent?: number; // Can't be less than 2
+    overallIndent?: number;
+    lastNodeExtraInfo?: string;
+  },
+) => {
+  const lineIndent = options.lineIndent ?? 2;
+  const overallIndent = options.overallIndent ?? 0;
+  const lastNodeExtraInfo = options.lastNodeExtraInfo ?? "";
+  if (lineIndent < 2) {
+    throw Error(`Line indent can not be less than 2`);
+  }
+  let formattedTree = path
     .reduce<string[]>((segments, segment) => {
       if (typeof segment === "number") {
         const formattedSegment = `[${segment}]`;
@@ -62,16 +71,27 @@ export const formatObjectPathAsTree = (
       }
       return segments;
     }, [])
+    // If segment is a number then wrap square brackets around it to signal that
     .map((segment) =>
       typeof segment === "number" ? `[${segment}]` : `${segment}`,
     )
     .map((segment) => chalk.bold(segment))
+    // Add arrow between segments
+    // Indent each segment by lineIndent more than the last + add arrow between segments
     .map(
       (segment, index) =>
-        (index ? "  ".repeat(index) + chalk.dim("↳ ") : "") + segment,
+        (index ? " ".repeat(index * lineIndent - 2) + chalk.dim("↳ ") : "") +
+        segment,
     )
-    .map((segment) => " ".repeat(indent) + segment)
     .join("\n");
+  if (lastNodeExtraInfo) {
+    formattedTree = `${formattedTree} - ${lastNodeExtraInfo.replace(/\n/, "\n" + " ".repeat((path.length - 1) * lineIndent))}`;
+  }
+  return formattedTree
+    .split("\n")
+    .map((line) => " ".repeat(overallIndent) + line)
+    .join("\n");
+};
 
 const capitalisedFirstLetter = (string: string) =>
   string[0].toUpperCase() + string.substring(1);
@@ -120,14 +140,22 @@ export class ConstructorExecutionError extends Error {
     context,
     log,
   }: ConstructorExecutionErrorOptions) {
-    super(message ?? cause?.message ?? "Error when executing constructor", {
-      cause,
-    });
+    super(message ?? cause?.message ?? "Error when executing constructor");
 
+    if (cause) {
+      this.stack = cause.stack;
+    }
+
+    // Use class name as the name of the error
+    ConstructorExecutionError.prototype.name = this.constructor.name;
     this.errorOccurredAtPath = context.path;
     this.log = log;
     this.context = context;
 
+    this.message = this.getFormattedErrorInfo();
+
+    // Explicitly set the prototype to maintain the correct prototype chain is
+    // required for "instanceOf" to work as expected
     Object.setPrototypeOf(this, ConstructorExecutionError.prototype);
   }
 
@@ -135,7 +163,7 @@ export class ConstructorExecutionError extends Error {
     const stack =
       this.cause instanceof Error
         ? this.cause.stack?.replace(this.cause.toString() + "\n", "")
-        : undefined;
+        : this.stack;
     const lastConstructorProp =
       this.errorOccurredAtPath[this.errorOccurredAtPath.length - 1];
     const errorLocation = stack
@@ -143,20 +171,14 @@ export class ConstructorExecutionError extends Error {
       .find((line) => line.startsWith(`    at ${lastConstructorProp}`))
       ?.match(/\((.*)\)/)?.[1];
     return [
-      chalk.dim(`Request:\n${JSON.stringify(this.context.request, null, 2)}`),
+      "Failed to render the following response constructor property",
+      formatObjectPathAsTree(this.errorOccurredAtPath, {
+        lineIndent: 3,
+        overallIndent: 2,
+        lastNodeExtraInfo: `${chalk.bold(this.message)}\n(${chalk.blue(errorLocation)})`,
+      }),
       "",
-      this.cause instanceof Error
-        ? chalk.dim(`Full stack trace:\n${stack}`)
-        : this.message,
-      "",
-      chalk.red("Error:") + " " + chalk.bold(this.message),
-      "  Occurred when rendering the following response constructor property: \n" +
-        ` ${formatObjectPathAsTree(this.errorOccurredAtPath, 4)} (${chalk.blue(errorLocation)})`,
     ].join("\n");
-  }
-
-  [util.inspect.custom]() {
-    return this.getFormattedErrorInfo();
   }
 }
 
@@ -181,6 +203,19 @@ export const getType = (value: unknown): ValueType => {
 
 export function hasNoDuplicates(array: unknown[]): boolean {
   return new Set(array).size === array.length;
+}
+
+export function getDuplicates<T>(array: T[]): T[] {
+  const duplicates = new Set<T>();
+  for (let i = 0; i < array.length; i++) {
+    for (let j = i + 1; j < array.length; j++) {
+      if (array[i] === array[j]) {
+        duplicates.add(array[i]);
+        continue;
+      }
+    }
+  }
+  return [...duplicates];
 }
 
 export function getOrdinal(number: number) {

@@ -1,6 +1,6 @@
 import { expect } from "vitest";
 import blueskySource from "@/src/plugins/built-in-sources/bluesky/index.js";
-import { createBasicTestsForRequestHandlers } from "../utils/vitest.js";
+import { createBasicTestsForRequestHandlers } from "../../utils/vitest.js";
 
 createBasicTestsForRequestHandlers({
   source: blueskySource,
@@ -12,7 +12,7 @@ createBasicTestsForRequestHandlers({
       checkResponse: (response) => expect(response).toMatchSnapshot(),
     },
     search: {
-      request: { searchText: "happy" },
+      request: { searchText: "#photo" },
       checkResponse: (response) =>
         expect(response.media.length).toBeGreaterThan(2),
       numOfPagesToLoad: 1,
@@ -27,6 +27,7 @@ createBasicTestsForRequestHandlers({
         expect(response.media.length).toBeGreaterThan(2),
       numOfPagesToLoad: 2,
       duplicateMediaPossible: true,
+      timeout: 10 * 1000,
     },
   },
 });

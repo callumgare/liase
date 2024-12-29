@@ -2,7 +2,7 @@ import { Source } from "@/src/schemas/source.js";
 import { expect, test } from "vitest";
 import { GenericResponse, createMediaFinderQuery } from "@/src/index.js";
 import { FinderOptionsInput } from "@/src/schemas/finderOptions.js";
-import { getOrdinal, hasNoDuplicates } from "@/src/lib/utils.js";
+import { getDuplicates, getOrdinal, hasNoDuplicates } from "@/src/lib/utils.js";
 import { QueryOptionsInput } from "@/src/schemas/queryOptions.js";
 import deepmerge from "deepmerge";
 import { copy } from "copy-anything";
@@ -42,21 +42,27 @@ export function createBasicTestsForRequestHandlers<
     }
     const handlerQueries = [queries[requestHandler.id as HandlerIds]].flat(1);
     for (const query of handlerQueries) {
-      const request = {
-        source: source.id,
-        queryType: requestHandler.id,
+      const requestPropsWithoutHandlerDetails = {
         ...query?.request,
         ...queriesShared?.request,
       };
+      const request = {
+        source: source.id,
+        queryType: requestHandler.id,
+        ...requestPropsWithoutHandlerDetails,
+      };
 
       const timeout = query.timeout ?? queriesShared?.timeout;
-      const formattedQuery = JSON.stringify(request, null, 2).replace(
-        /\n\s*/g,
-        " ",
-      );
+      const formattedQuery = JSON.stringify(
+        requestPropsWithoutHandlerDetails,
+        null,
+        2,
+      ).replace(/\n\s*/g, " ");
 
       const testName =
-        query.testName ?? queriesShared?.testName ?? `Query: ${formattedQuery}`;
+        query.testName ??
+        queriesShared?.testName ??
+        `Run query "${requestHandler.displayName}" with: ${formattedQuery}`;
       const expectError = query.expectError ?? queriesShared?.expectError;
 
       test(
@@ -98,7 +104,7 @@ export function createBasicTestsForRequestHandlers<
             ),
           });
 
-          const responses: any[] = [];
+          const responses: (GenericResponse | null)[] = [];
           let customResponseTestExpectedAssertions = 0;
 
           if (expectError) {
@@ -167,6 +173,17 @@ export function createBasicTestsForRequestHandlers<
               customResponseTestExpectedAssertions +=
                 typeof result === "number" ? result : 1;
             }
+
+            if (!query.duplicateMediaPossible) {
+              const idsOfMedia = (response?.media || [])
+                .filter((media) => media)
+                .map((media: any) => media.id);
+
+              expect(idsOfMedia).toSatisfy(
+                hasNoDuplicates,
+                `Media with the same ID appears in single response: ${getDuplicates(idsOfMedia).join(",")}`,
+              );
+            }
           }
 
           const customAllResponsesChecks = [
@@ -192,13 +209,13 @@ export function createBasicTestsForRequestHandlers<
 
             expect(idsOfMedia).toSatisfy(
               hasNoDuplicates,
-              "Media with the same ID appears in multiple responses",
+              `Media with the same ID appears in multiple responses: ${getDuplicates(idsOfMedia).join(",")}`,
             );
           }
 
           expect.assertions(
             numOfPagesToLoad * 2 +
-              (query.duplicateMediaPossible ? 0 : 1) +
+              (query.duplicateMediaPossible ? 0 : numOfPagesToLoad + 1) +
               customResponseTestExpectedAssertions,
           );
         },

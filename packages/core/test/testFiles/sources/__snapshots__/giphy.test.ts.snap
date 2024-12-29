@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Query: { "source": "giphy", "queryType": "single-media", "id": "YsTs5ltWtEhnq" } 1`] = `
+exports[`Run query "Single media" with: { "id": "YsTs5ltWtEhnq" } 1`] = `
 {
   "media": [
     {
@@ -13,7 +13,7 @@ exports[`Query: { "source": "giphy", "queryType": "single-media", "id": "YsTs5lt
           "image": false,
           "mimeType": "video/mp4",
           "type": "full",
-          "url": "https://media1.giphy.com/media/YsTs5ltWtEhnq/giphy.mp4",
+          "url": "https://media2.giphy.com/media/YsTs5ltWtEhnq/giphy.mp4",
           "video": true,
           "width": 400,
         },
@@ -24,7 +24,7 @@ exports[`Query: { "source": "giphy", "queryType": "single-media", "id": "YsTs5lt
           "image": false,
           "mimeType": "video/mp4",
           "type": "thumbnail",
-          "url": "https://media1.giphy.com/media/YsTs5ltWtEhnq/giphy-preview.mp4",
+          "url": "https://media2.giphy.com/media/YsTs5ltWtEhnq/giphy-preview.mp4",
           "video": true,
           "width": 150,
         },

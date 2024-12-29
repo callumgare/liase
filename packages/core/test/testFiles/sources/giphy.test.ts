@@ -3,7 +3,7 @@ import giphySource from "@/src/plugins/built-in-sources/giphy/index.js";
 import {
   createBasicTestsForRequestHandlers,
   normaliseResponse,
-} from "../utils/vitest.js";
+} from "../../utils/vitest.js";
 
 createBasicTestsForRequestHandlers({
   source: giphySource,

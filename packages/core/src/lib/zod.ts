@@ -103,19 +103,26 @@ type FriendlyZodErrorIssuesTree = {
 };
 export class FriendlyZodError extends Error {
   #inputData;
-  cause: z.ZodError;
+  zodError: z.ZodError;
 
   constructor(
     error: z.ZodError,
     { message, inputData }: FriendlyZodErrorOptions = {},
   ) {
-    super(message ?? error?.message ?? "Error when validating data", {
-      cause: error,
-    });
-    this.cause = error;
+    super(message ?? error?.message ?? "Error when validating data");
+
+    // Use class name as the name of the error
+    this.name = this.constructor.name;
+
+    this.zodError = error;
+    this.stack = error.stack;
 
     this.#inputData = inputData;
 
+    this.message = this.formattedErrorInfo;
+
+    // Explicitly set the prototype to maintain the correct prototype chain is
+    // required for "instanceOf" to work as expected
     Object.setPrototypeOf(this, FriendlyZodError.prototype);
   }
 
@@ -209,7 +216,7 @@ export class FriendlyZodError extends Error {
   }
 
   formatZodErrorIssues(
-    error: z.ZodError = this.cause,
+    error: z.ZodError = this.zodError,
     depth = 0,
     includePath = true,
   ): FriendlyZodErrorIssue[] {
@@ -269,7 +276,7 @@ export class FriendlyZodError extends Error {
   }
 
   formatZodErrorIssuesAsDotPoints(
-    error: z.ZodError = this.cause,
+    error: z.ZodError = this.zodError,
     depth = 0,
     indentSize = 2,
   ): string {
@@ -282,7 +289,7 @@ export class FriendlyZodError extends Error {
   }
 
   formatZodErrorIssuesAsTree(
-    error: z.ZodError = this.cause,
+    error: z.ZodError = this.zodError,
   ): FriendlyZodErrorIssuesTree {
     const issuesTree: FriendlyZodErrorIssuesTree = {
       issues: [],
@@ -321,7 +328,7 @@ export class FriendlyZodError extends Error {
   }
 
   formatZodErrorIssuesAsTreeString(
-    error: z.ZodError = this.cause,
+    error: z.ZodError = this.zodError,
     depth = 0,
     indentSize = 2,
   ): string {
@@ -367,12 +374,8 @@ export class FriendlyZodError extends Error {
           ]
         : []),
       "",
-      `The following ${this.cause.issues.length > 1 ? "issues were" : "issue was"} found:`,
-      this.formatZodErrorIssuesAsTreeString(this.cause, 1),
+      `The following ${this.zodError.issues.length > 1 ? "issues were" : "issue was"} found:`,
+      this.formatZodErrorIssuesAsTreeString(this.zodError, 1),
     ].join("\n");
-  }
-
-  [util.inspect.custom]() {
-    return this.formattedErrorInfo;
   }
 }

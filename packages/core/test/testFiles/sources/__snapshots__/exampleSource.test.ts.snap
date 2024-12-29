@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Query: { "source": "example-source", "queryType": "search-media", "searchText": "search text" } 1`] = `
+exports[`Run query "Search media" with: { "searchText": "search text" } 1`] = `
 {
   "media": [
     {
@@ -25,7 +25,7 @@ exports[`Query: { "source": "example-source", "queryType": "search-media", "sear
 }
 `;
 
-exports[`Query: { "source": "example-source", "queryType": "search-media", "searchText": "search text" } 2`] = `
+exports[`Run query "Search media" with: { "searchText": "search text" } 2`] = `
 {
   "media": [
     {
@@ -50,9 +50,9 @@ exports[`Query: { "source": "example-source", "queryType": "search-media", "sear
 }
 `;
 
-exports[`Query: { "source": "example-source", "queryType": "search-media", "searchText": "search text" } 3`] = `null`;
+exports[`Run query "Search media" with: { "searchText": "search text" } 3`] = `null`;
 
-exports[`Query: { "source": "example-source", "queryType": "single-media", "id": "test-getWebpage" } 1`] = `
+exports[`Run query "Single media" with: { "id": "test-getWebpage" } 1`] = `
 {
   "media": [
     {
