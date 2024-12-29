@@ -1,4 +1,5 @@
-import { AnyNode, Cheerio, CheerioAPI } from "cheerio";
+import { Cheerio, CheerioAPI } from "cheerio";
+import { AnyNode } from "domhandler";
 
 export abstract class DomSelection {
   // eslint-disable-next-line no-use-before-define -- We have to use DomSelection before it's defined because it's recursive
@@ -75,11 +76,11 @@ export class CheerioDomSelection extends DomSelection {
     return this.#cachedJsonLdArray;
   }
 
-  get data(): string {
+  get data(): Record<string, unknown> {
     return this.#nativeSelector.data();
   }
 
-  get value(): string {
+  get value(): string | undefined | string[] {
     return this.#nativeSelector.val();
   }
 }

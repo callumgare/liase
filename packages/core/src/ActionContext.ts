@@ -13,7 +13,7 @@ import {
   generateResponse,
   getResponseDetailsBasedOnRequest,
 } from "./generateResponse.js";
-import { executeHooks } from "./lib/hooks.js";
+import { getCachingFetch } from "./lib/networkRequestsCache.js";
 
 export const excludeFieldSymbol = Symbol("ExcludeField");
 
@@ -140,19 +140,11 @@ export class ActionContext extends Function {
     return this.#constructorContext.pageFetchLimitReached;
   }
 
-  loadUrl = (async (url, options) =>
-    executeHooks({ url, ...options }, [
-      ...this.#constructorContext.hooks.loadUrl,
-      (
-        {
-          url,
-          ...options
-        }: { url: Parameters<typeof loadUrl>[0] } & Parameters<
-          typeof loadUrl
-        >[1],
-        next,
-      ) => next(loadUrl(url, options)),
-    ])) as typeof loadUrl;
+  get cacheNetworkRequests() {
+    return this.#constructorContext.cacheNetworkRequests;
+  }
+
+  loadUrl = loadUrl.bind(this);
 
   loadRequest = async (
     requestHandler: RequestHandler,
@@ -188,11 +180,8 @@ export class ActionContext extends Function {
     return this.#constructorContext.hooks;
   }
 
-  async getFetchClient() {
-    return await executeHooks(null, [
-      ...this.hooks.getFetchClient,
-      (fetchClient, next) => next(fetchClient ?? fetch),
-    ]);
+  async getFetchClient(): Promise<typeof fetch> {
+    return await getCachingFetch(this.#constructorContext.cacheNetworkRequests);
   }
 
   guessMediaInfoFromUrl = guessMediaInfoFromUrl;

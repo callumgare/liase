@@ -1,48 +1,31 @@
 import { CheerioDomSelection, DomSelection } from "./DomSelection.js";
+import * as cheerio from "cheerio";
+import { gotScraping, Options as GotOptions } from "got-scraping";
 import {
-  HttpCrawler,
-  CheerioCrawler,
-  Configuration,
-  Request,
-  LogLevel,
-  CheerioCrawlingContext,
-  BasicCrawlerOptions,
-} from "crawlee";
-import { getPromiseWithResolvers, getUniqueId } from "./lib/utils.js";
-import { CheerioAPI } from "cheerio";
-import { gotScraping, type Options as GotOptions } from "got-scraping";
+  cacheResponse,
+  getCachedResponse,
+} from "./lib/networkRequestsCache.js";
+import deepmerge from "deepmerge";
+import { ActionContext } from "./ActionContext.js";
 
-const crawleeConfig = new Configuration({
-  logLevel: LogLevel.WARNING,
-  persistStorage: false,
-});
-
-const crawlerRequestCallbacks: Record<
-  string,
-  | {
-      responseResolve: (value?: unknown) => void;
-      responseReject: (reason?: any, ...otherData: any[]) => void;
-    }
-  | undefined
-> = {};
-
-type LoadUrlOptionsPuppeteer = {
-  agent?: "puppeteer";
-  responseType?: "webpage";
+type LoadUrlOptionsPlaywright = {
+  agent: "playwright";
+  responseType?: "dom";
   headers?: Record<string, string>;
 };
 
 type LoadUrlOptionsGot = {
   agent?: "got";
-  responseType?: "webpage" | "text" | "json";
+  responseType?: "dom" | "text" | "json";
   headers?: Record<string, string>;
   method?: GotOptions["method"];
-  body?: GotOptions["body"];
+  body?: string;
+  retryAdditional?: GotOptions["retry"];
 };
 
-type LoadUrlOptions = LoadUrlOptionsPuppeteer | LoadUrlOptionsGot;
+type LoadUrlOptions = LoadUrlOptionsPlaywright | LoadUrlOptionsGot;
 
-type LoadUrlResponseWebpage = {
+type LoadUrlResponseDom = {
   root: DomSelection;
   statusCode: number;
 };
@@ -50,170 +33,109 @@ type LoadUrlResponseJson = {
   data: unknown;
   statusCode: number;
 };
+type LoadUrlResponseText = {
+  data: unknown;
+  statusCode: number;
+};
 
-type LoadUrlResponse = LoadUrlResponseWebpage | LoadUrlResponseJson;
-
-export async function loadUrl(url: string): Promise<LoadUrlResponseWebpage>;
+type LoadUrlResponse =
+  | LoadUrlResponseDom
+  | LoadUrlResponseJson
+  | LoadUrlResponseText;
 export async function loadUrl(
   url: string,
-  props:
-    | Omit<LoadUrlOptionsPuppeteer, "responseType">
-    | Omit<LoadUrlOptionsGot, "responseType">,
-): Promise<LoadUrlResponseWebpage>;
-export async function loadUrl(
-  url: string,
-  props: (LoadUrlOptionsPuppeteer | LoadUrlOptionsGot) & {
-    responseType: "webpage";
-  },
-): Promise<LoadUrlResponseWebpage>;
-export async function loadUrl(
-  url: string,
-  props: LoadUrlOptionsGot & { responseType: "json" },
+  props: LoadUrlOptions & { responseType: "json" },
 ): Promise<LoadUrlResponseJson>;
-
 export async function loadUrl(
   url: string,
-  { agent, responseType, headers, ...otherProps }: LoadUrlOptions = {},
+  props?: LoadUrlOptions & { responseType: "dom" },
+): Promise<LoadUrlResponseDom>;
+export async function loadUrl(
+  url: string,
+  props: LoadUrlOptions & { responseType: "text" },
+): Promise<LoadUrlResponseText>;
+
+export async function loadUrl(
+  this: ActionContext,
+  url: string,
+  options?: LoadUrlOptions,
 ): Promise<LoadUrlResponse> {
-  if (!agent) {
-    if (responseType === "json") {
-      agent = "got";
-    } else if (!responseType || responseType === "webpage") {
-      agent = "got";
-    } else if (responseType === "text") {
-      agent = "got";
-    } else {
-      responseType satisfies never;
-      throw Error(`Unrecognised "responseType" value: ${responseType}`);
-    }
+  if (!options) {
+    options = {};
   }
-  let crawlerType;
-  if (agent === "got") {
-    if (!responseType || responseType === "webpage") {
-      crawlerType = "cheerio";
-    } else {
-      crawlerType = "got";
-    }
-  } else if (agent === "puppeteer") {
-    crawlerType = "puppeteer";
-  } else {
-    agent satisfies never;
-    throw Error(`Unrecognised "agent" value: ${responseType}`);
+  if (this.cacheNetworkRequests === "auto") {
+    throw Error(
+      `The "auto" value for the cacheNetworkRequests option is not yet supported. Sorry!`,
+    );
   }
-  const {
-    promise: responsePromise,
-    resolve: responseResolve,
-    reject: responseReject,
-  } = getPromiseWithResolvers();
-  const requestId = getUniqueId();
-  const request = new Request({
-    url,
-    headers: { Accept: "application/json", ...headers },
-    label: requestId,
-    uniqueKey: requestId,
-  });
-  crawlerRequestCallbacks[requestId] = { responseResolve, responseReject };
+  if (!options.agent) {
+    options.agent = "got";
+  }
 
-  let response;
-  if (crawlerType === "cheerio") {
-    const crawler = getCrawler(crawlerType);
-    if (!crawler.running) {
-      throw Error("Crawlee not running");
-    }
-    await crawler.addRequests([request]);
-    const crawleeContext = (await responsePromise) as CheerioCrawlingContext<
-      any,
-      any
-    >;
-    response = {
-      root: new CheerioDomSelection(crawleeContext.$ as CheerioAPI),
-      statusCode: crawleeContext.response.statusCode,
+  if (options.agent === "got") {
+    const requestOptions = {
+      ...(options.method && { method: options.method }),
+      ...(options.body && { body: options.body }),
+      ...(options.headers && { headers: options.headers }),
     };
-  } else if (crawlerType === "got") {
-    if (responseType === "webpage") {
-      throw Error("Can not use got crawlerType with webpage response");
+
+    const defaultGotOptions = new GotOptions();
+    let retry = defaultGotOptions.retry;
+    if (options.retryAdditional) {
+      retry = deepmerge(retry, options.retryAdditional);
     }
-    const { body, statusCode, ok, retryCount } = await gotScraping({
+
+    let cache;
+
+    let res;
+
+    const cacheableRequest = {
       url,
-      method: "method" in otherProps ? otherProps.method : undefined,
-      body: "body" in otherProps ? otherProps.body : undefined,
-      headers,
-      responseType,
-      // We add "POST" to the retry methods and set everything else to their defaults
-      // https://github.com/sindresorhus/got/blob/main/documentation/7-retry.md#retry
-      retry: {
-        methods: ["GET", "PUT", "HEAD", "DELETE", "OPTIONS", "TRACE", "POST"],
-        limit: 2,
-        statusCodes: [408, 413, 429, 500, 502, 503, 504, 521, 522, 524],
-        errorCodes: [
-          "ETIMEDOUT",
-          "ECONNRESET",
-          "EADDRINUSE",
-          "ECONNREFUSED",
-          "EPIPE",
-          "ENOTFOUND",
-          "ENETUNREACH",
-          "EAI_AGAIN",
-        ],
-        maxRetryAfter: undefined,
-        calculateDelay: ({ computedValue }) => computedValue,
-        backoffLimit: Number.POSITIVE_INFINITY,
-        noise: 100,
-      },
-    });
-    if (!ok) {
-      throw Error(
-        `Got response status ${statusCode} (retry count: ${retryCount}) with body: ${body}`,
-      );
+      method: requestOptions.method ?? "",
+      headers: requestOptions.headers ?? {},
+      body: requestOptions.body ?? "",
+    };
+
+    if (this.cacheNetworkRequests === "always") {
+      res = await getCachedResponse(cacheableRequest);
+    } else {
+      this.cacheNetworkRequests satisfies "never" | undefined;
     }
-    return { data: body, statusCode };
-  } else {
-    throw Error(`Unknown crawler type "${crawlerType}"`);
-  }
 
-  return response;
-}
-
-const _initedCrawlers: {
-  got?: HttpCrawler<any>;
-  cheerio?: CheerioCrawler;
-  puppeteer?: CheerioCrawler;
-} = {};
-type InitedCrawlersMap = typeof _initedCrawlers;
-
-function getCrawler<
-  CrawlerType extends keyof InitedCrawlersMap,
-  Crawler extends Exclude<InitedCrawlersMap[CrawlerType], undefined>,
->(crawlerType: CrawlerType): Crawler {
-  const crawlerConstructorOptions = {
-    async requestHandler(crawleeContext: any) {
-      const { responseResolve } =
-        crawlerRequestCallbacks[crawleeContext.request.label] || {};
-      if (!responseResolve) {
-        throw Error("Processed response with no promise callback");
+    if (!res) {
+      res = await gotScraping({
+        url,
+        ...requestOptions,
+        responseType: "text",
+        retry,
+        cache,
+        http2: false, // Seems to be necessary otherwise got will throw "Unknown HTTP2 promise event: destroy"
+        // when caching.
+      });
+      if (!res.ok) {
+        throw Error(
+          `Got response status ${res.statusCode} (retry count: ${res.retryCount}) with body: ${res.body}`,
+        );
       }
-      responseResolve(crawleeContext);
-    },
-    async failedRequestHandler(crawleeContext: any, error: any) {
-      const { responseReject } =
-        crawlerRequestCallbacks[crawleeContext.request.label] || {};
-      if (!responseReject) {
-        throw Error("Processed reject with no promise callback");
-      }
-      responseReject(error, crawleeContext);
-    },
-  } satisfies BasicCrawlerOptions;
-
-  if (crawlerType === "cheerio") {
-    if (!_initedCrawlers.cheerio || _initedCrawlers.cheerio.running === false) {
-      _initedCrawlers.cheerio = new CheerioCrawler(
-        crawlerConstructorOptions,
-        crawleeConfig,
-      );
-      _initedCrawlers.cheerio.run();
+      await cacheResponse(cacheableRequest, res);
     }
-    return _initedCrawlers.cheerio as Crawler;
+
+    const { body, statusCode } = res;
+
+    if (options.responseType === "dom" || !options.responseType) {
+      return { root: new CheerioDomSelection(cheerio.load(body)), statusCode };
+    } else if (options.responseType === "json") {
+      return { data: JSON.parse(body), statusCode };
+    } else if (options.responseType === "text") {
+      return { data: body, statusCode };
+    } else {
+      options.responseType satisfies never;
+      throw Error(`Unknown response type "${options.responseType}"`);
+    }
+  } else if (options.agent === "playwright") {
+    throw Error("Playwright not supported yet");
   } else {
-    throw Error(`Unknown crawler type "${crawlerType}"`);
+    options.agent satisfies never;
+    throw Error(`Unknown agent "${options.agent}"`);
   }
 }

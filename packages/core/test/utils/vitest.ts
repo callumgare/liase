@@ -1,12 +1,9 @@
 import { Source } from "@/src/schemas/source.js";
-import { expect, test, inject } from "vitest";
+import { expect, test } from "vitest";
 import { GenericResponse, createMediaFinderQuery } from "@/src/index.js";
 import { FinderOptionsInput } from "@/src/schemas/finderOptions.js";
 import { getOrdinal, hasNoDuplicates } from "@/src/lib/utils.js";
 import { QueryOptionsInput } from "@/src/schemas/queryOptions.js";
-import cachingNetworkPlugin, {
-  setCachingProxyPort,
-} from "@/src/plugins/cache-network.js";
 import deepmerge from "deepmerge";
 import { copy } from "copy-anything";
 import { getSecrets } from "./general.js";
@@ -21,12 +18,19 @@ export function createBasicTestsForRequestHandlers<
       response: any,
       other: { pageLoadNum: number; message: string },
     ) => void | number;
+    checkAllResponses?: (
+      response: any,
+      other: { message: string },
+    ) => void | number;
+    before?: () => Promise<unknown>;
     numOfPagesToLoad?: number;
     numOfPagesToExpect?: number;
     queryOptions?: QueryOptionsInput;
     finderOptions?: FinderOptionsInput;
     duplicateMediaPossible?: boolean;
     timeout?: number;
+    testName?: string;
+    expectError?: string | RegExp;
   },
   Queries extends { [Key in HandlerIds]: Query | Query[] },
   QueriesShared extends Query,
@@ -51,9 +55,18 @@ export function createBasicTestsForRequestHandlers<
         " ",
       );
 
+      const testName =
+        query.testName ?? queriesShared?.testName ?? `Query: ${formattedQuery}`;
+      const expectError = query.expectError ?? queriesShared?.expectError;
+
       test(
-        `Query: ${formattedQuery}`,
+        testName,
         async () => {
+          const beforeCallbacks = [query?.before, queriesShared?.before];
+
+          for (const before of beforeCallbacks) {
+            await before?.();
+          }
           const numOfPagesToLoad = query.numOfPagesToLoad ?? 1;
           const numOfPagesToExpect =
             query.numOfPagesToExpect ?? numOfPagesToLoad;
@@ -62,37 +75,39 @@ export function createBasicTestsForRequestHandlers<
           const deepMergeOptions = {
             isMergeableObject: isPlainObject,
           };
-          setCachingProxyPort(inject("cachingProxyPort"));
           const mediaQuery = await createMediaFinderQuery({
             request,
             queryOptions: deepmerge.all(
               [
+                {
+                  cacheNetworkRequests: "always",
+                },
                 queriesShared?.queryOptions || {},
                 query?.queryOptions || {},
                 {
                   secrets: {
                     ...(await getSecrets(request)),
-                    ...queriesShared?.secrets,
-                    ...query?.secrets,
                   },
                 },
               ],
               deepMergeOptions,
             ),
             finderOptions: deepmerge.all(
-              [
-                queriesShared?.finderOptions || {},
-                query?.finderOptions || {},
-                {
-                  plugins: [cachingNetworkPlugin],
-                },
-              ],
+              [queriesShared?.finderOptions || {}, query?.finderOptions || {}],
               deepMergeOptions,
             ),
           });
 
           const responses: any[] = [];
           let customResponseTestExpectedAssertions = 0;
+
+          if (expectError) {
+            expect.assertions(1);
+            expect(() => mediaQuery.getNext()).rejects.toThrowError(
+              expectError,
+            );
+            return;
+          }
 
           for (let i = 0; i < numOfPagesToLoad; i++) {
             const response = await mediaQuery.getNext();
@@ -152,6 +167,20 @@ export function createBasicTestsForRequestHandlers<
               customResponseTestExpectedAssertions +=
                 typeof result === "number" ? result : 1;
             }
+          }
+
+          const customAllResponsesChecks = [
+            ...(query?.checkAllResponses ? [query?.checkAllResponses] : []),
+            ...(queriesShared?.checkAllResponses
+              ? [queriesShared?.checkAllResponses]
+              : []),
+          ];
+          for (const checkAllResponses of customAllResponsesChecks) {
+            const result = checkAllResponses(responses, {
+              message: `The responses were not as expected`,
+            });
+            customResponseTestExpectedAssertions +=
+              typeof result === "number" ? result : 1;
           }
 
           if (!query.duplicateMediaPossible) {

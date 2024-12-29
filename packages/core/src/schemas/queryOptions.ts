@@ -5,6 +5,7 @@ export const queryOptionsSchema = z
   .object({
     secrets: genericSecretsSchema.default({}),
     fetchCountLimit: z.number().int().default(10),
+    cacheNetworkRequests: z.enum(["never", "auto", "always"]).optional(),
   })
   .strict();
 

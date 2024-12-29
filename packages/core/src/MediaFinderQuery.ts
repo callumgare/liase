@@ -129,6 +129,7 @@ export default class MediaFinderQuery extends MediaFinder {
         secrets: parsedSecrets,
         responseDetails: this.getResponseDetails(),
         pageFetchLimitReached,
+        cacheNetworkRequests: this.#queryOptions.cacheNetworkRequests,
         sourceId: this.getSource(parsedRequest.source).id,
         hooks: this._hooks,
       });

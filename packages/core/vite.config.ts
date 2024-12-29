@@ -8,7 +8,6 @@ export default defineConfig({
     },
   },
   test: {
-    globalSetup: "./test/setup.ts",
     setupFiles: ["dotenv-flow/config"],
   },
 });
