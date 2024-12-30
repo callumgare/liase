@@ -14,6 +14,7 @@ import {
   getResponseDetailsBasedOnRequest,
 } from "./generateResponse.js";
 import { getCachingFetch } from "./lib/networkRequestsCache.js";
+import { LoadUrlHistoryItem } from "./loadUrlHistory.js";
 
 export const excludeFieldSymbol = Symbol("ExcludeField");
 
@@ -27,6 +28,7 @@ export class ActionContext extends Function {
     ) => Promise<ActionContext>;
     path: (string | number)[];
     initialData?: Record<string, any>;
+    loadUrlHistory?: LoadUrlHistoryItem[];
   }) {
     super();
     this.#constructorContext = args.constructorContext;
@@ -35,6 +37,7 @@ export class ActionContext extends Function {
     if (args.initialData) {
       this.#dataStore = args.initialData;
     }
+    this.#loadUrlHistory = args.loadUrlHistory ?? [];
     return new Proxy(this, {
       apply: (target, thisArg, args) => target.get(...args),
       get: (target, propName: keyof ActionContext, receiver) => {
@@ -52,6 +55,10 @@ export class ActionContext extends Function {
   #executeActions;
   #path;
   #resultHistory: any[] = [];
+  #loadUrlHistory;
+  // eslint-disable-next-line no-use-before-define -- we need to use before it's defined since it's recursive
+  #clonedChildren: ActionContext[] = [];
+
   #unresolvedPromises: any[] = [];
 
   #dataStore: Record<string, any> = {};
@@ -108,12 +115,21 @@ export class ActionContext extends Function {
     appendToPath?: (string | number)[];
     data?: Record<string, any>;
   } = {}) {
-    return new ActionContext({
+    const clone = new ActionContext({
       constructorContext: this.#constructorContext,
       initialData: data ? { ...data } : { ...this.#dataStore },
       executeActions: this.#executeActions,
       path: (path ?? this.#path).concat(appendToPath ?? []),
+      loadUrlHistory: this.#loadUrlHistory,
     });
+    this.#clonedChildren.push(clone);
+    return clone;
+  }
+
+  get descendants(): ActionContext[] {
+    return this.#clonedChildren
+      .map((clonedChild) => [clonedChild, ...clonedChild.descendants])
+      .flat();
   }
 
   chain(...actions: Action[]) {
@@ -144,7 +160,23 @@ export class ActionContext extends Function {
     return this.#constructorContext.cacheNetworkRequests;
   }
 
-  loadUrl = loadUrl.bind(this);
+  loadUrl: typeof loadUrl = (async (
+    url: string,
+    options: Parameters<typeof loadUrl>[1],
+  ) => {
+    const response = await loadUrl.call(this, url, options);
+    this.#loadUrlHistory.push({
+      constructorPath: this.#path,
+      url,
+      options,
+      response,
+    });
+    return response;
+  }) as any;
+
+  get loadUrlHistory() {
+    return this.#loadUrlHistory;
+  }
 
   loadRequest = async (
     requestHandler: RequestHandler,

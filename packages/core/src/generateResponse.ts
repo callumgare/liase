@@ -10,6 +10,7 @@ import {
   requestHandlerSchema,
 } from "./schemas/requestHandler.js";
 import { z } from "zod";
+import { exportLoadUrlHistory, LoadUrlHistoryItem } from "./loadUrlHistory.js";
 
 export async function generateResponse(
   constructorContext: ConstructorExecutionContext,
@@ -32,48 +33,67 @@ export async function generateResponse(
     constructorContext.responseDetails.constructor,
     actionContext,
   );
-  return validateResponse(res, constructorContext);
+  return await validateResponse(res, constructorContext, actionContext);
 }
 
-function validateResponse(
+async function validateResponse(
   response: any,
-  context: ConstructorExecutionContext,
-): GenericResponse {
-  const errorMessage = `The response returned from the request handler "${context.requestHandler.id}" of the source "${context.sourceId}" is invalid`;
-  const parsedResponse = zodParseOrThrow(genericResponseSchema, response, {
-    errorMessage,
-  });
-  zodParseOrThrow(context.responseDetails.schema, response, { errorMessage });
+  constructorContext: ConstructorExecutionContext,
+  rootActionContext: ActionContext,
+): Promise<GenericResponse> {
+  let parsedResponse;
+  try {
+    const errorMessage = `The response returned from the request handler "${constructorContext.requestHandler.id}" of the source "${constructorContext.sourceId}" is invalid`;
+    parsedResponse = zodParseOrThrow(genericResponseSchema, response, {
+      errorMessage,
+    });
+    zodParseOrThrow(constructorContext.responseDetails.schema, response, {
+      errorMessage,
+    });
+  } catch (error) {
+    const allActionContexts = [
+      rootActionContext,
+      ...rootActionContext.descendants,
+    ];
+    const loadUrlHistory = new Set<LoadUrlHistoryItem>();
+    for (const actionContext of allActionContexts) {
+      for (const loadUrlHistoryItem of actionContext.loadUrlHistory) {
+        loadUrlHistory.add(loadUrlHistoryItem);
+      }
+    }
+    await exportLoadUrlHistory({ loadUrlHistory: [...loadUrlHistory] });
+    throw error;
+  }
 
-  assert.deepEqual(context.request, parsedResponse.request);
+  assert.deepEqual(constructorContext.request, parsedResponse.request);
 
   for (const [index, media] of Object.entries(parsedResponse.media)) {
-    if (media.mediaFinderSource !== context.sourceId) {
+    if (media.mediaFinderSource !== constructorContext.sourceId) {
       throw Error(
-        `Request was for source ${context.sourceId} but media number ${index} ` +
+        `Request was for source ${constructorContext.sourceId} but media number ${index} ` +
           `has source set to ${media.mediaFinderSource}`,
       );
     }
   }
 
-  if (context.requestHandler.paginationType !== "none") {
+  if (constructorContext.requestHandler.paginationType !== "none") {
     if (!parsedResponse.page) {
       throw Error(
-        `Request was for a ${context.requestHandler.paginationType} page but response has no page`,
+        `Request was for a ${constructorContext.requestHandler.paginationType} page but response has no page`,
       );
     }
 
     if (
-      context.requestHandler.paginationType !==
+      constructorContext.requestHandler.paginationType !==
       parsedResponse.page?.paginationType
     ) {
       throw Error(
-        `Request was for a ${context.requestHandler.paginationType} page but response page type was ${parsedResponse.page.paginationType}`,
+        `Request was for a ${constructorContext.requestHandler.paginationType} page but response page type was ${parsedResponse.page.paginationType}`,
       );
     }
 
     assert.equal(
-      context.pageFetchLimitReached,
+      constructorContext.pageFetchLimitReached,
       parsedResponse.page.pageFetchLimitReached,
     );
   } else {

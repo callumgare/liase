@@ -11,6 +11,7 @@ import {
   getType,
   waitForAllPropertiesToResolve,
 } from "./lib/utils.js";
+import { exportLoadUrlHistory } from "./loadUrlHistory.js";
 
 const log: string[] = [];
 
@@ -225,6 +226,7 @@ function handleExecutionError(error: unknown, context: ActionContext) {
   if (error instanceof ConstructorExecutionError) {
     throw error;
   }
+  exportLoadUrlHistory({ loadUrlHistory: context.loadUrlHistory });
   throw new ConstructorExecutionError({
     cause: error instanceof Error ? error : undefined,
     context,
