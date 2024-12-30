@@ -1,5 +1,7 @@
 import cacache from "cacache";
 import { QueryOptions } from "../schemas/queryOptions.js";
+import stringify from "json-stable-stringify";
+import { OptionsInit as GotOptionsInit } from "got-scraping";
 
 const cacheDir = "/tmp/media-finder/network-requests-cache/custom";
 
@@ -8,6 +10,10 @@ type CacheableRequest = {
   method: string;
   headers: Record<string, string>;
   body: string;
+  // Since the cache uses request headers before got has made any modifications changes to
+  // headerGeneratorOptions which impact got's generated headers won't break the cache.
+  // To get around this we include headerGeneratorOptions in the cache key.
+  headerGeneratorOptions: GotOptionsInit["headerGeneratorOptions"];
 };
 
 type CachedResponse = {
@@ -51,17 +57,10 @@ export async function cacheResponse(
 }
 
 function getCacheKeyFromReq(req: CacheableRequest): string {
-  return JSON.stringify([
-    req.url,
-    req.method,
-    Object.entries(req.headers).toSorted((a, b) => {
-      return (
-        a[0].localeCompare(b[0]) || // Primary criterion: header key ascending
-        a[1].localeCompare(b[1]) // Secondary criterion: header value ascending
-      );
-    }),
-    req.body,
-  ]);
+  return (
+    stringify([req.url, req.method, Object.entries(req.headers), req.body]) ||
+    ""
+  );
 }
 
 export function getCachingFetch(
@@ -116,7 +115,13 @@ export function getCachingFetch(
       throw Error("Input is invalid");
     }
 
-    const cacheableRequest = { url, body, headers, method };
+    const cacheableRequest = {
+      url,
+      body,
+      headers,
+      method,
+      headerGeneratorOptions: undefined,
+    };
 
     let res;
     if (cacheNetworkRequests === "always") {

@@ -1,6 +1,10 @@
 import { CheerioDomSelection, DomSelection } from "./DomSelection.js";
 import * as cheerio from "cheerio";
-import { gotScraping, Options as GotOptions } from "got-scraping";
+import {
+  gotScraping,
+  Options as GotOptions,
+  OptionsInit as GotOptionsInit,
+} from "got-scraping";
 import {
   cacheResponse,
   getCachedResponse,
@@ -18,10 +22,21 @@ type LoadUrlOptionsGot = {
   agent?: "got";
   responseType?: "dom" | "text" | "json";
   headers?: Record<string, string>;
-  method?: GotOptions["method"];
   body?: string;
-  retryAdditional?: GotOptions["retry"];
-};
+  retryAdditional?: GotOptionsInit["retry"];
+} & Omit<
+  GotOptionsInit,
+  | "responseType"
+  | "headers"
+  | "body"
+  | "retry"
+  | "hooks"
+  | "resolveBodyOnly"
+  | "isStream"
+  | "url"
+  | "json"
+  | "form"
+>;
 
 type LoadUrlOptions = LoadUrlOptionsPlaywright | LoadUrlOptionsGot;
 
@@ -34,25 +49,25 @@ type LoadUrlResponseJson = {
   statusCode: number;
 };
 type LoadUrlResponseText = {
-  data: unknown;
+  data: string;
   statusCode: number;
 };
 
-type LoadUrlResponse =
+export type LoadUrlResponse =
   | LoadUrlResponseDom
   | LoadUrlResponseJson
   | LoadUrlResponseText;
 export async function loadUrl(
   url: string,
-  props: LoadUrlOptions & { responseType: "json" },
+  options: LoadUrlOptions & { responseType: "json" },
 ): Promise<LoadUrlResponseJson>;
 export async function loadUrl(
   url: string,
-  props?: LoadUrlOptions & { responseType: "dom" },
+  options?: LoadUrlOptions & { responseType?: "dom" },
 ): Promise<LoadUrlResponseDom>;
 export async function loadUrl(
   url: string,
-  props: LoadUrlOptions & { responseType: "text" },
+  options: LoadUrlOptions & { responseType: "text" },
 ): Promise<LoadUrlResponseText>;
 
 export async function loadUrl(
@@ -73,11 +88,8 @@ export async function loadUrl(
   }
 
   if (options.agent === "got") {
-    const requestOptions = {
-      ...(options.method && { method: options.method }),
-      ...(options.body && { body: options.body }),
-      ...(options.headers && { headers: options.headers }),
-    };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- we define only to exclude from requestOptions
+    const { agent, retryAdditional, responseType, ...requestOptions } = options;
 
     const defaultGotOptions = new GotOptions();
     let retry = defaultGotOptions.retry;
@@ -94,6 +106,7 @@ export async function loadUrl(
       method: requestOptions.method ?? "",
       headers: requestOptions.headers ?? {},
       body: requestOptions.body ?? "",
+      headerGeneratorOptions: requestOptions.headerGeneratorOptions,
     };
 
     if (this.cacheNetworkRequests === "always") {
