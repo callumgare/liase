@@ -4,9 +4,9 @@ import path from "path";
 
 export async function getSecrets(request: GenericRequest) {
   try {
-    const secretsPath =
-      process.env.MEDIA_FINDER_SECRETS_FILE ??
-      path.join(import.meta.dirname, "../../.secrets.mjs");
+    const secretsPath = process.env.MEDIA_FINDER_SECRETS_FILE
+      ? path.resolve(process.env.MEDIA_FINDER_SECRETS_FILE)
+      : path.join(import.meta.dirname, "../../.secrets.mjs");
     try {
       await fs.access(secretsPath);
     } catch (error) {
