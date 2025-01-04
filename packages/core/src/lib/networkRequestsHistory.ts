@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import mimeTypes from "mime-types";
 import { timeSince } from "./time.js";
 import chalk from "chalk";
+import { ActionContext } from "../ActionContext.js";
 
 export type NetworkRequestsHistoryItem = {
   constructorPath: (string | number)[];
@@ -109,4 +110,39 @@ export async function exportNetworkRequestsHistory({
     ),
     tmpDir,
   );
+}
+
+export async function exportNetworkRequestsHistoryIfRelevantError(
+  error: unknown,
+) {
+  if (!(error instanceof Error)) {
+    return;
+  }
+  let networkRequestsHistory: NetworkRequestsHistoryItem[] | undefined;
+  if (
+    "actionContext" in error &&
+    error.actionContext instanceof ActionContext
+  ) {
+    // Most likely error is an instance of ConstructorExecutionError
+    networkRequestsHistory = error.actionContext.networkRequestsHistory;
+  } else if ("context" in error && error.context instanceof ActionContext) {
+    // Most likely error is an instance of ZodFriendlyError thrown when parsing the result.
+    const rootActionContext = error.context;
+    const allActionContexts = [
+      rootActionContext,
+      ...rootActionContext.descendants,
+    ];
+    const networkRequestsHistorySet = new Set<NetworkRequestsHistoryItem>();
+    for (const actionContext of allActionContexts) {
+      for (const networkRequestsHistoryItem of actionContext.networkRequestsHistory) {
+        networkRequestsHistorySet.add(networkRequestsHistoryItem);
+      }
+    }
+    networkRequestsHistory = [...networkRequestsHistorySet];
+  }
+  if (networkRequestsHistory) {
+    await exportNetworkRequestsHistory({
+      networkRequestsHistory,
+    });
+  }
 }

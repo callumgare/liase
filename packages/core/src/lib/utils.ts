@@ -127,17 +127,17 @@ type ConstructorExecutionErrorOptions = {
   cause?: Error;
   log: string[];
   message?: string;
-  context: ActionContext;
+  actionContext: ActionContext;
 };
 export class ConstructorExecutionError extends Error {
   errorOccurredAtPath;
   log;
-  context;
+  actionContext;
 
   constructor({
     message,
     cause,
-    context,
+    actionContext,
     log,
   }: ConstructorExecutionErrorOptions) {
     super(message ?? cause?.message ?? "Error when executing constructor");
@@ -148,9 +148,9 @@ export class ConstructorExecutionError extends Error {
 
     // Use class name as the name of the error
     ConstructorExecutionError.prototype.name = this.constructor.name;
-    this.errorOccurredAtPath = context.path;
+    this.errorOccurredAtPath = actionContext.path;
     this.log = log;
-    this.context = context;
+    this.actionContext = actionContext;
 
     this.message = this.getFormattedErrorInfo();
 

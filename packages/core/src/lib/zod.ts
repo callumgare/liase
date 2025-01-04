@@ -11,7 +11,7 @@ function isZodError(error: unknown): error is z.ZodError {
 export function zodParseOrThrow<Output, Def extends z.ZodTypeDef, Input>(
   zodSchema: z.ZodType<Output, Def, Input>,
   input: any,
-  options: { errorMessage?: string } = {},
+  options: { errorMessage?: string; context?: unknown } = {},
 ): Output {
   try {
     return zodSchema.parse(input);
@@ -23,6 +23,7 @@ export function zodParseOrThrow<Output, Def extends z.ZodTypeDef, Input>(
       const friendlyError = new FriendlyZodError(error, {
         message: options.errorMessage,
         inputData: input,
+        context: options.context,
       });
       throw friendlyError;
     }
@@ -90,6 +91,7 @@ function getPathInfo(
 type FriendlyZodErrorOptions = {
   message?: string;
   inputData?: unknown;
+  context?: unknown;
 };
 
 type FriendlyZodErrorIssue = {
@@ -104,10 +106,11 @@ type FriendlyZodErrorIssuesTree = {
 export class FriendlyZodError extends Error {
   #inputData;
   zodError: z.ZodError;
+  context: unknown;
 
   constructor(
     error: z.ZodError,
-    { message, inputData }: FriendlyZodErrorOptions = {},
+    { message, inputData, context }: FriendlyZodErrorOptions = {},
   ) {
     super(message ?? error?.message ?? "Error when validating data");
 
@@ -116,6 +119,8 @@ export class FriendlyZodError extends Error {
 
     this.zodError = error;
     this.stack = error.stack;
+
+    this.context = context;
 
     this.#inputData = inputData;
 

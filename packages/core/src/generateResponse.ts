@@ -10,10 +10,6 @@ import {
   requestHandlerSchema,
 } from "./schemas/requestHandler.js";
 import { z } from "zod";
-import {
-  exportNetworkRequestsHistory,
-  NetworkRequestsHistoryItem,
-} from "./lib/networkRequestsHistory.js";
 
 export async function generateResponse(
   constructorContext: ConstructorExecutionContext,
@@ -27,16 +23,16 @@ export async function generateResponse(
     ),
   };
   Error.stackTraceLimit = 50;
-  const actionContext = new ActionContext({
+  const rootActionContext = new ActionContext({
     constructorContext,
     executeActions,
     path: [],
   });
   const res = await executeConstructor(
     constructorContext.responseDetails.constructor,
-    actionContext,
+    rootActionContext,
   );
-  return await validateResponse(res, constructorContext, actionContext);
+  return await validateResponse(res, constructorContext, rootActionContext);
 }
 
 async function validateResponse(
@@ -44,31 +40,15 @@ async function validateResponse(
   constructorContext: ConstructorExecutionContext,
   rootActionContext: ActionContext,
 ): Promise<GenericResponse> {
-  let parsedResponse;
-  try {
-    const errorMessage = `The response returned from the request handler "${constructorContext.requestHandler.id}" of the source "${constructorContext.sourceId}" is invalid`;
-    parsedResponse = zodParseOrThrow(genericResponseSchema, response, {
-      errorMessage,
-    });
-    zodParseOrThrow(constructorContext.responseDetails.schema, response, {
-      errorMessage,
-    });
-  } catch (error) {
-    const allActionContexts = [
-      rootActionContext,
-      ...rootActionContext.descendants,
-    ];
-    const networkRequestsHistory = new Set<NetworkRequestsHistoryItem>();
-    for (const actionContext of allActionContexts) {
-      for (const networkRequestsHistoryItem of actionContext.networkRequestsHistory) {
-        networkRequestsHistory.add(networkRequestsHistoryItem);
-      }
-    }
-    await exportNetworkRequestsHistory({
-      networkRequestsHistory: [...networkRequestsHistory],
-    });
-    throw error;
-  }
+  const errorMessage = `The response returned from the request handler "${constructorContext.requestHandler.id}" of the source "${constructorContext.sourceId}" is invalid`;
+  const parsedResponse = zodParseOrThrow(genericResponseSchema, response, {
+    errorMessage,
+    context: rootActionContext,
+  });
+  zodParseOrThrow(constructorContext.responseDetails.schema, response, {
+    errorMessage,
+    context: rootActionContext,
+  });
 
   assert.deepEqual(constructorContext.request, parsedResponse.request);
 

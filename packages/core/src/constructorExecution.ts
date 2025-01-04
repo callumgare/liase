@@ -11,7 +11,6 @@ import {
   getType,
   waitForAllPropertiesToResolve,
 } from "./lib/utils.js";
-import { exportNetworkRequestsHistory } from "./lib/networkRequestsHistory.js";
 
 const log: string[] = [];
 
@@ -222,16 +221,13 @@ export async function executeActions(
   return context;
 }
 
-function handleExecutionError(error: unknown, context: ActionContext) {
+function handleExecutionError(error: unknown, actionContext: ActionContext) {
   if (error instanceof ConstructorExecutionError) {
     throw error;
   }
-  exportNetworkRequestsHistory({
-    networkRequestsHistory: context.networkRequestsHistory,
-  });
   throw new ConstructorExecutionError({
     cause: error instanceof Error ? error : undefined,
-    context,
+    actionContext,
     log,
   });
 }

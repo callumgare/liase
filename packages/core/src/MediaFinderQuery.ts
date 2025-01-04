@@ -23,6 +23,7 @@ import {
 } from "./generateResponse.js";
 import { GenericSecrets } from "./schemas/secrets.js";
 import { FriendlyZodError } from "./lib/zod.js";
+import { exportNetworkRequestsHistoryIfRelevantError } from "./lib/networkRequestsHistory.js";
 
 const propsSchema = z
   .object({
@@ -123,38 +124,43 @@ export default class MediaFinderQuery extends MediaFinder {
         handler.paginationType === "none"
           ? undefined
           : pageFetchedCount === maxPagesToFetch;
-      const response = await generateResponse({
-        requestHandler: handler,
-        request: parsedRequest,
-        secrets: parsedSecrets,
-        responseDetails: this.getResponseDetails(),
-        pageFetchLimitReached,
-        cacheNetworkRequests: this.#queryOptions.cacheNetworkRequests,
-        sourceId: this.getSource(parsedRequest.source).id,
-        hooks: this._hooks,
-      });
-      if (handler.paginationType === "offset") {
-        // if paginationType is "offset" then pageNumber must exist due to a check in validateResponse
-        // in generateResponse.ts but hard to prove that to typescript so we just add an if statement here
-        // to stop typescript complaining
-        if (response.page && "pageNumber" in response.page) {
-          this.#request.pageNumber = response.page.pageNumber + 1;
+      try {
+        const response = await generateResponse({
+          requestHandler: handler,
+          request: parsedRequest,
+          secrets: parsedSecrets,
+          responseDetails: this.getResponseDetails(),
+          pageFetchLimitReached,
+          cacheNetworkRequests: this.#queryOptions.cacheNetworkRequests,
+          sourceId: this.getSource(parsedRequest.source).id,
+          hooks: this._hooks,
+        });
+        if (handler.paginationType === "offset") {
+          // if paginationType is "offset" then pageNumber must exist due to a check in validateResponse
+          // in generateResponse.ts but hard to prove that to typescript so we just add an if statement here
+          // to stop typescript complaining
+          if (response.page && "pageNumber" in response.page) {
+            this.#request.pageNumber = response.page.pageNumber + 1;
+          }
+        } else if (handler.paginationType === "cursor") {
+          // Same situation as in earlier if statement
+          if (response.page && "nextCursor" in response.page) {
+            this.#request.cursor = response.page.nextCursor;
+          }
         }
-      } else if (handler.paginationType === "cursor") {
-        // Same situation as in earlier if statement
-        if (response.page && "nextCursor" in response.page) {
-          this.#request.cursor = response.page.nextCursor;
+
+        yield response;
+
+        if (handler.paginationType === "none") {
+          break;
         }
-      }
 
-      yield response;
-
-      if (handler.paginationType === "none") {
-        break;
-      }
-
-      if (response.page?.isLastPage) {
-        break;
+        if (response.page?.isLastPage) {
+          break;
+        }
+      } catch (error) {
+        await exportNetworkRequestsHistoryIfRelevantError(error);
+        throw error;
       }
     }
   }
