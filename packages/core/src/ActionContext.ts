@@ -163,11 +163,12 @@ export class ActionContext extends Function {
 
   loadUrl: typeof loadUrl = (async (
     url: string,
-    options: Parameters<typeof loadUrl>[1],
+    options?: Parameters<typeof loadUrl>[1],
   ) => {
     const response = (await loadUrl.call(
       this,
       url,
+      // @ts-expect-error -- Not sure why ts doesn't like this being undefined
       options,
     )) as LoadUrlResponse;
 
@@ -183,9 +184,9 @@ export class ActionContext extends Function {
       constructorPath: this.#path,
       request: {
         url: new URL(url),
-        method: options.method || "GET",
-        headers: options.headers || {},
-        body: options.body,
+        method: options?.method || "GET",
+        headers: response.request.headers,
+        body: options?.body,
       },
       response: {
         headers: response.headers,

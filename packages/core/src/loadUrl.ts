@@ -46,6 +46,9 @@ type LoadURLSharedResponse = {
   headers: Record<string, string>;
   cached: boolean;
   cachedOn: Date | null;
+  request: {
+    headers: Record<string, string>;
+  };
 };
 
 type LoadUrlResponseDom = LoadURLSharedResponse & {
@@ -121,6 +124,7 @@ export async function loadUrl(
     }
 
     if (!res) {
+      let sentHeaders: Record<string, string> = {};
       const gotRes = await gotScraping({
         url,
         ...requestOptions,
@@ -129,6 +133,13 @@ export async function loadUrl(
         cache,
         http2: false, // Seems to be necessary otherwise got will throw "Unknown HTTP2 promise event: destroy"
         // when caching.
+        hooks: {
+          beforeRequest: [
+            (options) => {
+              sentHeaders = headersToNormalisedBasicObject(options.headers);
+            },
+          ],
+        },
       });
       if (!gotRes.ok) {
         throw Error(
@@ -139,6 +150,9 @@ export async function loadUrl(
         body: gotRes.body,
         statusCode: gotRes.statusCode,
         headers: headersToNormalisedBasicObject(gotRes.headers),
+        request: {
+          headers: sentHeaders ?? {},
+        },
       };
       await cacheResponse(cacheableRequest, res);
     }
@@ -152,6 +166,7 @@ export async function loadUrl(
         headers,
         cached: Boolean(cachedOn),
         cachedOn: cachedOn ?? null,
+        request: res.request,
       };
     } else if (options.responseType === "json") {
       return {
@@ -160,6 +175,7 @@ export async function loadUrl(
         headers,
         cached: Boolean(cachedOn),
         cachedOn: cachedOn ?? null,
+        request: res.request,
       };
     } else if (options.responseType === "text") {
       return {
@@ -168,6 +184,7 @@ export async function loadUrl(
         headers,
         cached: Boolean(cachedOn),
         cachedOn: cachedOn ?? null,
+        request: res.request,
       };
     } else {
       options.responseType satisfies never;

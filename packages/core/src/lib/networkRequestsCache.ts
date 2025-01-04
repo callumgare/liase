@@ -22,6 +22,9 @@ type CachedResponse = {
   statusCode: number;
   headers: Record<string, string>;
   cachedOn: Date;
+  request: {
+    headers: Record<string, string>;
+  };
 };
 
 export async function getCachedResponse(
@@ -53,16 +56,11 @@ export async function cacheResponse(
   res: Omit<CachedResponse, "cachedOn">,
 ) {
   const key = getCacheKeyFromReq(req);
-  await cacache.put(
-    cacheDir,
-    key,
-    JSON.stringify({
-      body: res.body,
-      statusCode: res.statusCode,
-      headers: res.headers,
-      cachedOn: Date.now(),
-    }),
-  );
+  const value: Omit<CachedResponse, "cachedOn"> & { cachedOn: number } = {
+    ...res,
+    cachedOn: Date.now(),
+  };
+  await cacache.put(cacheDir, key, JSON.stringify(value));
 }
 
 function getCacheKeyFromReq(req: CacheableRequest): string {
@@ -116,6 +114,9 @@ export function addCachingFetchWrapper(
         statusCode: clonedRes.status,
         body: await clonedRes.text(),
         headers: headersToNormalisedBasicObject(clonedRes.headers),
+        request: {
+          headers,
+        },
       });
     } else {
       cacheNetworkRequests satisfies "never" | undefined;
