@@ -2,6 +2,7 @@ import cacache from "cacache";
 import { QueryOptions } from "../schemas/queryOptions.js";
 import stringify from "json-stable-stringify";
 import { OptionsInit as GotOptionsInit } from "got-scraping";
+import { headersToNormalisedBasicObject, parseFetchArgs } from "./fetch.js";
 
 const cacheDir = "/tmp/media-finder/network-requests-cache/custom";
 
@@ -19,6 +20,8 @@ type CacheableRequest = {
 type CachedResponse = {
   body: string;
   statusCode: number;
+  headers: Record<string, string>;
+  cachedOn: Date;
 };
 
 export async function getCachedResponse(
@@ -27,7 +30,11 @@ export async function getCachedResponse(
   const key = getCacheKeyFromReq(req);
   try {
     const { data } = await cacache.get(cacheDir, key);
-    return JSON.parse(data.toString());
+    const cachedValue = JSON.parse(data.toString());
+    return {
+      ...cachedValue,
+      cachedOn: new Date(cachedValue.cachedOn),
+    };
   } catch (error) {
     if (
       typeof error === "object" &&
@@ -43,7 +50,7 @@ export async function getCachedResponse(
 
 export async function cacheResponse(
   req: CacheableRequest,
-  res: CachedResponse,
+  res: Omit<CachedResponse, "cachedOn">,
 ) {
   const key = getCacheKeyFromReq(req);
   await cacache.put(
@@ -52,6 +59,8 @@ export async function cacheResponse(
     JSON.stringify({
       body: res.body,
       statusCode: res.statusCode,
+      headers: res.headers,
+      cachedOn: Date.now(),
     }),
   );
 }
@@ -63,7 +72,8 @@ function getCacheKeyFromReq(req: CacheableRequest): string {
   );
 }
 
-export function getCachingFetch(
+export function addCachingFetchWrapper(
+  originalFetch: typeof fetch,
   cacheNetworkRequests: QueryOptions["cacheNetworkRequests"],
 ): typeof fetch {
   return async (
@@ -76,48 +86,11 @@ export function getCachingFetch(
       );
     }
 
-    let url, body, headers, method;
-    if (typeof input === "string" || input instanceof URL) {
-      url = input instanceof URL ? input.href : input;
-      if (!init || !init.body) {
-        body = "";
-      } else if (init.body instanceof URLSearchParams) {
-        body = init.body.toString();
-      } else if (init.body instanceof FormData) {
-        body = init.body.toString();
-      } else if (typeof init.body === "object") {
-        throw Error(
-          "Only string, URLSearchParams and FormData type bodies are currently supported. Sorry!",
-        );
-      } else {
-        body = init.body;
-      }
-      headers = init?.headers
-        ? // @ts-expect-error Not sure why typescript is concerned by this
-          (Object.fromEntries(Array.from(init.headers.entries())) as Record<
-            string,
-            string
-          >)
-        : {};
-      method = init?.method ?? "";
-    } else if (input instanceof Request) {
-      const clonedRequest = input.clone();
-      url = clonedRequest.url;
-      body = (await clonedRequest.text()) ?? "";
-      headers = Object.fromEntries(
-        // @ts-expect-error Not sure why typescript is concerned by this
-        Array.from(clonedRequest.headers.entries()),
-      ) as Record<string, string>;
-      // headers = headers as Record<string, string>
-      method = clonedRequest.method;
-    } else {
-      input satisfies never;
-      throw Error("Input is invalid");
-    }
+    const { url, body, headers, method } = parseFetchArgs(input, init);
 
     const cacheableRequest = {
-      url,
-      body,
+      url: url.href,
+      body: await body,
       headers,
       method,
       headerGeneratorOptions: undefined,
@@ -126,18 +99,23 @@ export function getCachingFetch(
     let res;
     if (cacheNetworkRequests === "always") {
       res = await getCachedResponse(cacheableRequest);
+      if (res) {
+        return new Response(res.body, {
+          headers: res.headers,
+          status: res.statusCode,
+          statusText: `Cached on: ${res.cachedOn.getTime()}`,
+        });
+      }
     } else {
       cacheNetworkRequests satisfies "never" | undefined;
     }
-    if (res) {
-      return new Response(res.body, init);
-    }
-    res = await fetch(input, init);
+    res = await originalFetch(input, init);
     if (cacheNetworkRequests === "always") {
       const clonedRes = res.clone();
       await cacheResponse(cacheableRequest, {
         statusCode: clonedRes.status,
         body: await clonedRes.text(),
+        headers: headersToNormalisedBasicObject(clonedRes.headers),
       });
     } else {
       cacheNetworkRequests satisfies "never" | undefined;

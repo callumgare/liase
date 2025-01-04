@@ -11,6 +11,7 @@ import {
 } from "./lib/networkRequestsCache.js";
 import deepmerge from "deepmerge";
 import { ActionContext } from "./ActionContext.js";
+import { headersToNormalisedBasicObject } from "./lib/fetch.js";
 
 type LoadUrlOptionsPlaywright = {
   agent: "playwright";
@@ -38,19 +39,23 @@ type LoadUrlOptionsGot = {
   | "form"
 >;
 
-type LoadUrlOptions = LoadUrlOptionsPlaywright | LoadUrlOptionsGot;
+export type LoadUrlOptions = LoadUrlOptionsPlaywright | LoadUrlOptionsGot;
 
-type LoadUrlResponseDom = {
+type LoadURLSharedResponse = {
+  statusCode: number;
+  headers: Record<string, string>;
+  cached: boolean;
+  cachedOn: Date | null;
+};
+
+type LoadUrlResponseDom = LoadURLSharedResponse & {
   root: DomSelection;
-  statusCode: number;
 };
-type LoadUrlResponseJson = {
+type LoadUrlResponseJson = LoadURLSharedResponse & {
   data: unknown;
-  statusCode: number;
 };
-type LoadUrlResponseText = {
+type LoadUrlResponseText = LoadURLSharedResponse & {
   data: string;
-  statusCode: number;
 };
 
 export type LoadUrlResponse =
@@ -116,7 +121,7 @@ export async function loadUrl(
     }
 
     if (!res) {
-      res = await gotScraping({
+      const gotRes = await gotScraping({
         url,
         ...requestOptions,
         responseType: "text",
@@ -125,22 +130,45 @@ export async function loadUrl(
         http2: false, // Seems to be necessary otherwise got will throw "Unknown HTTP2 promise event: destroy"
         // when caching.
       });
-      if (!res.ok) {
+      if (!gotRes.ok) {
         throw Error(
-          `Got response status ${res.statusCode} (retry count: ${res.retryCount}) with body: ${res.body}`,
+          `Got response status ${gotRes.statusCode} (retry count: ${gotRes.retryCount}) with body: ${gotRes.body}`,
         );
       }
+      res = {
+        body: gotRes.body,
+        statusCode: gotRes.statusCode,
+        headers: headersToNormalisedBasicObject(gotRes.headers),
+      };
       await cacheResponse(cacheableRequest, res);
     }
 
-    const { body, statusCode } = res;
+    const { body, statusCode, headers, cachedOn } = res;
 
     if (options.responseType === "dom" || !options.responseType) {
-      return { root: new CheerioDomSelection(cheerio.load(body)), statusCode };
+      return {
+        root: new CheerioDomSelection(cheerio.load(body)),
+        statusCode,
+        headers,
+        cached: Boolean(cachedOn),
+        cachedOn: cachedOn ?? null,
+      };
     } else if (options.responseType === "json") {
-      return { data: JSON.parse(body), statusCode };
+      return {
+        data: JSON.parse(body),
+        statusCode,
+        headers,
+        cached: Boolean(cachedOn),
+        cachedOn: cachedOn ?? null,
+      };
     } else if (options.responseType === "text") {
-      return { data: body, statusCode };
+      return {
+        data: body,
+        statusCode,
+        headers,
+        cached: Boolean(cachedOn),
+        cachedOn: cachedOn ?? null,
+      };
     } else {
       options.responseType satisfies never;
       throw Error(`Unknown response type "${options.responseType}"`);

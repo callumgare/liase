@@ -33,9 +33,7 @@ export default {
                 ? $.loadUrl(getMockServerAddress(), {
                     responseType: "json",
                   }).then((res) => res.data)
-                : $.getFetchClient().then((fetch) =>
-                    fetch(getMockServerAddress()).then((res) => res.json()),
-                  ),
+                : $.fetch(getMockServerAddress()).then((res) => res.json()),
             media: [],
             time: ($) => $(),
             request: ($) => $.request,

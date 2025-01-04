@@ -3,7 +3,7 @@ import {
   guessMediaInfoFromUrl,
   guessMediaInfoFromMimeType,
 } from "./actionHelpers.js";
-import { loadUrl } from "./loadUrl.js";
+import { loadUrl, LoadUrlResponse } from "./loadUrl.js";
 import { Action } from "./schemas/constructor.js";
 import { GenericRequest } from "./schemas/request.js";
 import { GenericSecrets } from "./schemas/secrets.js";
@@ -13,8 +13,9 @@ import {
   generateResponse,
   getResponseDetailsBasedOnRequest,
 } from "./generateResponse.js";
-import { getCachingFetch } from "./lib/networkRequestsCache.js";
-import { LoadUrlHistoryItem } from "./loadUrlHistory.js";
+import { addCachingFetchWrapper } from "./lib/networkRequestsCache.js";
+import { NetworkRequestsHistoryItem } from "./lib/networkRequestsHistory.js";
+import { headersToNormalisedBasicObject, parseFetchArgs } from "./lib/fetch.js";
 
 export const excludeFieldSymbol = Symbol("ExcludeField");
 
@@ -28,7 +29,7 @@ export class ActionContext extends Function {
     ) => Promise<ActionContext>;
     path: (string | number)[];
     initialData?: Record<string, any>;
-    loadUrlHistory?: LoadUrlHistoryItem[];
+    networkRequestsHistory?: NetworkRequestsHistoryItem[];
   }) {
     super();
     this.#constructorContext = args.constructorContext;
@@ -37,7 +38,7 @@ export class ActionContext extends Function {
     if (args.initialData) {
       this.#dataStore = args.initialData;
     }
-    this.#loadUrlHistory = args.loadUrlHistory ?? [];
+    this.#networkRequestsHistory = args.networkRequestsHistory ?? [];
     return new Proxy(this, {
       apply: (target, thisArg, args) => target.get(...args),
       get: (target, propName: keyof ActionContext, receiver) => {
@@ -55,7 +56,7 @@ export class ActionContext extends Function {
   #executeActions;
   #path;
   #resultHistory: any[] = [];
-  #loadUrlHistory;
+  #networkRequestsHistory;
   // eslint-disable-next-line no-use-before-define -- we need to use before it's defined since it's recursive
   #clonedChildren: ActionContext[] = [];
 
@@ -120,7 +121,7 @@ export class ActionContext extends Function {
       initialData: data ? { ...data } : { ...this.#dataStore },
       executeActions: this.#executeActions,
       path: (path ?? this.#path).concat(appendToPath ?? []),
-      loadUrlHistory: this.#loadUrlHistory,
+      networkRequestsHistory: this.#networkRequestsHistory,
     });
     this.#clonedChildren.push(clone);
     return clone;
@@ -164,18 +165,42 @@ export class ActionContext extends Function {
     url: string,
     options: Parameters<typeof loadUrl>[1],
   ) => {
-    const response = await loadUrl.call(this, url, options);
-    this.#loadUrlHistory.push({
-      constructorPath: this.#path,
+    const response = (await loadUrl.call(
+      this,
       url,
       options,
-      response,
+    )) as LoadUrlResponse;
+
+    let stringifiedBody: string;
+    if ("root" in response) {
+      stringifiedBody = response.root.nativeSelector.html() ?? "";
+    } else if (typeof response.data === "string") {
+      stringifiedBody = response.data;
+    } else {
+      stringifiedBody = JSON.stringify(response.data, null, 2);
+    }
+    this.#networkRequestsHistory.push({
+      constructorPath: this.#path,
+      request: {
+        url: new URL(url),
+        method: options.method || "GET",
+        headers: options.headers || {},
+        body: options.body,
+      },
+      response: {
+        headers: response.headers,
+        body: stringifiedBody,
+        statusCode: response.statusCode,
+        cached: response.cached,
+        cachedOn: response.cachedOn,
+      },
     });
+
     return response;
   }) as any;
 
-  get loadUrlHistory() {
-    return this.#loadUrlHistory;
+  get networkRequestsHistory() {
+    return this.#networkRequestsHistory;
   }
 
   loadRequest = async (
@@ -212,8 +237,43 @@ export class ActionContext extends Function {
     return this.#constructorContext.hooks;
   }
 
-  async getFetchClient(): Promise<typeof fetch> {
-    return await getCachingFetch(this.#constructorContext.cacheNetworkRequests);
+  get fetch(): typeof fetch {
+    const cachingFetch = addCachingFetchWrapper(
+      fetch,
+      this.#constructorContext.cacheNetworkRequests,
+    );
+    return async (
+      input: Parameters<typeof fetch>[0],
+      init?: Parameters<typeof fetch>[1],
+    ): Promise<Response> => {
+      const response = await cachingFetch(input, init);
+
+      const { url, body, headers, method } = parseFetchArgs(input, init);
+      const clonedResponse = response.clone();
+      const cacheTimestamp =
+        response.statusText.match(/^Cached on: (\d+)$/)?.[1];
+      const responseHeaders = headersToNormalisedBasicObject(
+        clonedResponse.headers,
+      );
+      this.#networkRequestsHistory.push({
+        constructorPath: this.#path,
+        request: {
+          url,
+          method,
+          headers,
+          body,
+        },
+        response: {
+          headers: responseHeaders,
+          body: clonedResponse.text(),
+          statusCode: clonedResponse.status,
+          cached: Boolean(cacheTimestamp),
+          cachedOn: cacheTimestamp ? new Date(parseInt(cacheTimestamp)) : null,
+        },
+      });
+
+      return response;
+    };
   }
 
   guessMediaInfoFromUrl = guessMediaInfoFromUrl;

@@ -10,7 +10,10 @@ import {
   requestHandlerSchema,
 } from "./schemas/requestHandler.js";
 import { z } from "zod";
-import { exportLoadUrlHistory, LoadUrlHistoryItem } from "./loadUrlHistory.js";
+import {
+  exportNetworkRequestsHistory,
+  NetworkRequestsHistoryItem,
+} from "./lib/networkRequestsHistory.js";
 
 export async function generateResponse(
   constructorContext: ConstructorExecutionContext,
@@ -55,13 +58,15 @@ async function validateResponse(
       rootActionContext,
       ...rootActionContext.descendants,
     ];
-    const loadUrlHistory = new Set<LoadUrlHistoryItem>();
+    const networkRequestsHistory = new Set<NetworkRequestsHistoryItem>();
     for (const actionContext of allActionContexts) {
-      for (const loadUrlHistoryItem of actionContext.loadUrlHistory) {
-        loadUrlHistory.add(loadUrlHistoryItem);
+      for (const networkRequestsHistoryItem of actionContext.networkRequestsHistory) {
+        networkRequestsHistory.add(networkRequestsHistoryItem);
       }
     }
-    await exportLoadUrlHistory({ loadUrlHistory: [...loadUrlHistory] });
+    await exportNetworkRequestsHistory({
+      networkRequestsHistory: [...networkRequestsHistory],
+    });
     throw error;
   }
 

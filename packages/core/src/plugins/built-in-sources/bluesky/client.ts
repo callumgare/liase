@@ -16,7 +16,7 @@ export const getAgent = async (props: Props): Promise<AtpAgent> => {
 
   const agent = new AtpAgent({
     service: props.serviceUrl || defaultServiceUrl,
-    fetch: await props.$.getFetchClient(),
+    fetch: props.$.fetch,
   });
   if (props.handle && props.password) {
     await agent.login({
