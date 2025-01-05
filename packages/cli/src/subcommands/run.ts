@@ -16,6 +16,7 @@ export async function getRunCommand(): Promise<Command> {
 		requestHandlerOption,
 		pluginsOption,
 		cacheNetworkRequestsOption,
+		secretsSetOption,
 	} = getSharedMediaFinderOptions(mediaFinderDetails);
 	runCommand
 		.name("run")
@@ -23,6 +24,7 @@ export async function getRunCommand(): Promise<Command> {
 		.addOption(requestHandlerOption)
 		.addOption(pluginsOption)
 		.addOption(cacheNetworkRequestsOption)
+		.addOption(secretsSetOption)
 		.addOption(
 			new Option(
 				"-f, --outputFormat <output format>",
@@ -33,11 +35,13 @@ export async function getRunCommand(): Promise<Command> {
 				.default(process.stdout.isTTY ? "pretty" : "json"),
 		)
 		.action(async (options) => {
-			const { plugins, outputFormat, request, cacheNetworkRequests } = options;
+			const { outputFormat, request, cacheNetworkRequests, secretsSet } =
+				options;
 			const query = await getMediaFinderQuery({
 				request,
 				loadPluginsFromArgs: true,
 				cacheNetworkRequests,
+				secretsSet,
 			});
 			const response = await query.getNext();
 

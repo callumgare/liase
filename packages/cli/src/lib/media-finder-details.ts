@@ -125,6 +125,11 @@ export function getSharedMediaFinderOptions({
 		"Plugins to load",
 	);
 
+	const secretsSetOption = new Option(
+		"--secretsSet <secrets set name>",
+		"Finds secrets set with given name and uses secrets in query",
+	);
+
 	const cacheNetworkRequestsOption = new Option(
 		"--cacheNetworkRequests <caching option>",
 		`"never" will never cache network requests, "auto" will cache requests that seem like they might be cacheable and store them for as long as they seem fresh, ` +
@@ -147,5 +152,6 @@ export function getSharedMediaFinderOptions({
 		requestHandlerOption,
 		pluginsOption,
 		cacheNetworkRequestsOption,
+		secretsSetOption,
 	};
 }
