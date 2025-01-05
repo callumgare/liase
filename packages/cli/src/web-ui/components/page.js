@@ -20,10 +20,7 @@ export default {
 		);
 		watch(
 			queries,
-			() => {
-				console.log("queries changed", queries);
-				localStorage.setItem("queries", JSON.stringify(queries.value));
-			},
+			() => localStorage.setItem("queries", JSON.stringify(queries.value)),
 			{ deep: true },
 		);
 
@@ -55,10 +52,6 @@ export default {
 				);
 			}
 			return currentQuery;
-		});
-		const queryName = ref(currentQuery.value.name);
-		watch(currentQuery, () => {
-			queryName.value = currentQuery.value.name;
 		});
 
 		const secretsSets = ref([]);
@@ -106,19 +99,14 @@ export default {
 		}
 		fetchMedia();
 
-		function saveNewQuery() {
+		function duplicateQuery() {
 			const clonedCurrentQuery = JSON.parse(JSON.stringify(currentQuery.value));
 			const newQuery = {
 				...clonedCurrentQuery,
 				id: Date.now(),
-				name: queryName.value,
 			};
 			queries.value.push(newQuery);
 			currentQueryId.value = newQuery.id;
-		}
-
-		function renameCurrentQuery() {
-			currentQuery.value.name = queryName.value;
 		}
 
 		function handleRequestChange(event) {
@@ -149,9 +137,7 @@ export default {
 			currentQuery,
 			currentQueryId,
 			queries,
-			queryName,
-			saveNewQuery,
-			renameCurrentQuery,
+			duplicateQuery,
 		};
 	},
 	template: /* html */ `
@@ -164,11 +150,10 @@ export default {
 					</select>
 				</div>
 				<div class="group">
-					<label for="new-query-name">Query name:</label>
-					<input name="query-name" id="new-query-name" v-model="queryName" />
-					<button @click="saveNewQuery">Save as new query</button>
-					<button @click="renameCurrentQuery">Rename current query</button>
-				</div>
+					<label for="query-name">Query name:</label>
+					<input name="query-name" id="query-name" v-model="currentQuery.name" />
+					</div>
+				<button @click="duplicateQuery">Duplicate query</button>
 			</div>
       <textarea
         :style="{'background-color': requestValid ? 'rgba(56, 255, 0, 0.06)' : '#ff00001a'}"
