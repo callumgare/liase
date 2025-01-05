@@ -13,6 +13,7 @@ export default {
 					{ type: "fix", release: "patch" },
 					{ type: "perf", release: "patch" },
 					{ type: "ci", release: "patch" },
+					{ type: "refactor", release: "patch" },
 					{ type: "docs", scope: "help-text", release: "patch" },
 					{ scope: "no-release", release: false },
 				],

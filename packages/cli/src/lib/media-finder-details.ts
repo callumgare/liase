@@ -44,9 +44,7 @@ export async function getMediaFinderDetailsFromArgs(): Promise<MediaFinderDetail
 
 		silenceCommand(program);
 
-		let sourceId = "";
-		let requestHandlerId = "";
-		let pluginFilePaths: string[] = [];
+		let options: Record<string, unknown> = {};
 
 		function addSubcommand(program: Command, subcommandName: string) {
 			const command = new Command();
@@ -55,10 +53,8 @@ export async function getMediaFinderDetailsFromArgs(): Promise<MediaFinderDetail
 				.option("-s, --source <source id>")
 				.option("-r, --requestHandler <request handler id>")
 				.option("-p, --plugins <comma separated list of filepaths to plugins>")
-				.action((options) => {
-					sourceId = options.source;
-					requestHandlerId = options.requestHandler;
-					pluginFilePaths = options.plugins?.split(",") || [];
+				.action((_options) => {
+					options = _options;
 				});
 			silenceCommand(command);
 			program.addCommand(command);
@@ -74,12 +70,18 @@ export async function getMediaFinderDetailsFromArgs(): Promise<MediaFinderDetail
 		} catch (error) {
 			// We don't care if there's an error
 		}
+		const sourceId = options.source;
+		const requestHandlerId = options.requestHandler;
+		const pluginFilePaths =
+			typeof options.plugins === "string" ? options.plugins.split(",") : [];
 
 		const plugins = await Promise.all(
-			pluginFilePaths.map(
-				async (pluginFilePath) =>
-					await tsImport(pluginFilePath, import.meta.url),
-			),
+			pluginFilePaths
+				.filter((path) => path)
+				.map(
+					async (pluginFilePath) =>
+						await tsImport(pluginFilePath, import.meta.url),
+				),
 		).then((modules) => modules.map((module) => module.default));
 
 		const mediaFinder = new MediaFinder({ plugins });
@@ -154,4 +156,18 @@ export function getSharedMediaFinderOptions({
 		cacheNetworkRequestsOption,
 		secretsSetOption,
 	};
+}
+
+export function getRequestFromArgs(
+	options: Record<string, unknown>,
+	requestHandler?: RequestHandler,
+): Record<string, unknown> {
+	const request: Record<string, unknown> = {};
+	if (requestHandler) {
+		for (const key in requestHandler.requestSchema.shape) {
+			request[key] = options[key];
+		}
+	}
+	request.queryType = options.requestHandler;
+	return request;
 }

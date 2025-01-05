@@ -2,6 +2,7 @@ import { Command, Option } from "commander";
 import open from "open";
 import {
 	getMediaFinderDetailsFromArgs,
+	getRequestFromArgs,
 	getSharedMediaFinderOptions,
 } from "../lib/media-finder-details.js";
 import { getMediaFinderQuery } from "../lib/media-finder-query.js";
@@ -35,8 +36,11 @@ export async function getRunCommand(): Promise<Command> {
 				.default(process.stdout.isTTY ? "pretty" : "json"),
 		)
 		.action(async (options) => {
-			const { outputFormat, request, cacheNetworkRequests, secretsSet } =
-				options;
+			const { outputFormat, cacheNetworkRequests, secretsSet } = options;
+			const request = getRequestFromArgs(
+				options,
+				mediaFinderDetails.requestHandler,
+			);
 			const query = await getMediaFinderQuery({
 				request,
 				loadPluginsFromArgs: true,
@@ -48,11 +52,11 @@ export async function getRunCommand(): Promise<Command> {
 			if (response === null) {
 				throw Error("No response received");
 			}
-			if (options.outputFormat === "pretty") {
+			if (outputFormat === "pretty") {
 				console.dir(response, { depth: null });
-			} else if (options.outputFormat === "json") {
+			} else if (outputFormat === "json") {
 				console.log(JSON.stringify(response, null, 2));
-			} else if (options.outputFormat === "online") {
+			} else if (outputFormat === "online") {
 				const { origin: proxyOrigin } = await startProxyServer();
 
 				for (const media of response.media || []) {
@@ -83,7 +87,7 @@ export async function getRunCommand(): Promise<Command> {
 					throw Error("Invalid response for server");
 				}
 			} else {
-				throw Error(`Unknown output format "${options.outputFormat}"`);
+				throw Error(`Unknown output format "${outputFormat}"`);
 			}
 		});
 

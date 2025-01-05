@@ -28,11 +28,6 @@ export async function getMediaFinderQuery({
 		const secretsSets = await getSecretsSets();
 		secrets = secretsSets[secretsSet];
 	}
-	if (request.requestHandler) {
-		request.queryType = request.requestHandler;
-		// biome-ignore lint/performance/noDelete: Performance isn't really a concern here
-		delete request.requestHandler;
-	}
 
 	return createMediaFinderQuery({
 		request: request as GenericRequest,
