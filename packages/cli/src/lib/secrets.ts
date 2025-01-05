@@ -1,10 +1,13 @@
 import fs from "node:fs/promises";
+import path from "node:path";
 
 let cachedSecretSets: Record<string, Record<string, unknown>>;
 
 export async function getSecretsSets() {
 	const defaultSecretSetsConfigPath = "./.secrets-sets.json";
-	const customSecretSetsConfigPath = process.env.SECRETS_SETS_CONFIG_PATH;
+	const customSecretSetsConfigPath = process.env.SECRETS_SETS_CONFIG_PATH
+		? path.resolve(process.env.SECRETS_SETS_CONFIG_PATH)
+		: "";
 
 	const secretSetsConfigPath =
 		customSecretSetsConfigPath ?? defaultSecretSetsConfigPath;
