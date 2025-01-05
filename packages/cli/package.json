@@ -47,7 +47,7 @@
 		"typescript": "^5.7.2"
 	},
 	"peerDependencies": {
-		"media-finder": "^3.8.0"
+		"media-finder": "^3.12.0"
 	},
 	"overrides": {
 		"conventional-changelog-conventionalcommits": ">= 8.0.0"

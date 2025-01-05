@@ -1,4 +1,5 @@
 import { Command, Option } from "commander";
+import open from "open";
 import {
 	getMediaFinderDetailsFromArgs,
 	getSharedMediaFinderOptions,
@@ -10,13 +11,18 @@ import { zodSchemaToSimpleSchema } from "../lib/zod.js";
 export async function getRunCommand(): Promise<Command> {
 	const runCommand = new Command();
 	const mediaFinderDetails = await getMediaFinderDetailsFromArgs();
-	const { sourceOption, requestHandlerOption, pluginsOption } =
-		getSharedMediaFinderOptions(mediaFinderDetails);
+	const {
+		sourceOption,
+		requestHandlerOption,
+		pluginsOption,
+		cacheNetworkRequestsOption,
+	} = getSharedMediaFinderOptions(mediaFinderDetails);
 	runCommand
 		.name("run")
 		.addOption(sourceOption)
 		.addOption(requestHandlerOption)
 		.addOption(pluginsOption)
+		.addOption(cacheNetworkRequestsOption)
 		.addOption(
 			new Option(
 				"-f, --outputFormat <output format>",
@@ -27,10 +33,11 @@ export async function getRunCommand(): Promise<Command> {
 				.default(process.stdout.isTTY ? "pretty" : "json"),
 		)
 		.action(async (options) => {
-			const { plugins, outputFormat, request } = options;
+			const { plugins, outputFormat, request, cacheNetworkRequests } = options;
 			const query = await getMediaFinderQuery({
 				request,
 				loadPluginsFromArgs: true,
+				cacheNetworkRequests,
 			});
 			const response = await query.getNext();
 
@@ -60,8 +67,17 @@ export async function getRunCommand(): Promise<Command> {
 						body: JSON.stringify(response),
 					},
 				);
-				const { viewerUrl } = await res.json();
-				open(viewerUrl);
+				const data = await res.json();
+				if (
+					data &&
+					typeof data === "object" &&
+					"viewerUrl" in data &&
+					typeof data.viewerUrl === "string"
+				) {
+					open(data.viewerUrl);
+				} else {
+					throw Error("Invalid response for server");
+				}
 			} else {
 				throw Error(`Unknown output format "${options.outputFormat}"`);
 			}

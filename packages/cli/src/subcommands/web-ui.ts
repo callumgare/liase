@@ -86,13 +86,15 @@ function handleMediaQueryRequest(
 		body += chunk;
 	});
 	req.on("end", async () => {
-		const { mediaFinderRequest, secretsSet } = JSON.parse(body);
+		const { mediaFinderRequest, secretsSet, cacheNetworkRequests } =
+			JSON.parse(body);
 		let response: unknown;
 		try {
 			const query = await getMediaFinderQuery({
 				request: mediaFinderRequest,
 				secretsSet,
 				loadPluginsFromArgs: true,
+				cacheNetworkRequests,
 			});
 			response = await query.getNext();
 		} catch (error) {

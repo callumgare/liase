@@ -4,38 +4,24 @@ import {
 	type Plugin,
 	createMediaFinderQuery,
 } from "media-finder";
-import cachingNetworkPlugin, {
-	setupCachingProxy,
-	cachingProxyDetected,
-} from "media-finder/dist/plugins/cache-network.js";
 import { getMediaFinderDetailsFromArgs } from "./media-finder-details.js";
 import { getSecretsSets } from "./secrets.js";
 
 export async function getMediaFinderQuery({
 	request,
 	secretsSet,
-	noCachingPlugin,
+	cacheNetworkRequests,
 	loadPluginsFromArgs,
 }: {
 	request: Record<string, unknown>;
 	secretsSet?: string;
-	noCachingPlugin?: boolean;
+	cacheNetworkRequests?: "never" | "auto" | "always";
 	loadPluginsFromArgs?: boolean;
 }): Promise<MediaFinderQuery> {
 	const plugins: Plugin[] = [];
 	if (loadPluginsFromArgs) {
 		const mediaFinderDetails = await getMediaFinderDetailsFromArgs();
 		plugins.push(...mediaFinderDetails.plugins);
-	}
-	if (!noCachingPlugin) {
-		if (!cachingProxyDetected()) {
-			const { cleanup } = await setupCachingProxy();
-
-			process.on("SIGINT", cleanup);
-			process.on("SIGQUIT", cleanup);
-			process.on("SIGTERM", cleanup);
-		}
-		plugins.push(cachingNetworkPlugin);
 	}
 	let secrets = {};
 	if (secretsSet) {
@@ -52,6 +38,7 @@ export async function getMediaFinderQuery({
 		request: request as GenericRequest,
 		queryOptions: {
 			secrets,
+			cacheNetworkRequests,
 		},
 		finderOptions: {
 			plugins,

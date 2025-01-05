@@ -30,6 +30,15 @@ export default {
 		}
 		updateSecretsSets();
 
+		const cacheNetworkRequests = ref(
+			localStorage.getItem("cacheNetworkRequests")
+				? localStorage.getItem("cacheNetworkRequests")
+				: "always",
+		);
+		watch(cacheNetworkRequests, () => {
+			localStorage.setItem("cacheNetworkRequests", cacheNetworkRequests.value);
+		});
+
 		const requestValid = computed(() => {
 			try {
 				JSON.parse(requestString.value);
@@ -52,6 +61,7 @@ export default {
 					body: JSON.stringify({
 						mediaFinderRequest: JSON.parse(requestString.value),
 						secretsSet: secretsSet.value,
+						cacheNetworkRequests: cacheNetworkRequests.value,
 					}),
 				});
 				response.value = await res.json();
@@ -95,6 +105,7 @@ export default {
 			handleRequestChange,
 			secretsSets,
 			secretsSet,
+			cacheNetworkRequests,
 		};
 	},
 	template: /* html */ `
@@ -108,10 +119,17 @@ export default {
 			<div class="group">
 				<div class="group">
 					<label for="secret-set">Secrets Set:</label>
-
 					<select name="secret-set" id="secret-set" v-model="secretsSet">
 						<option value="">--None--</option>
 						<option v-for="secretsSet in secretsSets" :value="secretsSet">{{secretsSet}}</option>
+					</select>
+				</div>
+				<div class="group">
+					<label for="cache-network-requests">Cache Network Requests:</label>
+					<select name="cache-network-requests" id="cache-network-requests" v-model="cacheNetworkRequests">
+						<option value="never">Never</option>
+						<option value="auto">Auto</option>
+						<option value="always">Always</option>
 					</select>
 				</div>
 				<button @click="fetchMedia" :disabled="!requestValid">Fetch</button>

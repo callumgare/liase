@@ -125,6 +125,14 @@ export function getSharedMediaFinderOptions({
 		"Plugins to load",
 	);
 
+	const cacheNetworkRequestsOption = new Option(
+		"--cacheNetworkRequests <caching option>",
+		`"never" will never cache network requests, "auto" will cache requests that seem like they might be cacheable and store them for as long as they seem fresh, ` +
+			`"always" will always cache requests with no expiry.`,
+	)
+		.choices(["never", "auto", "always"])
+		.default("always");
+
 	const mediaFinder = new MediaFinder({ plugins });
 	sourceOption.choices(mediaFinder.sources.map((source) => source.id));
 
@@ -138,5 +146,6 @@ export function getSharedMediaFinderOptions({
 		sourceOption,
 		requestHandlerOption,
 		pluginsOption,
+		cacheNetworkRequestsOption,
 	};
 }
