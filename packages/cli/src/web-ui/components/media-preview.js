@@ -17,42 +17,45 @@ export default {
 			return weight;
 		};
 
-		const files = computed(
+		const mediaAsset = computed(
 			() =>
-				props.media.files?.toSorted(
-					(a, b) => fileSortWeight(a) - fileSortWeight(b),
-				) || [],
+				(props.media.assets?.media || props.media.files || []).toSorted(
+					(a, b) =>
+						// Listed in order of importance from most important to least important
+						(b.videoCodec !== "hevc") - (a.videoCodec !== "hevc") || // Non-hevc streams preferred
+						(b.isOriginalTranscode ?? false) -
+							(a.isOriginalTranscode ?? false) || // isOriginalTranscode preferred
+						(b.mimeType === "application/vnd.apple.mpegurl") -
+							(a.mimeType === "application/vnd.apple.mpegurl") || // HLS preferred
+						(b.isOriginalResolution ?? false) -
+							(a.isOriginalResolution ?? false) || // isOriginalResolution preferred
+						(b.duration ?? 0) - (a.duration ?? 0), // duration descending
+				)[0],
+		);
+
+		const previewAsset = computed(
+			() =>
+				(
+					props.media.assets?.preview ||
+					props.media.files?.filter((file) => file.image) ||
+					[]
+				).toSorted(
+					(a, b) =>
+						// Listed in order of importance from most important to least important
+						fileSortWeight(a) - fileSortWeight(b), // How close the size it to the displayed size from closest to furthest
+				)[0],
 		);
 
 		const displayElement = computed(() =>
-			files.value.some((file) => file.video && file.ext !== "gif")
+			mediaAsset.value?.video && mediaAsset.value?.ext !== "gif"
 				? "video"
 				: "image",
 		);
-		const videoFile = computed(() =>
-			files.value.find((file) => file.video && file.ext !== "gif"),
-		);
-		const imageFile = computed(() =>
-			files.value.find((file) => file.image || file.ext === "gif"),
-		);
-
-		const getSrc = (file) =>
-			`${document.location.origin}/file/${props.media.id}/${file?.id}/${file?.url}`;
-
-		const posterSrc = computed(() => {
-			if (imageFile.value) {
-				return getSrc(imageFile.value);
-			}
-			if (videoFile.value) {
-				return `${document.location.origin}/file/poster/${props.media.id}/${videoFile.value?.id}/${thumbnailDisplayHeight}`;
-			}
-			return "";
-		});
 
 		const videoRef = useTemplateRef("video-elm");
 
 		onMounted(() => {
-			const file = videoFile.value;
+			const file = mediaAsset.value;
 
 			if (!file || videoRef.value === null) {
 				return;
@@ -86,30 +89,37 @@ export default {
 		}
 		return {
 			displayElement,
-			imageFile,
-			videoFile,
+			mediaAsset,
+			previewAsset,
 			handleMouseEnter,
 			handleMouseLeave,
-			posterSrc,
 		};
 	},
 	template: /* html */ `
     <div
       class="MediaPreview"
     >
-      <video
-        v-if="displayElement === 'video'"
-        ref="video-elm"
-        preload="none"
-        playsinline="true"
-        muted="true"
-        :poster="imageFile?.url"
-        :style="videoFile.aspectRatio ? {'aspect-ratio': videoFile.aspectRatio.width + ' / ' + videoFile.aspectRatio.height} : {}"
-        controls="true"
-      ></video>
+			<div
+				v-if="displayElement === 'video'"
+				class="videoContainer"
+			>
+				<video
+					ref="video-elm"
+					preload="none"
+					playsinline="true"
+					muted="true"
+					:poster="previewAsset?.url"
+					:style="mediaAsset.aspectRatio ? {'aspect-ratio': mediaAsset.aspectRatio.width + ' / ' + mediaAsset.aspectRatio.height} : {}"
+					controls="true"
+				></video>
+				<img
+					v-if="previewAsset"
+					:src="previewAsset?.url"
+				>
+			</div>
       <img
         v-else-if="displayElement === 'image'"
-        :src="imageFile.url"
+        :src="mediaAsset?.url"
       >
       <div v-else>
         Unknown display type {{ displayElement }}

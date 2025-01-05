@@ -67,6 +67,22 @@
         display: flex;
         gap: 1em;
 
+        .videoContainer {
+          display: grid;
+          grid-template-rows: 1fr;
+          grid-template-columns: 1fr;
+
+          img,
+          video {
+            grid-area: 1 / 1 / 2 / 2;
+          }
+
+          video {
+            grid-area: 1 / 1 / 2 / 2;
+            z-index: 1;
+          }
+        }
+
         img,
         video {
           max-height: 200px;
