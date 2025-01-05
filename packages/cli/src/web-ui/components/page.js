@@ -6,42 +6,71 @@ export default {
 		DisplayMedia,
 	},
 	setup() {
-		const requestString = ref(
-			localStorage.getItem("mediaFinderRequest") ||
-				JSON.stringify(
-					{
-						source: "bluesky",
-						queryType: "search",
-					},
-					null,
-					2,
-				),
+		const emptyQuery = {
+			id: Date.now(),
+			name: "untitled query",
+			requestString: "{}",
+			secretsSet: "",
+			cacheNetworkRequests: "always",
+		};
+		const queries = ref(
+			JSON.parse(
+				localStorage.getItem("queries") || JSON.stringify([emptyQuery]),
+			),
+		);
+		watch(
+			queries,
+			() => {
+				console.log("queries changed", queries);
+				localStorage.setItem("queries", JSON.stringify(queries.value));
+			},
+			{ deep: true },
 		);
 
-		const secretsSets = ref([]);
-
-		const secretsSet = ref(localStorage.getItem("secretsSet") || "");
-		watch(secretsSet, () => {
-			localStorage.setItem("secretsSet", secretsSet.value);
+		const currentQueryId = ref(
+			JSON.parse(localStorage.getItem("currentQueryId")) ||
+				queries.value[0]?.id,
+		);
+		watch(currentQueryId, () => {
+			localStorage.setItem("currentQueryId", currentQueryId.value);
 		});
+
+		const currentQuery = computed(() => {
+			const currentQuery = queries.value?.find(
+				(query) => query.id === currentQueryId.value,
+			);
+			if (!currentQuery) {
+				console.info("Queries", queries.value);
+				if (queries.value?.length) {
+					console.warn(
+						"Could not find current query with id:",
+						currentQueryId.value,
+					);
+					const firstQuery = queries.value[0];
+					currentQueryId.value = firstQuery.id;
+					return firstQuery;
+				}
+				throw Error(
+					`Could not find current query with id: ${currentQueryId.value}`,
+				);
+			}
+			return currentQuery;
+		});
+		const queryName = ref(currentQuery.value.name);
+		watch(currentQuery, () => {
+			queryName.value = currentQuery.value.name;
+		});
+
+		const secretsSets = ref([]);
 		async function updateSecretsSets() {
 			const res = await fetch("/secrets-sets");
 			secretsSets.value = await res.json();
 		}
 		updateSecretsSets();
 
-		const cacheNetworkRequests = ref(
-			localStorage.getItem("cacheNetworkRequests")
-				? localStorage.getItem("cacheNetworkRequests")
-				: "always",
-		);
-		watch(cacheNetworkRequests, () => {
-			localStorage.setItem("cacheNetworkRequests", cacheNetworkRequests.value);
-		});
-
 		const requestValid = computed(() => {
 			try {
-				JSON.parse(requestString.value);
+				JSON.parse(currentQuery.value?.requestString);
 				return true;
 			} catch (error) {
 				return false;
@@ -59,9 +88,9 @@ export default {
 				const res = await fetch("/", {
 					method: "POST",
 					body: JSON.stringify({
-						mediaFinderRequest: JSON.parse(requestString.value),
-						secretsSet: secretsSet.value,
-						cacheNetworkRequests: cacheNetworkRequests.value,
+						mediaFinderRequest: JSON.parse(currentQuery.value?.requestString),
+						secretsSet: currentQuery.value?.secretsSet,
+						cacheNetworkRequests: currentQuery.value?.cacheNetworkRequests,
 					}),
 				});
 				response.value = await res.json();
@@ -77,13 +106,27 @@ export default {
 		}
 		fetchMedia();
 
+		function saveNewQuery() {
+			const clonedCurrentQuery = JSON.parse(JSON.stringify(currentQuery.value));
+			const newQuery = {
+				...clonedCurrentQuery,
+				id: Date.now(),
+				name: queryName.value,
+			};
+			queries.value.push(newQuery);
+			currentQueryId.value = newQuery.id;
+		}
+
+		function renameCurrentQuery() {
+			currentQuery.value.name = queryName.value;
+		}
+
 		function handleRequestChange(event) {
-			requestString.value = JSON.stringify(
+			currentQuery.value.requestString = JSON.stringify(
 				JSON.parse(event.target.value),
 				null,
 				2,
 			);
-			localStorage.setItem("mediaFinderRequest", requestString.value);
 		}
 
 		const jsonViewerRef = useTemplateRef("json-viewer");
@@ -97,36 +140,53 @@ export default {
 		});
 		return {
 			response,
-			requestString,
 			fetchMedia,
 			responseView,
 			requestValid,
 			loadingStatus,
 			handleRequestChange,
 			secretsSets,
-			secretsSet,
-			cacheNetworkRequests,
+			currentQuery,
+			currentQueryId,
+			queries,
+			queryName,
+			saveNewQuery,
+			renameCurrentQuery,
 		};
 	},
 	template: /* html */ `
     <div class="options">
+			<div class="group">
+				<div class="group">
+					<label for="current-query">Current query:</label>
+					<select name="current-query" id="current-query" v-model="currentQueryId">
+						<option v-for="query, index in queries" :value="query.id">{{index}} - {{query.name}}</option>
+					</select>
+				</div>
+				<div class="group">
+					<label for="new-query-name">Query name:</label>
+					<input name="query-name" id="new-query-name" v-model="queryName" />
+					<button @click="saveNewQuery">Save as new query</button>
+					<button @click="renameCurrentQuery">Rename current query</button>
+				</div>
+			</div>
       <textarea
         :style="{'background-color': requestValid ? 'rgba(56, 255, 0, 0.06)' : '#ff00001a'}"
         id="request"
-        v-model="requestString"
+        v-model="currentQuery.requestString"
         @change="handleRequestChange"
       ></textarea>
 			<div class="group">
 				<div class="group">
 					<label for="secret-set">Secrets Set:</label>
-					<select name="secret-set" id="secret-set" v-model="secretsSet">
+					<select name="secret-set" id="secret-set" v-model="currentQuery.secretsSet">
 						<option value="">--None--</option>
 						<option v-for="secretsSet in secretsSets" :value="secretsSet">{{secretsSet}}</option>
 					</select>
 				</div>
 				<div class="group">
 					<label for="cache-network-requests">Cache Network Requests:</label>
-					<select name="cache-network-requests" id="cache-network-requests" v-model="cacheNetworkRequests">
+					<select name="cache-network-requests" id="cache-network-requests" v-model="currentQuery.cacheNetworkRequests">
 						<option value="never">Never</option>
 						<option value="auto">Auto</option>
 						<option value="always">Always</option>
