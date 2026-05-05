@@ -21,9 +21,17 @@ export function parseFetchArgs(
       body = init.body.toString();
     } else if (init.body instanceof FormData) {
       body = init.body.toString();
+    } else if (init.body instanceof ArrayBuffer) {
+      body = new TextDecoder().decode(init.body);
+    } else if (ArrayBuffer.isView(init.body)) {
+      body = new TextDecoder().decode(init.body);
+    } else if (init.body instanceof Blob) {
+      body = init.body.text();
+    } else if (init.body instanceof ReadableStream) {
+      body = new Response(init.body).text();
     } else if (typeof init.body === "object") {
       throw Error(
-        "Only string, URLSearchParams and FormData type bodies are currently supported. Sorry!",
+        "Only string, URLSearchParams, FormData, ArrayBuffer, ArrayBufferView, Blob, and ReadableStream type bodies are currently supported. Sorry!",
       );
     } else {
       body = init.body;

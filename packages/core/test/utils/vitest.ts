@@ -35,6 +35,7 @@ export function createBasicTestsForRequestHandlers<
     timeout?: number;
     testName?: string;
     expectError?: string | RegExp;
+    skip?: boolean | string;
   },
   Queries extends { [Key in HandlerIds]: Query | Query[] },
   QueriesShared extends Query,
@@ -68,6 +69,17 @@ export function createBasicTestsForRequestHandlers<
         queriesShared?.testName ??
         `Run query "${requestHandler.displayName}" with: ${formattedQuery}`;
       const expectError = query.expectError ?? queriesShared?.expectError;
+      const skip = query.skip ?? queriesShared?.skip;
+
+      if (skip) {
+        const message =
+          typeof skip === "string"
+            ? `SKIPPED: ${testName} — ${skip}`
+            : `SKIPPED: ${testName}`;
+        console.warn(message);
+        test.skip(testName, () => {});
+        continue;
+      }
 
       test(
         testName,

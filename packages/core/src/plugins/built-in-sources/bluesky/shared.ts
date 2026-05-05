@@ -29,17 +29,30 @@ export const postsToMediaResponseConstructor = [
             ? [{ ...$(), url: $().playlistUrl, mediaFinderType: "full" }]
             : []),
           ...($().thumbnailUrl
-            ? [{ url: $().thumbnailUrl, mediaFinderType: "thumbnail" }]
+            ? [
+                {
+                  url: $().thumbnailUrl,
+                  mediaFinderType: "thumbnail",
+                  // For image posts use the image mimeType; for video posts the
+                  // thumbnail is always a JPEG image regardless of video format
+                  mimeType: $().fullsizeUrl ? $().mimeType : "image/jpeg",
+                },
+              ]
             : []),
         ],
         _setup: ($) =>
           $.set(
             "mediaInfo",
             $.guessMediaInfoFromUrl(
+              // Bluesky CDN URLs previously had a @format suffix (e.g. @jpeg).
+              // Keep this replacement for backward-compat with cached responses.
               $().url.replace(
                 /@(\w+)$/,
                 (_: string, match: string) => `.${match}`,
               ),
+              // Fall back to the mimeType stored on the entry when the URL has
+              // no file extension (current Bluesky CDN image URL format).
+              { mimeType: $().mimeType },
             ),
           ),
         type: ($) => $().mediaFinderType,

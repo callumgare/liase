@@ -1,6 +1,16 @@
 import blueskySource from "@/src/plugins/built-in-sources/bluesky/index.js";
 import { expect } from "vitest";
+import { getSecrets } from "../../utils/general.js";
 import { createBasicTestsForRequestHandlers } from "../../utils/vitest.js";
+
+// Search requires Bluesky authentication. Skip when no credentials are present
+// (e.g. in CI). Add handle/password for bluesky in .secrets.mjs to run this test.
+const blueskySecrets = await getSecrets({
+  source: "bluesky",
+  queryType: "search",
+});
+const hasBlueskyCredentials = !!(blueskySecrets as Record<string, unknown>)
+  ?.handle;
 
 createBasicTestsForRequestHandlers({
   source: blueskySource,
@@ -17,6 +27,9 @@ createBasicTestsForRequestHandlers({
         expect(response.media.length).toBeGreaterThan(2),
       numOfPagesToLoad: 1,
       duplicateMediaPossible: true,
+      skip:
+        !hasBlueskyCredentials &&
+        "Bluesky search requires authentication — add .secrets.mjs with handle/password to run",
     },
     feed: {
       request: {

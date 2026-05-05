@@ -14,7 +14,7 @@ exports[`Run query "Single media" with: { "id": "at://did:plc:z72i7hdynmk6r22z27
           "image": true,
           "mimeType": "image/jpeg",
           "type": "full",
-          "url": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreidf3ystxebv33boyb5hr2ggwmlee5x53vubwelsuvmcw3tq4p36pi@jpeg",
+          "url": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreidf3ystxebv33boyb5hr2ggwmlee5x53vubwelsuvmcw3tq4p36pi",
           "video": false,
         },
         {
@@ -24,7 +24,7 @@ exports[`Run query "Single media" with: { "id": "at://did:plc:z72i7hdynmk6r22z27
           "image": true,
           "mimeType": "image/jpeg",
           "type": "thumbnail",
-          "url": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreidf3ystxebv33boyb5hr2ggwmlee5x53vubwelsuvmcw3tq4p36pi@jpeg",
+          "url": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreidf3ystxebv33boyb5hr2ggwmlee5x53vubwelsuvmcw3tq4p36pi",
           "video": false,
         },
       ],

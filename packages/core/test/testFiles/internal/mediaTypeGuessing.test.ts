@@ -2,7 +2,7 @@ import {
   guessMediaInfoFromMimeType,
   guessMediaInfoFromUrl,
 } from "@/src/actionHelpers.js";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 
 let url: string;
 let mimeType: string;
@@ -51,9 +51,11 @@ url = "http://example.com/path/file";
 test.extend({ url })(
   `Throw when guessing media type from "${url}"`,
   ({ url }) => {
+    vi.spyOn(console, "info").mockImplementation(() => {});
     expect(() => guessMediaInfoFromUrl(url)).toThrowError(
       /Couldn't derive file type/,
     );
+    vi.restoreAllMocks();
   },
 );
 
