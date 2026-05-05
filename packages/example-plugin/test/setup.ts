@@ -1,5 +1,5 @@
+import { vitestSetupCachingProxy } from "@liason/core/dist/test/utils/globalSetup.js";
 import type { GlobalSetupContext } from "vitest/node";
-import { vitestSetupCachingProxy } from "media-finder/dist/test/setup.js";
 
 export default async function (context: GlobalSetupContext) {
   const cleanup = await vitestSetupCachingProxy(context);

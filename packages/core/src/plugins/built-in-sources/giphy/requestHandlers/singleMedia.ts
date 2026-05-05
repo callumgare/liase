@@ -1,9 +1,9 @@
-import { z } from "zod";
 import Giphy from "giphy-api";
+import { z } from "zod";
 
-import { responseSchema } from "../types.js";
+import type { RequestHandler } from "@/src/schemas/requestHandler.js";
 import { mediaResponseConstructor } from "../shared.js";
-import { RequestHandler } from "@/src/schemas/requestHandler.js";
+import { responseSchema } from "../types.js";
 
 export default {
   id: "single-media",

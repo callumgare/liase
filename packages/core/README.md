@@ -1,18 +1,18 @@
+# liason (`@liason/core`)
+
 > :warning: **This package is currently experimental and the API is both poorly documented and likely to change**
 
-# Media Finder
-
-Media Finder attempts to provide a consistent API to search for, and pull the metadata of, various types of media (images, video, gifs, etc) from a variety of sites and sources.
+liason attempts to provide a consistent API to search for, and pull the metadata of, various types of media (images, video, gifs, etc) from a variety of sites and sources.
 
 ## Search
 
 ```js
-import { createMediaFinderQuery } from "media-finder";
+import { createLiasonQuery } from "@liason/core";
 
 // Self-executing async function is used here simply to enable the use of await.
 (async () => {
   // Search and return immediately the first page of results
-  const response = await createMediaFinderQuery({
+  const response = await createLiasonQuery({
     request: {
       source: "giphy",
       queryType: "search",
@@ -30,7 +30,7 @@ import { createMediaFinderQuery } from "media-finder";
 
 (async () => {
   // Alternatively create a query object which can be modified and iterated over
-  const mediaQuery = createMediaFinderQuery({
+  const mediaQuery = createLiasonQuery({
     request: {
       source: "giphy",
       queryType: "search",
@@ -56,4 +56,5 @@ import { createMediaFinderQuery } from "media-finder";
 
 ## Other
 
-Media Finder can also be used with the [media-finder-cli tool](https://github.com/callumgare/media-finder-cli).
+liason can also be used with the [@liason/cli tool](https://github.com/callumgare/liason/tree/main/packages/cli).
+

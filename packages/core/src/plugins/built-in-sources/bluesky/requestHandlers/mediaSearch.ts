@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-import { responseSchema } from "../types.js";
-import { postsToMediaResponseConstructor } from "../shared.js";
-import { RequestHandler } from "@/src/schemas/requestHandler.js";
+import type { RequestHandler } from "@/src/schemas/requestHandler.js";
 import { getAgent } from "../client.js";
+import { postsToMediaResponseConstructor } from "../shared.js";
+import { responseSchema } from "../types.js";
 
 export default {
   id: "search",
@@ -54,7 +54,7 @@ export default {
               ...($.request.tags || []).map((tag: string) => `#${tag}`),
             ].join(" "),
           };
-          let res;
+          let res: unknown;
           try {
             const agent = await getAgent({
               $,
@@ -62,11 +62,12 @@ export default {
               password: $.secrets.password,
               serviceUrl: $.secrets.serviceUrl,
             });
-            res = await agent.app.bsky.feed.searchPosts(params);
-            if (!res.success) {
+            const apiRes = await agent.app.bsky.feed.searchPosts(params);
+            res = apiRes;
+            if (!apiRes.success) {
               throw Error("Unsuccessful request to Bluesky");
             }
-            return res.data;
+            return apiRes.data;
           } catch (error) {
             console.info("Request sent to Bluesky:", params);
             console.info("Response:", res);

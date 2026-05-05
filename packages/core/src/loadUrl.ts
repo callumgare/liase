@@ -1,17 +1,17 @@
-import { CheerioDomSelection, DomSelection } from "./DomSelection.js";
 import * as cheerio from "cheerio";
+import deepmerge from "deepmerge";
 import {
-  gotScraping,
   Options as GotOptions,
-  OptionsInit as GotOptionsInit,
+  type OptionsInit as GotOptionsInit,
+  gotScraping,
 } from "got-scraping";
+import type { ActionContext } from "./ActionContext.js";
+import { CheerioDomSelection, type DomSelection } from "./DomSelection.js";
+import { headersToNormalisedBasicObject } from "./lib/fetch.js";
 import {
   cacheResponse,
   getCachedResponse,
 } from "./lib/networkRequestsCache.js";
-import deepmerge from "deepmerge";
-import { ActionContext } from "./ActionContext.js";
-import { headersToNormalisedBasicObject } from "./lib/fetch.js";
 
 type LoadUrlOptionsPlaywright = {
   agent: "playwright";
@@ -84,6 +84,7 @@ export async function loadUrl(
   options?: LoadUrlOptions,
 ): Promise<LoadUrlResponse> {
   if (!options) {
+    // biome-ignore lint/style/noParameterAssign: assigning default value to optional parameter
     options = {};
   }
   if (this.cacheNetworkRequests === "auto") {
@@ -105,9 +106,17 @@ export async function loadUrl(
       retry = deepmerge(retry, options.retryAdditional);
     }
 
-    let cache;
+    let cache: GotOptionsInit["cache"];
 
-    let res;
+    let res:
+      | {
+          body: string;
+          statusCode: number;
+          headers: Record<string, string>;
+          cachedOn?: Date;
+          request: { headers: Record<string, string> };
+        }
+      | undefined;
 
     const cacheableRequest = {
       url,
@@ -168,7 +177,8 @@ export async function loadUrl(
         cachedOn: cachedOn ?? null,
         request: res.request,
       };
-    } else if (options.responseType === "json") {
+    }
+    if (options.responseType === "json") {
       return {
         data: JSON.parse(body),
         statusCode,
@@ -177,7 +187,8 @@ export async function loadUrl(
         cachedOn: cachedOn ?? null,
         request: res.request,
       };
-    } else if (options.responseType === "text") {
+    }
+    if (options.responseType === "text") {
       return {
         data: body,
         statusCode,
@@ -186,14 +197,13 @@ export async function loadUrl(
         cachedOn: cachedOn ?? null,
         request: res.request,
       };
-    } else {
-      options.responseType satisfies never;
-      throw Error(`Unknown response type "${options.responseType}"`);
     }
-  } else if (options.agent === "playwright") {
-    throw Error("Playwright not supported yet");
-  } else {
-    options.agent satisfies never;
-    throw Error(`Unknown agent "${options.agent}"`);
+    options.responseType satisfies never;
+    throw Error(`Unknown response type "${options.responseType}"`);
   }
+  if (options.agent === "playwright") {
+    throw Error("Playwright not supported yet");
+  }
+  options.agent satisfies never;
+  throw Error(`Unknown agent "${options.agent}"`);
 }

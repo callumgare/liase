@@ -1,10 +1,10 @@
-import path from "node:path";
-import os from "node:os";
 import fs from "node:fs/promises";
-import mimeTypes from "mime-types";
-import { timeSince } from "./time.js";
+import os from "node:os";
+import path from "node:path";
 import chalk from "chalk";
+import mimeTypes from "mime-types";
 import { ActionContext } from "../ActionContext.js";
+import { timeSince } from "./time.js";
 
 export type NetworkRequestsHistoryItem = {
   constructorPath: (string | number)[];
@@ -33,7 +33,7 @@ export async function exportNetworkRequestsHistory({
   }
   const tmpDir = path.join(
     os.tmpdir(),
-    "media-finder-exports",
+    "liason-exports",
     Date.now().toString(),
   );
   try {
@@ -55,7 +55,7 @@ export async function exportNetworkRequestsHistory({
     const ext = mimeTypes.extension(mimeType ?? "") || "txt";
     const filename = path.join(
       tmpDir,
-      [
+      `${[
         networkRequestsHistoryItem.constructorPath
           .map((value) => (typeof value === "number" ? `[${value}]` : value))
           .join("."),
@@ -63,11 +63,9 @@ export async function exportNetworkRequestsHistory({
         networkRequestsHistoryItem.request.url.href
           .replaceAll(/(?:^\w+:\/\/|\/+$)/g, "")
           .replaceAll("/", "."),
-      ].join("_") +
-        "." +
-        ext,
+      ].join("_")}.${ext}`,
     );
-    let body;
+    let body: string;
     if (ext === "json") {
       body = JSON.stringify(
         JSON.parse(await networkRequestsHistoryItem.response.body),
@@ -79,28 +77,29 @@ export async function exportNetworkRequestsHistory({
     }
     await fs.writeFile(filename, body);
     await fs.writeFile(
-      filename + ".metadata.txt",
+      `${filename}.metadata.txt`,
       [
-        "Request URL: " + networkRequestsHistoryItem.request.url.href,
+        `Request URL: ${networkRequestsHistoryItem.request.url.href}`,
         "",
-        "Request method: " + networkRequestsHistoryItem.request.method,
+        `Request method: ${networkRequestsHistoryItem.request.method}`,
         "",
         "Request headers:",
         Object.entries(networkRequestsHistoryItem.request.headers)
           .map(([key, value]) => `  ${key}: ${value}`)
           .join("\n"),
         "",
-        "Response cached: " +
-          (networkRequestsHistoryItem.response.cachedOn
+        `Response cached: ${
+          networkRequestsHistoryItem.response.cachedOn
             ? `Yes (${timeSince(networkRequestsHistoryItem.response.cachedOn)})`
-            : "No"),
+            : "No"
+        }`,
         "",
         "Response headers:",
         Object.entries(networkRequestsHistoryItem.response.headers)
           .map(([key, value]) => `  ${key}: ${value}`)
           .join("\n"),
         "",
-        "Status code: " + networkRequestsHistoryItem.response.statusCode,
+        `Status code: ${networkRequestsHistoryItem.response.statusCode}`,
       ].join("\n"),
     );
   }

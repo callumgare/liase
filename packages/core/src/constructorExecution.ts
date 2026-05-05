@@ -1,9 +1,4 @@
 import { ActionContext, excludeFieldSymbol } from "./ActionContext.js";
-import {
-  Constructor,
-  Action,
-  ConstructorObject,
-} from "./schemas/constructor.js";
 import { DomSelection } from "./DomSelection.js";
 import {
   ConstructorExecutionError,
@@ -11,65 +6,72 @@ import {
   getType,
   waitForAllPropertiesToResolve,
 } from "./lib/utils.js";
+import type {
+  Action,
+  Constructor,
+  ConstructorObject,
+} from "./schemas/constructor.js";
 
 const log: string[] = [];
 
 export async function executeConstructor(
-  constructor: Constructor,
+  constructorDef: Constructor,
   context: ActionContext,
-): Promise<any> {
+): Promise<unknown> {
   try {
     if (
-      !Array.isArray(constructor) &&
-      typeof constructor === "object" &&
-      !(constructor instanceof Date) &&
-      constructor !== null
+      !Array.isArray(constructorDef) &&
+      typeof constructorDef === "object" &&
+      !(constructorDef instanceof Date) &&
+      constructorDef !== null
     ) {
-      return executeConstructorObject(constructor, context);
-    } else if (Array.isArray(constructor)) {
-      return executeConstructorArray(constructor, context);
-    } else if (typeof constructor === "function") {
-      return executeAction(constructor, context)
+      return executeConstructorObject(constructorDef, context);
+    }
+    if (Array.isArray(constructorDef)) {
+      return executeConstructorArray(constructorDef, context);
+    }
+    if (typeof constructorDef === "function") {
+      return executeAction(constructorDef, context)
         .then((context) => context.lastResult())
         .then((result) =>
           result instanceof DomSelection ? result.text : result,
         );
-    } else {
-      return constructor;
     }
+    return constructorDef;
   } catch (error) {
     handleExecutionError(error, context);
   }
 }
 
 export async function executeConstructorObject(
-  constructor: ConstructorObject,
+  constructorDef: ConstructorObject,
   context: ActionContext,
-): Promise<any> {
-  const topLevelPath = context.path;
+): Promise<unknown> {
+  let currentContext = context;
+  const topLevelPath = currentContext.path;
 
-  if (constructor._arrayMap) {
+  if (constructorDef._arrayMap) {
     handleExecutionError(
       new Error(
         `Constructor with "_arrayMap" used outside of an array context`,
       ),
-      context.clone({ appendToPath: ["_arrayMap"] }),
+      currentContext.clone({ appendToPath: ["_arrayMap"] }),
     );
   }
 
-  if (constructor._setup) {
-    context = await executeAction(
-      constructor._setup,
-      context.clone({ path: [...topLevelPath, "_setup"] }),
+  if (constructorDef._setup) {
+    currentContext = await executeAction(
+      constructorDef._setup,
+      currentContext.clone({ path: [...topLevelPath, "_setup"] }),
     );
   }
 
-  const returnObject: { [key: string]: any } = {};
+  const returnObject: { [key: string]: unknown } = {};
 
-  if (constructor._include) {
+  if (constructorDef._include) {
     const resultContext = await executeAction(
-      constructor._include,
-      context.clone({ path: [...topLevelPath, "_include"] }),
+      constructorDef._include,
+      currentContext.clone({ path: [...topLevelPath, "_include"] }),
     );
     const resultValue = resultContext.get("");
 
@@ -88,13 +90,13 @@ export async function executeConstructorObject(
 
     // We don't want _include to override any value _setup has written to $.get('') but we do
     // want to keep any values it has written to other non-'' keys.
-    context = context.clone({
-      data: { ...resultContext.getAll(), "": context.get("") },
+    currentContext = currentContext.clone({
+      data: { ...resultContext.getAll(), "": currentContext.get("") },
     });
   }
 
   const constructorReturnKeys = Object.fromEntries(
-    Object.entries(constructor).filter(
+    Object.entries(constructorDef).filter(
       // Filter out constructor instruction keys
       ([key]) => !key.match(/^_[^_]/),
     ),
@@ -106,7 +108,7 @@ export async function executeConstructorObject(
 
     returnObject[newKey] = executeConstructor(
       value,
-      context.clone({ path: [...topLevelPath, key] }),
+      currentContext.clone({ path: [...topLevelPath, key] }),
     );
   }
 
@@ -124,11 +126,11 @@ export async function executeConstructorObject(
 }
 
 export async function executeConstructorArray(
-  constructor: Array<Constructor>,
+  constructorDef: Array<Constructor>,
   context: ActionContext,
-): Promise<Array<any>> {
+): Promise<Array<unknown>> {
   const resultArray = [];
-  for (const [i, element] of constructor.entries()) {
+  for (const [i, element] of constructorDef.entries()) {
     const elementContext = context.clone({ appendToPath: [i] });
 
     // If valueElement is a constructor with a _arrayMap property, get the array returned by _arrayMap and
@@ -145,7 +147,7 @@ export async function executeConstructorArray(
         _arrayMap,
         elementContext.clone({ appendToPath: ["_arrayMap"] }),
       );
-      let elementsToMap: any[];
+      let elementsToMap: unknown[];
       const data = arrayMapContext.get();
       if (Array.isArray(data)) {
         elementsToMap = data;
@@ -184,24 +186,24 @@ async function executeAction(
   log.push(`Executing action for ${formatObjectPath(context.path)}`);
   // Actions can be run in parallel and we don't want the execution of one action to modify the context
   // object and non-deterministically effect the execution of a different action
-  context = context.clone();
+  let currentContext = context.clone();
   try {
-    const result = await action(context);
+    const result = await action(currentContext);
     if (result instanceof ActionContext) {
       // Needed for .chain() to be able to update context by returning cloned context
-      context = result;
-      context.recordResult(undefined);
+      currentContext = result;
+      currentContext.recordResult(undefined);
     } else {
-      context.recordResult(result);
+      currentContext.recordResult(result);
     }
-    if (typeof context.lastResult() !== "undefined") {
-      context.set("", context.lastResult());
+    if (typeof currentContext.lastResult() !== "undefined") {
+      currentContext.set("", currentContext.lastResult());
     }
-    await context.waitForAllPromisesToResolve();
+    await currentContext.waitForAllPromisesToResolve();
   } catch (error) {
-    handleExecutionError(error, context);
+    handleExecutionError(error, currentContext);
   }
-  return context;
+  return currentContext;
 }
 
 export async function executeActions(
@@ -210,15 +212,16 @@ export async function executeActions(
 ): Promise<ActionContext> {
   const parentPath = context.path.slice(0, -1);
   const lastPathSegment = context.path[context.path.length - 1];
+  let currentContext = context;
   for (const [i, action] of actions.entries()) {
-    context = await executeAction(
+    currentContext = await executeAction(
       action,
-      context.clone({
+      currentContext.clone({
         path: [...parentPath, `${lastPathSegment} (chain step ${i + 1})`],
       }),
     );
   }
-  return context;
+  return currentContext;
 }
 
 function handleExecutionError(error: unknown, actionContext: ActionContext) {

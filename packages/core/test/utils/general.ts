@@ -1,18 +1,18 @@
-import { GenericRequest } from "@/src/index.js";
 import fs from "node:fs/promises";
-import path from "path";
+import path from "node:path";
+import type { GenericRequest } from "@/src/index.js";
 
 export async function getSecrets(request: GenericRequest) {
   try {
-    const secretsPath = process.env.MEDIA_FINDER_SECRETS_FILE
-      ? path.resolve(process.env.MEDIA_FINDER_SECRETS_FILE)
+    const secretsPath = process.env.LIASON_SECRETS_FILE
+      ? path.resolve(process.env.LIASON_SECRETS_FILE)
       : path.join(import.meta.dirname, "../../.secrets.mjs");
     try {
       await fs.access(secretsPath);
     } catch (error) {
-      if (process.env.MEDIA_FINDER_SECRETS_FILE) {
+      if (process.env.LIASON_SECRETS_FILE) {
         throw Error(
-          `MEDIA_FINDER_SECRETS_FILE is set to ${process.env.MEDIA_FINDER_SECRETS_FILE} but secrets file not found or accessible`,
+          `LIASON_SECRETS_FILE is set to ${process.env.LIASON_SECRETS_FILE} but secrets file not found or accessible`,
         );
       }
       return {};

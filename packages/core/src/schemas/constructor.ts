@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { ActionContext } from "../ActionContext.js";
-import { Primitives, zodPrimitives } from "./primitives.js";
+import { type Primitives, zodPrimitives } from "./primitives.js";
 
+// biome-ignore lint/suspicious/noExplicitAny: action can return any value including primitives and complex objects
 export type Action = (context: ActionContext) => any;
 
 export type Constructor =
@@ -19,7 +20,7 @@ export type ConstructorObject = {
 const ActionSchema: z.ZodType<Action> = z
   .function()
   .args(z.instanceof(ActionContext))
-  .returns(z.promise(z.any()));
+  .returns(z.promise(z.unknown()));
 
 // ConstructorSchema should be the following:
 //

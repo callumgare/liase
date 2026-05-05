@@ -1,7 +1,7 @@
 import { sourceId } from "./shared.js";
 
-import singleMediaReqHandler from "./requestHandlers/singleMedia.js";
 import searchReqHandler from "./requestHandlers/search.js";
+import singleMediaReqHandler from "./requestHandlers/singleMedia.js";
 
 export default {
   id: sourceId,

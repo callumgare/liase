@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-import { singleMediaResponseSchema } from "../types.js";
+import type { RequestHandler } from "@liason/core";
 import { rootUrl, sourceId } from "../shared.js";
-import type { RequestHandler } from "media-finder";
+import { singleMediaResponseSchema } from "../types.js";
 
 const requestSchema = z
   .object({

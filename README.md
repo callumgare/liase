@@ -1,17 +1,16 @@
-# liaison
+# Liason
 
-> *Named "liaison" — because apparently the creator can't spell it. The library acts as a liaison between your code and media sources, which felt clever at the time and still does, regardless of how many times it gets autocorrected from "liason".*
-
-A monorepo containing the liaison ecosystem — a consistent API for fetching media metadata from a variety of sources and platforms.
+Liason is a library that provide a uniform interface to fetch and return media from different sources all in a
+standardised format.
 
 ## Packages
 
 | Package | Description |
 |---|---|
-| [`@liaison/core`](packages/core) | The core library |
-| [`@liaison/cli`](packages/cli) | CLI tool for interacting with the core library |
-| [`@liaison/example-plugin`](packages/example-plugin) | An example plugin demonstrating how to extend liaison |
-| [`@liaison/output-viewer`](packages/output-viewer) | A Next.js web app for viewing liaison output |
+| [`@liason/core`](packages/core) | The core library |
+| [`@liason/cli`](packages/cli) | CLI tool for interacting with the core library |
+| [`@liason/example-plugin`](packages/example-plugin) | An example plugin demonstrating how to extend liason |
+| [`@liason/output-viewer`](packages/output-viewer) | A Next.js web app for viewing liason output |
 
 ## Development
 
@@ -40,3 +39,6 @@ npm run test
 ```bash
 npm run lint
 ```
+
+## Name
+It should probably be spelt "liaison" by my dyslexia-ass brain can't spell that reliabably 😆

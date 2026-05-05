@@ -1,5 +1,5 @@
+import type { Plugin } from "@/src/schemas/plugin.js";
 import exampleSource from "./exampleSource.js";
-import { Plugin } from "@/src/schemas/plugin.js";
 
 export default {
   sources: [exampleSource],

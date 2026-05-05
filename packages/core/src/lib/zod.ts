@@ -1,7 +1,7 @@
-import pluralize from "pluralize";
-import { z } from "zod";
-import chalk from "chalk";
 import util from "node:util";
+import chalk from "chalk";
+import pluralize from "pluralize";
+import type { z } from "zod";
 import { capitaliseType, formatObjectPath } from "./utils.js";
 
 function isZodError(error: unknown): error is z.ZodError {
@@ -10,6 +10,7 @@ function isZodError(error: unknown): error is z.ZodError {
 
 export function zodParseOrThrow<Output, Def extends z.ZodTypeDef, Input>(
   zodSchema: z.ZodType<Output, Def, Input>,
+  // biome-ignore lint/suspicious/noExplicitAny: zod schema accepts any input for runtime validation
   input: any,
   options: { errorMessage?: string; context?: unknown } = {},
 ): Output {
@@ -45,9 +46,8 @@ type ValueType =
 export const getType = (value: unknown): ValueType => {
   if (Array.isArray(value)) {
     return "array";
-  } else {
-    return typeof value;
   }
+  return typeof value;
 };
 
 function getPathInfo(
@@ -60,7 +60,9 @@ function getPathInfo(
   longestExistingPath: (string | number)[];
   typeAtLongestExistingPath: ValueType;
 } {
+  // biome-ignore lint/suspicious/noExplicitAny: complex accumulator type in path traversal
   return path.reduce<any>(
+    // biome-ignore lint/suspicious/noExplicitAny: complex accumulator type in path traversal
     (accumulator: any, currentArrayValue: string | number) => {
       const exists =
         typeof accumulator.value !== "undefined" &&
@@ -140,12 +142,11 @@ export class FriendlyZodError extends Error {
     if (issue.code === "invalid_type") {
       if (pathInfo.exists) {
         const includeValue = ["string", "number"].includes(pathInfo.type);
-        issueMessage =
-          `Expected ${includePath ? formattedPath + " to be an" : ""}${issue.expected} but ` +
-          (includeValue
+        issueMessage = `Expected ${includePath ? `${formattedPath} to be an` : ""}${issue.expected} but ${
+          includeValue
             ? `the received value ${JSON.stringify(pathInfo.value)} was`
-            : "received") +
-          ` a ${issue.received}.`;
+            : "received"
+        } a ${issue.received}.`;
       } else {
         const keyOrIndex = path.at(-1);
         const parentPath = formatObjectPath(path.slice(0, -1));
@@ -165,11 +166,12 @@ export class FriendlyZodError extends Error {
           : `is a ${pathInfo.type}`;
         return `"${key}" (value ${formattedValue})`;
       });
-      issueMessage = `Unexpected ${pluralize("key", keys.length)} found${includePath ? " at " + formattedPath : ""}: ${keys.join(", ")}`;
+      issueMessage = `Unexpected ${pluralize("key", keys.length)} found${includePath ? ` at ${formattedPath}` : ""}: ${keys.join(", ")}`;
     } else if (issue.code === "invalid_string") {
-      issueMessage = `${includePath ? formattedPath + " failed" : "Failed"} ${issue.validation} validation, received ${JSON.stringify(pathInfo.value)}`;
+      issueMessage = `${includePath ? `${formattedPath} failed` : "Failed"} ${issue.validation} validation, received ${JSON.stringify(pathInfo.value)}`;
     } else if (issue.code === "too_small" || issue.code === "too_big") {
-      let condition, threshold;
+      let condition = "";
+      let threshold: number | bigint = 0;
       if (issue.code === "too_small") {
         threshold = issue.minimum;
         if (issue.exact) {
@@ -197,7 +199,7 @@ export class FriendlyZodError extends Error {
       ) {
         const capitalisedType = capitaliseType(issue.type);
         issueMessage =
-          `${capitalisedType} ${includePath ? "at " + formattedPath + " " : ""}must be ${condition}` +
+          `${capitalisedType} ${includePath ? `at ${formattedPath} ` : ""}must be ${condition}` +
           ` ${threshold} but was ${pathInfo.value}.`;
       } else {
         const nameForTypeElement = {
@@ -208,14 +210,14 @@ export class FriendlyZodError extends Error {
         const capitalisedType = capitaliseType(issue.type);
         const length = (pathInfo.value as Array<unknown>).length;
         issueMessage =
-          `${capitalisedType} ${includePath ? " at " + formattedPath + " " : ""}must have ${condition}` +
+          `${capitalisedType} ${includePath ? ` at ${formattedPath} ` : ""}must have ${condition}` +
           ` ${threshold} ${nameForTypeElement}(s) but the received ${issue.type} had ${length}.`;
       }
     } else if (issue.code === "invalid_date") {
-      issueMessage = `Expected date ${includePath ? "at " + formattedPath + " " : ""}but received value ${JSON.stringify(pathInfo.value)} is not a valid date.`;
+      issueMessage = `Expected date ${includePath ? `at ${formattedPath} ` : ""}but received value ${JSON.stringify(pathInfo.value)} is not a valid date.`;
     } else {
       pathInfo = getPathInfo(this.#inputData, path);
-      issueMessage = `Issue with${includePath ? " " + formattedPath : ""}: ${JSON.stringify(detailWithoutPath)} - ${JSON.stringify(pathInfo.value)}`;
+      issueMessage = `Issue with${includePath ? ` ${formattedPath}` : ""}: ${JSON.stringify(detailWithoutPath)} - ${JSON.stringify(pathInfo.value)}`;
     }
     return `${issueMessage}`;
   }
@@ -230,7 +232,7 @@ export class FriendlyZodError extends Error {
     for (const issue of error.issues) {
       if (issue.code === "invalid_union") {
         formattedIssues.push({
-          formattedMessage: " ".repeat(depth * indentSize) + "Invalid union:",
+          formattedMessage: `${" ".repeat(depth * indentSize)}Invalid union:`,
           zodIssue: issue,
           depth,
         });
@@ -241,8 +243,7 @@ export class FriendlyZodError extends Error {
         }
       } else if (issue.code === "invalid_arguments") {
         formattedIssues.push({
-          formattedMessage:
-            " ".repeat(depth * indentSize) + "Invalid arguments:",
+          formattedMessage: `${" ".repeat(depth * indentSize)}Invalid arguments:`,
           zodIssue: issue,
           depth,
         });
@@ -255,8 +256,7 @@ export class FriendlyZodError extends Error {
         );
       } else if (issue.code === "invalid_return_type") {
         formattedIssues.push({
-          formattedMessage:
-            " ".repeat(depth * indentSize) + "Invalid return type:",
+          formattedMessage: `${" ".repeat(depth * indentSize)}Invalid return type:`,
           zodIssue: issue,
           depth,
         });
@@ -347,9 +347,7 @@ export class FriendlyZodError extends Error {
         const indentation =
           baseIndentation + " ".repeat(friendlyZodIssue.depth * indentSize);
         lines.push(
-          indentation +
-            "- " +
-            friendlyZodIssue.formattedMessage.replace(/^\s+/, ""),
+          `${indentation}- ${friendlyZodIssue.formattedMessage.replace(/^\s+/, "")}`,
         );
       }
       for (const [index, key] of Object.keys(issuesTree.children).entries()) {

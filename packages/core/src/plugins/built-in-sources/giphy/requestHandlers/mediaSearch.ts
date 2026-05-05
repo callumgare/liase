@@ -1,9 +1,9 @@
+import Giphy, { type SearchOptions } from "giphy-api";
 import { z } from "zod";
-import Giphy, { SearchOptions } from "giphy-api";
 
-import { responseSchema } from "../types.js";
+import type { RequestHandler } from "@/src/schemas/requestHandler.js";
 import { mediaResponseConstructor } from "../shared.js";
-import { RequestHandler } from "@/src/schemas/requestHandler.js";
+import { responseSchema } from "../types.js";
 
 const giphyRatings = ["y", "g", "pg", "pg-13", "r"] as const;
 

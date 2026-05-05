@@ -1,6 +1,6 @@
-import { Source } from "@/src/index.js";
+import { type Server, createServer } from "node:http";
+import type { Source } from "@/src/index.js";
 import { z } from "zod";
-import { createServer, Server } from "node:http";
 
 export default {
   id: "current-time",

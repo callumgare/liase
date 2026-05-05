@@ -1,5 +1,5 @@
-import { expect } from "vitest";
 import blueskySource from "@/src/plugins/built-in-sources/bluesky/index.js";
+import { expect } from "vitest";
 import { createBasicTestsForRequestHandlers } from "../../utils/vitest.js";
 
 createBasicTestsForRequestHandlers({

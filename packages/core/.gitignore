@@ -1,6 +1,0 @@
-dist
-node_modules
-npm-debug.log
-.proxy-cache
-.env*.local
-.secrets.mjs

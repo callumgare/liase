@@ -1,9 +1,9 @@
 import { z } from "zod";
 
+import type { Constructor, RequestHandler } from "@liason/core";
+import type { DomSelection } from "@liason/core/dist/DomSelection.js";
 import { rootUrl, sourceId } from "../shared.js";
-import { RequestHandler } from "media-finder";
 import { pageOfMediaResponseSchema } from "../types.js";
-import { type Constructor } from "media-finder/dist/schemas/constructor.js";
 
 const responseConstructor = {
   _setup: async ($) => {
@@ -11,9 +11,9 @@ const responseConstructor = {
     const categorySlugMap = Object.fromEntries(
       res.root
         .select(".side_categories ul li a")
-        .map((elm: any) => [
-          elm.text.trim(),
-          elm.attr("href").split("/").at(-2),
+        .map((elm: DomSelection) => [
+          (elm.text as string).trim(),
+          elm.attr("href")?.split("/").at(-2),
         ]),
     );
 
@@ -33,13 +33,15 @@ const responseConstructor = {
   page: {
     paginationType: "offset",
     pageNumber: ($) =>
-      parseInt(
+      Number.parseInt(
         $()
           .select(".pager .current")
           .text?.match(/^Page (\d+)/)?.[1] ?? "1",
       ),
     totalPages: ($) =>
-      parseInt($().select(".pager .current").text?.match(/\d+$/)?.[0] ?? "1"),
+      Number.parseInt(
+        $().select(".pager .current").text?.match(/\d+$/)?.[0] ?? "1",
+      ),
     isLastPage: ($) => !$().exists(".pager .next"),
     url: ($) => $("url"),
     pageFetchLimitReached: ($) => $.pageFetchLimitReached,

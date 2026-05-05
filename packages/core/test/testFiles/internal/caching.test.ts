@@ -1,9 +1,9 @@
 import { afterEach, expect } from "vitest";
-import { createBasicTestsForRequestHandlers } from "../../utils/vitest.js";
 import currentTimeSource, {
   startMockServer,
   stopMockServer,
 } from "../../fixtures/currentTimeSource.js";
+import { createBasicTestsForRequestHandlers } from "../../utils/vitest.js";
 
 afterEach(async () => {
   await stopMockServer();

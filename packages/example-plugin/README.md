@@ -1,1 +1,1 @@
-An example plugin for [Media Finder](https://github.com/callumgare/media-finder).
+An example plugin for [liason](https://github.com/callumgare/liason).

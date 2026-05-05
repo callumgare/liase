@@ -1,27 +1,27 @@
-import builtInSourcesPlugin from "./plugins/built-in-sources/index.js";
-import type { Source } from "@/src/schemas/source.js";
-import type { Plugin } from "@/src/schemas/plugin.js";
 import {
+  type FinderOptions,
+  type FinderOptionsInput,
   finderOptionsSchema,
-  FinderOptions,
-  FinderOptionsInput,
 } from "@/src/schemas/finderOptions.js";
+import type { Plugin } from "@/src/schemas/plugin.js";
+import type { Source } from "@/src/schemas/source.js";
+import type { Entries } from "type-fest";
+import type { LiasonHooks } from "./lib/hooks.js";
+import { zodParseOrThrow } from "./lib/zod.js";
+import builtInSourcesPlugin from "./plugins/built-in-sources/index.js";
 import {
-  RequestHandler,
+  type RequestHandler,
   requestHandlerSchema,
 } from "./schemas/requestHandler.js";
-import { zodParseOrThrow } from "./lib/zod.js";
-import { Entries } from "type-fest";
-import { MediaFinderHooks } from "./lib/hooks.js";
 
-export default class MediaFinder {
+export default class Liason {
   protected sourceMap: { [sourceName: string]: Source } = {};
   get sources(): Source[] {
     return Object.values(this.sourceMap);
   }
 
   _finderOptions: FinderOptions;
-  _hooks: MediaFinderHooks = {
+  _hooks: LiasonHooks = {
     loadUrl: [],
     getFetchClient: [],
   };
@@ -29,7 +29,9 @@ export default class MediaFinder {
   constructor(finderOptions: FinderOptionsInput = {}) {
     this._finderOptions = finderOptionsSchema.parse(finderOptions);
     this.loadPlugin(builtInSourcesPlugin);
-    this._finderOptions.plugins.forEach((plugin) => this.loadPlugin(plugin));
+    for (const plugin of this._finderOptions.plugins) {
+      this.loadPlugin(plugin);
+    }
   }
 
   loadPlugin(plugin: Plugin) {
@@ -50,8 +52,7 @@ export default class MediaFinder {
   loadSource(source: Source) {
     if (Object.prototype.hasOwnProperty.call(this.sourceMap, source.id)) {
       console.warn(
-        `Loading "${source.id}" but a source with the same id has already been loaded. The ` +
-          `existing source will be overwritten.`,
+        `Loading "${source.id}" but a source with the same id has already been loaded. The existing source will be overwritten.`,
       );
     }
 
@@ -67,11 +68,9 @@ export default class MediaFinder {
         property: string,
       ) =>
         new Error(
-          `Request handler "${requestHandler.id}" of source "${source.id}" has paginationType ` +
-            `${paginationType} but ${
-              issue === "missing" ? "is missing" : "includes"
-            } ${property} ` +
-            `in the request schema.`,
+          `Request handler "${requestHandler.id}" of source "${source.id}" has paginationType ${paginationType} but ${
+            issue === "missing" ? "is missing" : "includes"
+          } ${property} in the request schema.`,
         );
 
       if (paginationType === "offset") {
@@ -109,9 +108,7 @@ export default class MediaFinder {
         )
       ) {
         throw Error(
-          `Some response schema elements are missing "requestMatcher" field for request handler ` +
-            `"${requestHandler.id}" of source "${source.id}". ("requestMatcher" is mandatory in all ` +
-            `except the last response schema element.`,
+          `Some response schema elements are missing "requestMatcher" field for request handler "${requestHandler.id}" of source "${source.id}". ("requestMatcher" is mandatory in all except the last response schema element.`,
         );
       }
     }
@@ -133,8 +130,7 @@ export default class MediaFinder {
     const source = this.sourceMap[sourceId];
     if (!source) {
       throw new Error(
-        `Attempted to query an unknown source. If "${sourceId}" is provided by a plugin please make sure that ` +
-          `plugin is loaded first before attempting to query.`,
+        `Attempted to query an unknown source. If "${sourceId}" is provided by a plugin please make sure that plugin is loaded first before attempting to query.`,
       );
     }
     return source;

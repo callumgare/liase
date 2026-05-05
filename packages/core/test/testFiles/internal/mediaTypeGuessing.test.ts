@@ -1,8 +1,8 @@
-import { expect, test } from "vitest";
 import {
   guessMediaInfoFromMimeType,
   guessMediaInfoFromUrl,
 } from "@/src/actionHelpers.js";
+import { expect, test } from "vitest";
 
 let url: string;
 let mimeType: string;
@@ -106,7 +106,7 @@ test.extend({ mimeType })(
 
 mimeType = "invalid/mime/type";
 test.extend({ mimeType })(
-  `Throw when guessing media type from invalid mime type`,
+  "Throw when guessing media type from invalid mime type",
   ({ mimeType }) => {
     expect(() => guessMediaInfoFromMimeType(mimeType)).toThrowError(
       /Resource does not appear to be media/,

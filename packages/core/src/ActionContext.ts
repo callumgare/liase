@@ -1,21 +1,21 @@
-import { RequestHandler } from "./schemas/requestHandler.js";
-import {
-  guessMediaInfoFromUrl,
-  guessMediaInfoFromMimeType,
-} from "./actionHelpers.js";
-import { loadUrl, LoadUrlResponse } from "./loadUrl.js";
-import { Action } from "./schemas/constructor.js";
-import { GenericRequest } from "./schemas/request.js";
-import { GenericSecrets } from "./schemas/secrets.js";
-import { ConstructorExecutionContext } from "./types.js";
 import { decodeHTML } from "entities";
+import {
+  guessMediaInfoFromMimeType,
+  guessMediaInfoFromUrl,
+} from "./actionHelpers.js";
 import {
   generateResponse,
   getResponseDetailsBasedOnRequest,
 } from "./generateResponse.js";
-import { addCachingFetchWrapper } from "./lib/networkRequestsCache.js";
-import { NetworkRequestsHistoryItem } from "./lib/networkRequestsHistory.js";
 import { headersToNormalisedBasicObject, parseFetchArgs } from "./lib/fetch.js";
+import { addCachingFetchWrapper } from "./lib/networkRequestsCache.js";
+import type { NetworkRequestsHistoryItem } from "./lib/networkRequestsHistory.js";
+import { type LoadUrlResponse, loadUrl } from "./loadUrl.js";
+import type { Action } from "./schemas/constructor.js";
+import type { GenericRequest } from "./schemas/request.js";
+import type { RequestHandler } from "./schemas/requestHandler.js";
+import type { GenericSecrets } from "./schemas/secrets.js";
+import type { ConstructorExecutionContext } from "./types.js";
 
 export const excludeFieldSymbol = Symbol("ExcludeField");
 
@@ -28,6 +28,7 @@ export class ActionContext extends Function {
       path: (string | number)[],
     ) => Promise<ActionContext>;
     path: (string | number)[];
+    // biome-ignore lint/suspicious/noExplicitAny: data store accepts arbitrary values
     initialData?: Record<string, any>;
     networkRequestsHistory?: NetworkRequestsHistoryItem[];
   }) {
@@ -39,11 +40,13 @@ export class ActionContext extends Function {
       this.#dataStore = args.initialData;
     }
     this.#networkRequestsHistory = args.networkRequestsHistory ?? [];
+    // biome-ignore lint/correctness/noConstructorReturn: Proxy wrapping requires returning from constructor
     return new Proxy(this, {
       apply: (target, thisArg, args) => target.get(...args),
       get: (target, propName: keyof ActionContext, receiver) => {
         const value = target[propName];
         if (value instanceof Function) {
+          // biome-ignore lint/suspicious/noExplicitAny: spread args for dynamic proxy forwarding
           return (...args: any[]) =>
             value.apply(this === receiver ? target : this, args);
         }
@@ -55,16 +58,19 @@ export class ActionContext extends Function {
   #constructorContext: ConstructorExecutionContext;
   #executeActions;
   #path;
+  // biome-ignore lint/suspicious/noExplicitAny: result history stores arbitrary action results
   #resultHistory: any[] = [];
   #networkRequestsHistory;
   // eslint-disable-next-line no-use-before-define -- we need to use before it's defined since it's recursive
   #clonedChildren: ActionContext[] = [];
 
+  // biome-ignore lint/suspicious/noExplicitAny: unresolved promise store accepts arbitrary values
   #unresolvedPromises: any[] = [];
 
+  // biome-ignore lint/suspicious/noExplicitAny: data store accepts arbitrary values
   #dataStore: Record<string, any> = {};
 
-  get(key: string = "") {
+  get(key = "") {
     if (!(key in this.#dataStore)) {
       throw Error(
         `Attempted to access value "${key}" but that value was never set`,
@@ -73,6 +79,7 @@ export class ActionContext extends Function {
     return this.#dataStore[key];
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: value can be any type in dynamic data store
   set(key: string, value: any) {
     if (value instanceof Promise) {
       this.#unresolvedPromises.push(
@@ -91,7 +98,7 @@ export class ActionContext extends Function {
     return this;
   }
 
-  has(key: string = "") {
+  has(key = "") {
     return key in this.#dataStore;
   }
 
@@ -99,10 +106,12 @@ export class ActionContext extends Function {
     return { ...this.#dataStore };
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: result can be any type from dynamic action execution
   recordResult(result: any) {
     this.#resultHistory.push(result);
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: result can be any type from dynamic action execution
   lastResult(): any {
     return this.#resultHistory[this.#resultHistory.length - 1];
   }
@@ -114,6 +123,7 @@ export class ActionContext extends Function {
   }: {
     path?: (string | number)[];
     appendToPath?: (string | number)[];
+    // biome-ignore lint/suspicious/noExplicitAny: data store accepts arbitrary values
     data?: Record<string, any>;
   } = {}) {
     const clone = new ActionContext({
@@ -128,9 +138,10 @@ export class ActionContext extends Function {
   }
 
   get descendants(): ActionContext[] {
-    return this.#clonedChildren
-      .map((clonedChild) => [clonedChild, ...clonedChild.descendants])
-      .flat();
+    return this.#clonedChildren.flatMap((clonedChild) => [
+      clonedChild,
+      ...clonedChild.descendants,
+    ]);
   }
 
   chain(...actions: Action[]) {
@@ -141,10 +152,12 @@ export class ActionContext extends Function {
     return Promise.all(this.#unresolvedPromises);
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: request is a dynamic object from user input
   get request(): Record<string, any> {
     return Object.freeze(this.#constructorContext.request);
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: secrets is a dynamic object from user input
   get secrets(): Record<string, any> {
     return Object.freeze(this.#constructorContext.secrets);
   }
@@ -198,6 +211,7 @@ export class ActionContext extends Function {
     });
 
     return response;
+    // biome-ignore lint/suspicious/noExplicitAny: cast needed for complex overloaded function assignment
   }) as any;
 
   get networkRequestsHistory() {
@@ -269,7 +283,9 @@ export class ActionContext extends Function {
           body: clonedResponse.text(),
           statusCode: clonedResponse.status,
           cached: Boolean(cacheTimestamp),
-          cachedOn: cacheTimestamp ? new Date(parseInt(cacheTimestamp)) : null,
+          cachedOn: cacheTimestamp
+            ? new Date(Number.parseInt(cacheTimestamp))
+            : null,
         },
       });
 
@@ -295,13 +311,13 @@ export class ActionContext extends Function {
     const [, ...segments] = match;
     let totalSeconds = 0;
     if (typeof segments[0] === "string") {
-      totalSeconds += parseInt(segments[0]) * 24 * 60 * 60;
+      totalSeconds += Number.parseInt(segments[0]) * 24 * 60 * 60;
     }
     if (typeof segments[1] === "string") {
-      totalSeconds += parseInt(segments[1]) * 60 * 60;
+      totalSeconds += Number.parseInt(segments[1]) * 60 * 60;
     }
-    totalSeconds += parseInt(segments[2]) * 60;
-    totalSeconds += parseInt(segments[3]);
+    totalSeconds += Number.parseInt(segments[2]) * 60;
+    totalSeconds += Number.parseInt(segments[3]);
 
     return totalSeconds;
   };

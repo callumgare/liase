@@ -1,12 +1,10 @@
-import MediaFinderQuery, { MediaFinderQueryProps } from "./MediaFinderQuery.js";
+import LiasonQuery, { type LiasonQueryProps } from "./LiasonQuery.js";
 
-export { default as MediaFinder } from "./MediaFinder.js";
-export { default as MediaFinderQuery } from "./MediaFinderQuery.js";
+export { default as Liason } from "./Liason.js";
+export { default as LiasonQuery } from "./LiasonQuery.js";
 
-export function createMediaFinderQuery(
-  props: MediaFinderQueryProps,
-): MediaFinderQuery {
-  return new MediaFinderQuery(props);
+export function createLiasonQuery(props: LiasonQueryProps): LiasonQuery {
+  return new LiasonQuery(props);
 }
 
 export type { GenericMedia } from "@/src/schemas/media.js";

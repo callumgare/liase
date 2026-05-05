@@ -1,4 +1,4 @@
-import { Constructor } from "@/src/schemas/constructor.js";
+import type { Constructor } from "@/src/schemas/constructor.js";
 
 export const sourceId = "bluesky";
 
@@ -6,6 +6,7 @@ export const postsToMediaResponseConstructor = [
   {
     _arrayMap: ($) =>
       postsToMedia(
+        // biome-ignore lint/suspicious/noExplicitAny: bluesky API response is untyped
         $().posts ?? $().feed?.map((item: any) => item.post) ?? [],
       ).filter((bskyMedia) =>
         $.request.id ? bskyMedia.id === $.request.id : true,
@@ -82,6 +83,7 @@ type BlueskyMedia = {
   createdAt: string;
 };
 
+// biome-ignore lint/suspicious/noExplicitAny: bluesky API response is untyped
 function postsToMedia(posts: any): BlueskyMedia[] {
   const mediaPosts: BlueskyMedia[][] = [];
   for (const post of posts) {

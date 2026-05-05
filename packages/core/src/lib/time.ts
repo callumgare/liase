@@ -4,7 +4,7 @@ const timePeriodFormatter = new Intl.RelativeTimeFormat("en", {
 });
 
 export function timeSince(date: Date) {
-  if (isNaN(date.getTime())) {
+  if (Number.isNaN(date.getTime())) {
     throw Error("Invalid date");
   }
   const seconds = Math.floor((date.getTime() - Date.now()) / 1000);

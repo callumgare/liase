@@ -10,7 +10,9 @@
     align-items: center;
 
     & li {
-      & video, & img, & mux-player {
+      & video,
+      & img,
+      & mux-player {
         max-height: 400px;
         display: block;
       }

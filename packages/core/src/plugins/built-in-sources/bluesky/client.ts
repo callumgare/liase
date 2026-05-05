@@ -1,4 +1,4 @@
-import { ActionContext } from "@/src/ActionContext.js";
+import type { ActionContext } from "@/src/ActionContext.js";
 import { AtpAgent } from "@atproto/api";
 
 type Props = {

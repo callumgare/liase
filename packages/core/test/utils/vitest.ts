@@ -1,26 +1,30 @@
-import { Source } from "@/src/schemas/source.js";
-import { expect, test } from "vitest";
-import { GenericResponse, createMediaFinderQuery } from "@/src/index.js";
-import { FinderOptionsInput } from "@/src/schemas/finderOptions.js";
+import { type GenericResponse, createLiasonQuery } from "@/src/index.js";
 import { getDuplicates, getOrdinal, hasNoDuplicates } from "@/src/lib/utils.js";
-import { QueryOptionsInput } from "@/src/schemas/queryOptions.js";
-import deepmerge from "deepmerge";
+import type { FinderOptionsInput } from "@/src/schemas/finderOptions.js";
+import type { QueryOptionsInput } from "@/src/schemas/queryOptions.js";
+import type { Source } from "@/src/schemas/source.js";
 import { copy } from "copy-anything";
+import deepmerge from "deepmerge";
+import { expect, test } from "vitest";
 import { getSecrets } from "./general.js";
 
 export function createBasicTestsForRequestHandlers<
   S extends Source,
   HandlerIds extends S["requestHandlers"][number]["id"],
   Query extends {
-    request?: Record<string, any>;
-    secrets?: Record<string, any>;
+    request?: Record<string, unknown>;
+    secrets?: Record<string, unknown>;
     checkResponse?: (
+      // biome-ignore lint/suspicious/noExplicitAny: response shape varies by plugin/fixture
       response: any,
       other: { pageLoadNum: number; message: string },
+      // biome-ignore lint/suspicious/noConfusingVoidType: callbacks can optionally return assertion count
     ) => void | number;
     checkAllResponses?: (
+      // biome-ignore lint/suspicious/noExplicitAny: response shape varies by plugin/fixture
       response: any,
       other: { message: string },
+      // biome-ignore lint/suspicious/noConfusingVoidType: callbacks can optionally return assertion count
     ) => void | number;
     before?: () => Promise<unknown>;
     numOfPagesToLoad?: number;
@@ -76,12 +80,13 @@ export function createBasicTestsForRequestHandlers<
           const numOfPagesToLoad = query.numOfPagesToLoad ?? 1;
           const numOfPagesToExpect =
             query.numOfPagesToExpect ?? numOfPagesToLoad;
+          // biome-ignore lint/suspicious/noExplicitAny: type narrowing helper needs any for constructor check
           const isPlainObject = (value: any) =>
             value?.constructor === Object || Array.isArray(value);
           const deepMergeOptions = {
             isMergeableObject: isPlainObject,
           };
-          const mediaQuery = await createMediaFinderQuery({
+          const mediaQuery = await createLiasonQuery({
             request,
             queryOptions: deepmerge.all(
               [
@@ -177,7 +182,7 @@ export function createBasicTestsForRequestHandlers<
             if (!query.duplicateMediaPossible) {
               const idsOfMedia = (response?.media || [])
                 .filter((media) => media)
-                .map((media: any) => media.id);
+                .map((media) => media.id);
 
               expect(idsOfMedia).toSatisfy(
                 hasNoDuplicates,
@@ -194,7 +199,7 @@ export function createBasicTestsForRequestHandlers<
           ];
           for (const checkAllResponses of customAllResponsesChecks) {
             const result = checkAllResponses(responses, {
-              message: `The responses were not as expected`,
+              message: "The responses were not as expected",
             });
             customResponseTestExpectedAssertions +=
               typeof result === "number" ? result : 1;
@@ -202,10 +207,11 @@ export function createBasicTestsForRequestHandlers<
 
           if (!query.duplicateMediaPossible) {
             const idsOfMedia = responses
-              .map((response: GenericResponse | null) => response?.media || [])
-              .flat()
+              .flatMap(
+                (response: GenericResponse | null) => response?.media || [],
+              )
               .filter((media) => media)
-              .map((media: any) => media.id);
+              .map((media) => media.id);
 
             expect(idsOfMedia).toSatisfy(
               hasNoDuplicates,

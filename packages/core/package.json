@@ -1,28 +1,19 @@
 {
-  "name": "media-finder",
+  "name": "@liason/core",
   "version": "0.0.0-version-set-when-releasing",
   "description": "The easiest way to programmatically fetch media content details on the internet",
   "main": "dist/index.js",
-  "files": [
-    "dist/*"
-  ],
-  "bin": {
-    "media-finder": "dist/media-finder-cli.js"
-  },
+  "files": ["dist/*"],
   "scripts": {
     "build": "rm -rf ./dist && tsc -p ./tsconfig.dist.json && tsc -p test/tsconfig.dist.json && tsc-alias",
     "watch": "tsc -p ./tsconfig.dist.json --watch",
-    "lint": "eslint src && prettier .",
-    "lint:fix": "eslint --fix src && prettier --write .",
+    "lint": "biome check",
+    "lint:fix": "biome check --fix",
     "test": "vitest run",
     "test:watch": "vitest watch",
-    "preview": "test/preview/start.sh",
-    "prepare": "husky",
-    "commit": "lint-staged && commit"
+    "preview": "test/preview/start.sh"
   },
-  "keywords": [
-    "media"
-  ],
+  "keywords": ["media"],
   "author": "Callum Gare <callum@gare.au>",
   "license": "MIT",
   "type": "module",
@@ -47,9 +38,6 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.3.0",
-    "@commitlint/config-conventional": "^19.2.2",
-    "@commitlint/prompt-cli": "^19.3.1",
     "@loopback/http-caching-proxy": "^6.0.3",
     "@tsconfig/node21": "^21.0.3",
     "@types/cacache": "^17.0.2",
@@ -59,21 +47,10 @@
     "@types/node": "^22.1.0",
     "@types/pluralize": "^0.0.33",
     "copy-anything": "^4.0.2",
-    "eslint": "^8.51.0",
-    "eslint-config-prettier": "^8.10.0",
-    "eslint-config-standard": "^17.1.0",
-    "eslint-plugin-import": "^2.27.5",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-promise": "^6.1.1",
-    "eslint-plugin-zod": "^1.4.0",
-    "globals": "^15.8.0",
-    "husky": "^9.1.1",
-    "lint-staged": "^15.2.7",
-    "prettier": "^3.3.3",
     "semantic-release": "^24.0.0",
+    "semantic-release-monorepo": "^8.0.2",
     "tsc-alias": "^1.8.8",
     "typescript": "^5.5.3",
-    "typescript-eslint": "^7.16.1",
     "vitest": "^1.6.0"
   },
   "optionalDependencies": {

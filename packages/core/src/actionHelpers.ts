@@ -99,20 +99,22 @@ function guessBasicMediaType({
       video: true,
       image: false,
     };
-  } else if (coreMimeType.startsWith("image/")) {
+  }
+  if (coreMimeType.startsWith("image/")) {
     return {
       video: false,
       image: true,
     };
-  } else if (coreMimeType.startsWith("audio/")) {
+  }
+  if (coreMimeType.startsWith("audio/")) {
     return {
       video: false,
       image: false,
       audio: true,
     };
-  } else if (["application/ogg"].includes(coreMimeType)) {
-    throw new Error(`Unable to determine type of media: ${mimeType || ext}`);
-  } else {
-    throw new Error(`Resource does not appear to be media: ${mimeType || ext}`);
   }
+  if (["application/ogg"].includes(coreMimeType)) {
+    throw new Error(`Unable to determine type of media: ${mimeType || ext}`);
+  }
+  throw new Error(`Resource does not appear to be media: ${mimeType || ext}`);
 }

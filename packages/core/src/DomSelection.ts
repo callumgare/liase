@@ -1,5 +1,5 @@
-import { Cheerio, CheerioAPI } from "cheerio";
-import { AnyNode } from "domhandler";
+import type { Cheerio, CheerioAPI } from "cheerio";
+import type { AnyNode } from "domhandler";
 
 export abstract class DomSelection {
   // eslint-disable-next-line no-use-before-define -- We have to use DomSelection before it's defined because it's recursive
@@ -9,13 +9,16 @@ export abstract class DomSelection {
   abstract get text(): string | Promise<string>;
   abstract get nativeSelector(): Cheerio<AnyNode>;
   abstract get selectedNodes(): DomSelection[];
-  abstract get firstJsonLd(): Record<string, any>;
-  abstract get jsonLd(): Array<Record<string, any>>;
+  abstract get firstJsonLd(): Record<string, unknown>;
+  abstract get jsonLd(): Array<Record<string, unknown>>;
+  map<T>(mapFunction: (node: DomSelection, index: number) => T): T[] {
+    return this.selectedNodes.map(mapFunction);
+  }
 }
 
 export class CheerioDomSelection extends DomSelection {
   #nativeSelector;
-  #cachedJsonLdArray: Array<Record<string, any>> | undefined;
+  #cachedJsonLdArray: Array<Record<string, unknown>> | undefined;
   #$: CheerioAPI;
 
   constructor(cheerioAPI: CheerioAPI, cheerioNode?: Cheerio<AnyNode>) {
@@ -39,14 +42,14 @@ export class CheerioDomSelection extends DomSelection {
     return this.#nativeSelector.text();
   }
 
-  map(mapFunction: (node: CheerioDomSelection, index: number) => any) {
+  map<T>(mapFunction: (node: CheerioDomSelection, index: number) => T): T[] {
     return this.selectedNodes.map(mapFunction);
   }
 
   get selectedNodes(): Array<CheerioDomSelection> {
     return this.#nativeSelector
       .toArray()
-      .map((node: any) => new CheerioDomSelection(this.#$, this.#$(node)));
+      .map((node: AnyNode) => new CheerioDomSelection(this.#$, this.#$(node)));
   }
 
   get firstJsonLd(): Record<string, unknown> {
@@ -62,7 +65,7 @@ export class CheerioDomSelection extends DomSelection {
       this.#cachedJsonLdArray = this.select(
         'script[type="application/ld+json"]',
       )
-        .map((ldJsonElm) => ldJsonElm.text)
+        .map((ldJsonElm) => ldJsonElm.text as string)
         .map((ldJsonText) => {
           try {
             return JSON.parse(ldJsonText);

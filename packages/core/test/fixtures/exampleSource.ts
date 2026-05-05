@@ -1,5 +1,5 @@
+import type { Source } from "@/src/index.js";
 import { z } from "zod";
-import { Source } from "@/src/index.js";
 
 const sourceName = "Example Source";
 const sourceId = "example-source";

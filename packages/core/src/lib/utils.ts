@@ -1,5 +1,5 @@
-import { ActionContext } from "../ActionContext.js";
 import chalk from "chalk";
+import type { ActionContext } from "../ActionContext.js";
 
 export function createCounter() {
   let counter = -1;
@@ -36,12 +36,11 @@ export function mergeInUnsetProperties(a: object, b: object) {
 }
 
 export const formatObjectPath = (path: (string | number)[]) =>
-  "$" +
-  path
+  `$${path
     .map((segment) =>
       typeof segment === "number" ? `[${segment}]` : `.${segment}`,
     )
-    .join("");
+    .join("")}`;
 
 export const formatObjectPathAsTree = (
   path: (string | number)[],
@@ -55,7 +54,7 @@ export const formatObjectPathAsTree = (
   const overallIndent = options.overallIndent ?? 0;
   const lastNodeExtraInfo = options.lastNodeExtraInfo ?? "";
   if (lineIndent < 2) {
-    throw Error(`Line indent can not be less than 2`);
+    throw Error("Line indent can not be less than 2");
   }
   let formattedTree = path
     .reduce<string[]>((segments, segment) => {
@@ -85,7 +84,7 @@ export const formatObjectPathAsTree = (
     )
     .join("\n");
   if (lastNodeExtraInfo) {
-    formattedTree = `${formattedTree} - ${lastNodeExtraInfo.replace(/\n/, "\n" + " ".repeat((path.length - 1) * lineIndent))}`;
+    formattedTree = `${formattedTree} - ${lastNodeExtraInfo.replace(/\n/, `\n${" ".repeat((path.length - 1) * lineIndent)}`)}`;
   }
   return formattedTree
     .split("\n")
@@ -102,7 +101,7 @@ type TypeOfTypes = ReturnType<typeof returnType>;
 export const capitaliseType = (
   type: TypeOfTypes | "array" | "set" | "date",
 ): string => {
-  let result;
+  let result: string;
   switch (type) {
     case "string":
     case "number":
@@ -162,7 +161,7 @@ export class ConstructorExecutionError extends Error {
   getFormattedErrorInfo() {
     const stack =
       this.cause instanceof Error
-        ? this.cause.stack?.replace(this.cause.toString() + "\n", "")
+        ? this.cause.stack?.replace(`${this.cause.toString()}\n`, "")
         : this.stack;
     const lastConstructorProp =
       this.errorOccurredAtPath[this.errorOccurredAtPath.length - 1];
@@ -196,9 +195,8 @@ type ValueType =
 export const getType = (value: unknown): ValueType => {
   if (Array.isArray(value)) {
     return "array";
-  } else {
-    return typeof value;
   }
+  return typeof value;
 };
 
 export function hasNoDuplicates(array: unknown[]): boolean {
@@ -211,7 +209,6 @@ export function getDuplicates<T>(array: T[]): T[] {
     for (let j = i + 1; j < array.length; j++) {
       if (array[i] === array[j]) {
         duplicates.add(array[i]);
-        continue;
       }
     }
   }
@@ -219,7 +216,7 @@ export function getDuplicates<T>(array: T[]): T[] {
 }
 
 export function getOrdinal(number: number) {
-  let suffix;
+  let suffix: string;
   switch (number % 10) {
     case 1:
       suffix = "st";
@@ -238,6 +235,7 @@ export function getOrdinal(number: number) {
 
 export function getPromiseWithResolvers<Expected = unknown>() {
   let resolve: (value: Expected) => void;
+  // biome-ignore lint/suspicious/noExplicitAny: reject reason is intentionally untyped
   let reject: (reason?: any) => void;
   const promise = new Promise<Expected>((...resolvers) => {
     resolve = resolvers[0];
@@ -257,11 +255,11 @@ export function getPromiseWithResolvers<Expected = unknown>() {
 export type ObjectEntry<BaseType> = [keyof BaseType, BaseType[keyof BaseType]];
 
 // Takes an object and if any property values are promises it will wait until they're resolved.
-export async function waitForAllPropertiesToResolve<
-  ObjectWithPromises,
->(object: {
-  [key in keyof ObjectWithPromises]: ObjectWithPromises[key];
-}): Promise<{
+export async function waitForAllPropertiesToResolve<ObjectWithPromises>(
+  object: {
+    [key in keyof ObjectWithPromises]: ObjectWithPromises[key];
+  },
+): Promise<{
   [key in keyof ObjectWithPromises]: Awaited<ObjectWithPromises[key]>;
 }> {
   // So that we can use Promise.all() to resolve every prop in object we first convert
@@ -272,13 +270,13 @@ export async function waitForAllPropertiesToResolve<
   const entriesAsPromises = Object.entries(object).map((entry) => {
     const [entryKey, entryValue] = entry;
     if (entryValue instanceof Promise) {
-      return entryValue.then((resolvedEntryValue: any) => [
+      return entryValue.then((resolvedEntryValue: unknown) => [
         entryKey,
         resolvedEntryValue,
       ]);
-    } else {
-      return new Promise((resolve) => resolve(entry as [any, any]));
     }
+    // biome-ignore lint/suspicious/noExplicitAny: entry tuple cast needed for Promise.all compatibility
+    return new Promise((resolve) => resolve(entry as [any, any]));
   }) as Promise<ObjectEntry<ObjectWithPromises>>[];
   const entriesResolved = await Promise.all(entriesAsPromises);
   return Object.fromEntries(entriesResolved) as {

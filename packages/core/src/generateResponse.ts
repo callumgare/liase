@@ -1,21 +1,24 @@
 import assert from "node:assert";
-import { GenericResponse, genericResponseSchema } from "./schemas/response.js";
-import { executeConstructor, executeActions } from "./constructorExecution.js";
-import { FriendlyZodError, zodParseOrThrow } from "./lib/zod.js";
-import { ConstructorExecutionContext } from "./types.js";
+import { z } from "zod";
 import { ActionContext } from "./ActionContext.js";
-import { GenericRequest } from "./schemas/request.js";
-import {
+import { executeActions, executeConstructor } from "./constructorExecution.js";
+import { FriendlyZodError, zodParseOrThrow } from "./lib/zod.js";
+import type { GenericRequest } from "./schemas/request.js";
+import type {
   RequestHandler,
   requestHandlerSchema,
 } from "./schemas/requestHandler.js";
-import { z } from "zod";
+import {
+  type GenericResponse,
+  genericResponseSchema,
+} from "./schemas/response.js";
+import type { ConstructorExecutionContext } from "./types.js";
 
 export async function generateResponse(
   constructorContext: ConstructorExecutionContext,
 ): Promise<GenericResponse> {
   // If the requestHandler's requestSchema sets any defaults add them to the request
-  constructorContext = {
+  const resolvedContext = {
     ...constructorContext,
     request: requestWithDefaults(
       constructorContext.request,
@@ -24,18 +27,19 @@ export async function generateResponse(
   };
   Error.stackTraceLimit = 50;
   const rootActionContext = new ActionContext({
-    constructorContext,
+    constructorContext: resolvedContext,
     executeActions,
     path: [],
   });
   const res = await executeConstructor(
-    constructorContext.responseDetails.constructor,
+    resolvedContext.responseDetails.constructor,
     rootActionContext,
   );
-  return await validateResponse(res, constructorContext, rootActionContext);
+  return await validateResponse(res, resolvedContext, rootActionContext);
 }
 
 async function validateResponse(
+  // biome-ignore lint/suspicious/noExplicitAny: dynamic response object validated by zod
   response: any,
   constructorContext: ConstructorExecutionContext,
   rootActionContext: ActionContext,
@@ -83,7 +87,7 @@ async function validateResponse(
     );
   } else {
     if (parsedResponse.page) {
-      throw Error(`has page`);
+      throw Error("has page");
     }
   }
 
@@ -99,12 +103,10 @@ export function getResponseDetailsBasedOnRequest(
       const { success } = response.requestMatcher.safeParse(request);
       if (success) {
         return response;
-      } else {
-        return undefined;
       }
-    } else {
-      return response;
+      return undefined;
     }
+    return response;
   });
   if (!response) {
     throw Error("Could not find matching response details");

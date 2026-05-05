@@ -1,29 +1,29 @@
 import { ZodError, z } from "zod";
 
-import MediaFinder from "./MediaFinder.js";
-import {
-  queryOptionsSchema,
-  QueryOptions,
-} from "@/src/schemas/queryOptions.js";
 import { finderOptionsSchema } from "@/src/schemas/finderOptions.js";
 import {
-  genericRequestSchema,
-  GenericRequest,
-  GenericRequestInput,
-} from "@/src/schemas/request.js";
-import { GenericResponse } from "@/src/schemas/response.js";
+  type QueryOptions,
+  queryOptionsSchema,
+} from "@/src/schemas/queryOptions.js";
 import {
-  requestHandlerSchema,
+  type GenericRequest,
+  type GenericRequestInput,
+  genericRequestSchema,
+} from "@/src/schemas/request.js";
+import type {
   RequestHandler,
+  requestHandlerSchema,
 } from "@/src/schemas/requestHandler.js";
+import type { GenericResponse } from "@/src/schemas/response.js";
+import Liason from "./Liason.js";
 import {
   generateResponse,
   getResponseDetailsBasedOnRequest,
   requestWithDefaults,
 } from "./generateResponse.js";
-import { GenericSecrets } from "./schemas/secrets.js";
-import { FriendlyZodError } from "./lib/zod.js";
 import { exportNetworkRequestsHistoryIfRelevantError } from "./lib/networkRequestsHistory.js";
+import { FriendlyZodError } from "./lib/zod.js";
+import type { GenericSecrets } from "./schemas/secrets.js";
 
 const propsSchema = z
   .object({
@@ -32,21 +32,21 @@ const propsSchema = z
     finderOptions: finderOptionsSchema.default({}),
   })
   .strict();
-export type MediaFinderQueryProps = z.input<typeof propsSchema>;
+export type LiasonQueryProps = z.input<typeof propsSchema>;
 
-export default class MediaFinderQuery extends MediaFinder {
+export default class LiasonQuery extends Liason {
   #request: GenericRequest;
   #queryOptions: QueryOptions;
   #iterator: AsyncIterator<GenericResponse>;
 
-  constructor(props: MediaFinderQueryProps) {
-    let parsedProps;
+  constructor(props: LiasonQueryProps) {
+    let parsedProps: z.output<typeof propsSchema>;
     try {
       parsedProps = propsSchema.parse(props);
     } catch (err) {
       if (err instanceof ZodError) {
         const error = new FriendlyZodError(err, {
-          message: "MediaFinder argument invalid",
+          message: "Liason argument invalid",
           inputData: props,
         });
         throw error;

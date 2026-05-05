@@ -1,5 +1,5 @@
-import { expect } from "vitest";
 import giphySource from "@/src/plugins/built-in-sources/giphy/index.js";
+import { expect } from "vitest";
 import {
   createBasicTestsForRequestHandlers,
   normaliseResponse,

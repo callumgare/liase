@@ -1,5 +1,3 @@
-import { Headers } from "got-scraping";
-
 type ParsedFetchArgs = {
   url: URL;
   method: string;
@@ -11,7 +9,10 @@ export function parseFetchArgs(
   input: Parameters<typeof fetch>[0],
   init?: Parameters<typeof fetch>[1],
 ): ParsedFetchArgs {
-  let url, body, headers, method;
+  let url: URL;
+  let body: string | Promise<string>;
+  let headers: Record<string, string>;
+  let method: string;
   if (typeof input === "string" || input instanceof URL) {
     url = input instanceof URL ? input : new URL(input);
     if (!init || !init.body) {
@@ -47,12 +48,18 @@ export function parseFetchArgs(
   };
 }
 
-export function headersToNormalisedBasicObject(headers: Headers | HeadersInit) {
-  let entries;
+export function headersToNormalisedBasicObject(
+  headers:
+    | globalThis.Headers
+    | string[][]
+    | Record<string, string | string[] | readonly string[] | undefined>,
+) {
+  let entries:
+    | string[][]
+    | [string, string | string[] | readonly string[] | undefined][];
   if (Array.isArray(headers)) {
     entries = headers;
   } else if (headers instanceof global.Headers) {
-    // @ts-expect-error -- entries does exist, not sure why not in types
     entries = [...headers.entries()];
   } else {
     entries = Object.entries(headers);

@@ -1,8 +1,8 @@
-import { MediaFinderHooks } from "./lib/hooks.js";
-import { QueryOptions } from "./schemas/queryOptions.js";
-import { GenericRequest } from "./schemas/request.js";
-import { RequestHandler } from "./schemas/requestHandler.js";
-import { GenericSecrets } from "./schemas/secrets.js";
+import type { LiasonHooks } from "./lib/hooks.js";
+import type { QueryOptions } from "./schemas/queryOptions.js";
+import type { GenericRequest } from "./schemas/request.js";
+import type { RequestHandler } from "./schemas/requestHandler.js";
+import type { GenericSecrets } from "./schemas/secrets.js";
 
 export type ConstructorExecutionContext = {
   request: GenericRequest;
@@ -12,5 +12,5 @@ export type ConstructorExecutionContext = {
   pageFetchLimitReached?: boolean;
   cacheNetworkRequests?: QueryOptions["cacheNetworkRequests"];
   sourceId: string;
-  hooks: MediaFinderHooks;
+  hooks: LiasonHooks;
 };

@@ -1,6 +1,6 @@
-import { expect } from "vitest";
 import booksToScrapeSource from "@/src/sources/books-to-scrape/index.js";
-import { createBasicTestsForRequestHandlers } from "media-finder/dist/test/utils.js";
+import { createBasicTestsForRequestHandlers } from "@liason/core/dist/test/utils/vitest.js";
+import { expect } from "vitest";
 
 createBasicTestsForRequestHandlers({
   source: booksToScrapeSource,

@@ -1,10 +1,10 @@
 import cacache from "cacache";
-import { QueryOptions } from "../schemas/queryOptions.js";
+import type { OptionsInit as GotOptionsInit } from "got-scraping";
 import stringify from "json-stable-stringify";
-import { OptionsInit as GotOptionsInit } from "got-scraping";
+import type { QueryOptions } from "../schemas/queryOptions.js";
 import { headersToNormalisedBasicObject, parseFetchArgs } from "./fetch.js";
 
-const cacheDir = "/tmp/media-finder/network-requests-cache/custom";
+const cacheDir = "/tmp/liason/network-requests-cache/custom";
 
 type CacheableRequest = {
   url: string;
@@ -94,7 +94,7 @@ export function addCachingFetchWrapper(
       headerGeneratorOptions: undefined,
     };
 
-    let res;
+    let res: Response | CachedResponse | undefined;
     if (cacheNetworkRequests === "always") {
       res = await getCachedResponse(cacheableRequest);
       if (res) {
