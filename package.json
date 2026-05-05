@@ -1,0 +1,26 @@
+{
+	"name": "liaison-monorepo",
+	"private": true,
+	"type": "module",
+	"workspaces": ["packages/*"],
+	"scripts": {
+		"build": "turbo build",
+		"test": "turbo test",
+		"lint": "turbo lint",
+		"lint:fix": "turbo lint:fix",
+		"prepare": "husky",
+		"commit": "lint-staged && commit"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@commitlint/cli": "^19.6.1",
+		"@commitlint/config-conventional": "^19.6.0",
+		"@commitlint/prompt-cli": "^19.6.1",
+		"husky": "^9.1.7",
+		"lint-staged": "^15.2.11",
+		"turbo": "^2.5.4"
+	},
+	"overrides": {
+		"conventional-changelog-conventionalcommits": ">= 8.0.0"
+	}
+}
