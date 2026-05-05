@@ -1,0 +1,1 @@
+An example plugin for [Media Finder](https://github.com/callumgare/media-finder).

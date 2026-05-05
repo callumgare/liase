@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist/",
+    "declaration": true,
+    "declarationMap": true,
+    "forceConsistentCasingInFileNames": true,
+    "typeRoots": ["./node_modules/@types"],
+    "baseUrl": "./src",
+    "paths": {
+      "@/src/*": ["./*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "extends": "@tsconfig/node21/tsconfig.json"
+}
