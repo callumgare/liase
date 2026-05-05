@@ -1,0 +1,22 @@
+.root {
+  padding: 1em;
+
+  & ul {
+    display: flex;
+    flex-wrap: wrap;
+    list-style-type: none;
+    gap: 1em;
+    justify-content: center;
+    align-items: center;
+
+    & li {
+      & video, & img, & mux-player {
+        max-height: 400px;
+        display: block;
+      }
+      & mux-player {
+        height: 10000px; /* Needed to ensure the video element in mux-player respects max-height for some reason */
+      }
+    }
+  }
+}
