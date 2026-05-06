@@ -1,13 +1,13 @@
 import {
-  Liason,
+  Liase,
   type Plugin,
   type RequestHandler,
   type Source,
-} from "@liason/core";
+} from "@liase/core";
 import { Command, Option } from "commander";
 import { tsImport } from "tsx/esm/api";
 
-type LiasonDetails = {
+type LiaseDetails = {
   source?: Source;
   requestHandler?: RequestHandler;
   plugins: Plugin[];
@@ -26,9 +26,9 @@ type LiasonDetails = {
 // subcommand options we care about, parse this in order to determine which values
 // the user has given us, then finally we lookup any relevant info based on this and
 // return it so it can be used for building our actual options.
-let cachedLiasonDetails: LiasonDetails | undefined = undefined;
-export async function getLiasonDetailsFromArgs(): Promise<LiasonDetails> {
-  if (!cachedLiasonDetails) {
+let cachedLiaseDetails: LiaseDetails | undefined = undefined;
+export async function getLiaseDetailsFromArgs(): Promise<LiaseDetails> {
+  if (!cachedLiaseDetails) {
     const program = new Command();
     const silenceCommand = (command: Command) =>
       command
@@ -84,7 +84,7 @@ export async function getLiasonDetailsFromArgs(): Promise<LiasonDetails> {
         ),
     ).then((modules) => modules.map((module) => module.default));
 
-    const mediaFinder = new Liason({ plugins });
+    const mediaFinder = new Liase({ plugins });
 
     const source: Source | undefined = mediaFinder.sources.find(
       (source) => source.id === sourceId,
@@ -102,13 +102,13 @@ export async function getLiasonDetailsFromArgs(): Promise<LiasonDetails> {
     if (source && requestHandlerId && !requestHandler) {
       throw Error(`Could not find request handler for "${requestHandlerId}"`);
     }
-    cachedLiasonDetails = { source, requestHandler, plugins };
+    cachedLiaseDetails = { source, requestHandler, plugins };
   }
 
-  return cachedLiasonDetails;
+  return cachedLiaseDetails;
 }
 
-export function getSharedLiasonOptions({ source, plugins }: LiasonDetails) {
+export function getSharedLiaseOptions({ source, plugins }: LiaseDetails) {
   const sourceOption = new Option(
     "-s, --source <source id>",
     "Media finder source ID",
@@ -137,7 +137,7 @@ export function getSharedLiasonOptions({ source, plugins }: LiasonDetails) {
     .choices(["never", "auto", "always"])
     .default("always");
 
-  const mediaFinder = new Liason({ plugins });
+  const mediaFinder = new Liase({ plugins });
   sourceOption.choices(mediaFinder.sources.map((source) => source.id));
 
   if (source) {

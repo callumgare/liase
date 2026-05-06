@@ -1,10 +1,10 @@
-import LiasonQuery, { type LiasonQueryProps } from "./LiasonQuery.js";
+import LiaseQuery, { type LiaseQueryProps } from "./LiaseQuery.js";
 
-export { default as Liason } from "./Liason.js";
-export { default as LiasonQuery } from "./LiasonQuery.js";
+export { default as Liase } from "./Liase.js";
+export { default as LiaseQuery } from "./LiaseQuery.js";
 
-export function createLiasonQuery(props: LiasonQueryProps): LiasonQuery {
-  return new LiasonQuery(props);
+export function createLiaseQuery(props: LiaseQueryProps): LiaseQuery {
+  return new LiaseQuery(props);
 }
 
 export type { GenericMedia } from "@/src/schemas/media.js";

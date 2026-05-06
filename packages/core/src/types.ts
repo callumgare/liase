@@ -1,4 +1,4 @@
-import type { LiasonHooks } from "./lib/hooks.js";
+import type { LiaseHooks } from "./lib/hooks.js";
 import type { QueryOptions } from "./schemas/queryOptions.js";
 import type { GenericRequest } from "./schemas/request.js";
 import type { RequestHandler } from "./schemas/requestHandler.js";
@@ -12,5 +12,5 @@ export type ConstructorExecutionContext = {
   pageFetchLimitReached?: boolean;
   cacheNetworkRequests?: QueryOptions["cacheNetworkRequests"];
   sourceId: string;
-  hooks: LiasonHooks;
+  hooks: LiaseHooks;
 };

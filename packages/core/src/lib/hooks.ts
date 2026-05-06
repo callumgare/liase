@@ -1,7 +1,7 @@
 // biome-ignore lint/suspicious/noExplicitAny: hooks pipeline passes arbitrary data between middleware
 export type Hook = (input: any, next: (output: any) => any) => any;
 
-export type LiasonHooks = {
+export type LiaseHooks = {
   loadUrl: Array<Hook>;
   getFetchClient: Array<Hook>;
 };

@@ -5,13 +5,13 @@ import util from "node:util";
 import AnsiToHtml from "ansi-to-html";
 import { Command } from "commander";
 import mimeTypes from "mime-types";
-import { getSharedLiasonOptions } from "../lib/liason-details.js";
-import { getLiasonQuery } from "../lib/liason-query.js";
+import { getSharedLiaseOptions } from "../lib/liase-details.js";
+import { getLiaseQuery } from "../lib/liase-query.js";
 import { getSecretsSets } from "../lib/secrets.js";
 
 export async function getWebUiCommand(): Promise<Command> {
   const webUiCommand = new Command();
-  const { pluginsOption } = getSharedLiasonOptions({ plugins: [] });
+  const { pluginsOption } = getSharedLiaseOptions({ plugins: [] });
   webUiCommand
     .name("web-ui")
     .addOption(pluginsOption)
@@ -90,7 +90,7 @@ function handleMediaQueryRequest(
       JSON.parse(body);
     let response: unknown;
     try {
-      const query = await getLiasonQuery({
+      const query = await getLiaseQuery({
         request: mediaFinderRequest,
         secretsSet,
         loadPluginsFromArgs: true,

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { RequestHandler } from "@liason/core";
+import type { RequestHandler } from "@liase/core";
 import { rootUrl, sourceId } from "../shared.js";
 import { singleMediaResponseSchema } from "../types.js";
 

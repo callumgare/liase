@@ -3,7 +3,7 @@ export default function Home() {
   return (
     <main className={style.root}>
       <h1>
-        <a href="https://github.com/callumgare/liason/">liason</a> output viewer
+        <a href="https://github.com/callumgare/liase/">liase</a> output viewer
       </h1>
     </main>
   );

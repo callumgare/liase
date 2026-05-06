@@ -1,4 +1,4 @@
-import { vitestSetupCachingProxy } from "@liason/core/dist/test/utils/globalSetup.js";
+import { vitestSetupCachingProxy } from "@liase/core/dist/test/utils/globalSetup.js";
 import type { GlobalSetupContext } from "vitest/node";
 
 export default async function (context: GlobalSetupContext) {

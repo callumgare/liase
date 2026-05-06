@@ -1,18 +1,18 @@
 import { Command, Option } from "commander";
 import { z } from "zod";
 import {
-  getLiasonDetailsFromArgs,
-  getSharedLiasonOptions,
-} from "../lib/liason-details.js";
-import { getLiasonQuery } from "../lib/liason-query.js";
+  getLiaseDetailsFromArgs,
+  getSharedLiaseOptions,
+} from "../lib/liase-details.js";
+import { getLiaseQuery } from "../lib/liase-query.js";
 import { zodSchemaToSimpleSchema } from "../lib/zod.js";
 
 export async function getShowSchemaCommand(): Promise<Command> {
   const showSchemaCommand = new Command();
-  const liasonDetails = await getLiasonDetailsFromArgs();
+  const liaseDetails = await getLiaseDetailsFromArgs();
   const { sourceOption, requestHandlerOption, pluginsOption } =
-    getSharedLiasonOptions(liasonDetails);
-  const { requestHandler } = liasonDetails;
+    getSharedLiaseOptions(liaseDetails);
+  const { requestHandler } = liaseDetails;
   showSchemaCommand
     .name("show-schema")
     .addOption(sourceOption)
@@ -39,11 +39,11 @@ export async function getShowSchemaCommand(): Promise<Command> {
         schema = requestHandler.secretsSchema || z.object({}).strict();
       } else if (options.schemaType === "response") {
         const { plugins, outputFormat, request } = options;
-        const liasonQuery = await getLiasonQuery({
+        const liaseQuery = await getLiaseQuery({
           request,
           loadPluginsFromArgs: true,
         });
-        schema = liasonQuery.getResponseDetails().schema;
+        schema = liaseQuery.getResponseDetails().schema;
       } else {
         throw Error(`Unknown schema type option "${options.schemaType}"`);
       }

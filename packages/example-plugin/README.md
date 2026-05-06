@@ -1,1 +1,1 @@
-An example plugin for [liason](https://github.com/callumgare/liason).
+An example plugin for [liase](https://github.com/callumgare/liase).

@@ -31,11 +31,7 @@ export async function exportNetworkRequestsHistory({
   if (!networkRequestsHistory.length) {
     return;
   }
-  const tmpDir = path.join(
-    os.tmpdir(),
-    "liason-exports",
-    Date.now().toString(),
-  );
+  const tmpDir = path.join(os.tmpdir(), "liase-exports", Date.now().toString());
   try {
     await fs.access(tmpDir);
   } catch (error) {

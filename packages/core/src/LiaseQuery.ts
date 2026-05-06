@@ -15,7 +15,7 @@ import type {
   requestHandlerSchema,
 } from "@/src/schemas/requestHandler.js";
 import type { GenericResponse } from "@/src/schemas/response.js";
-import Liason from "./Liason.js";
+import Liase from "./Liase.js";
 import {
   generateResponse,
   getResponseDetailsBasedOnRequest,
@@ -32,21 +32,21 @@ const propsSchema = z
     finderOptions: finderOptionsSchema.default({}),
   })
   .strict();
-export type LiasonQueryProps = z.input<typeof propsSchema>;
+export type LiaseQueryProps = z.input<typeof propsSchema>;
 
-export default class LiasonQuery extends Liason {
+export default class LiaseQuery extends Liase {
   #request: GenericRequest;
   #queryOptions: QueryOptions;
   #iterator: AsyncIterator<GenericResponse>;
 
-  constructor(props: LiasonQueryProps) {
+  constructor(props: LiaseQueryProps) {
     let parsedProps: z.output<typeof propsSchema>;
     try {
       parsedProps = propsSchema.parse(props);
     } catch (err) {
       if (err instanceof ZodError) {
         const error = new FriendlyZodError(err, {
-          message: "Liason argument invalid",
+          message: "Liase argument invalid",
           inputData: props,
         });
         throw error;

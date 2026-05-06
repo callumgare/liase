@@ -1,16 +1,16 @@
-# Liason
+# Liase
 
-Liason is a library that provide a uniform interface to fetch and return media from different sources all in a
+Liase is a library that provide a uniform interface to fetch and return media from different sources all in a
 standardised format.
 
 ## Packages
 
 | Package | Description |
 |---|---|
-| [`@liason/core`](packages/core) | The core library |
-| [`@liason/cli`](packages/cli) | CLI tool for interacting with the core library |
-| [`@liason/example-plugin`](packages/example-plugin) | An example plugin demonstrating how to extend liason |
-| [`@liason/output-viewer`](packages/output-viewer) | A Next.js web app for viewing liason output |
+| [`@liase/core`](packages/core) | The core library |
+| [`@liase/cli`](packages/cli) | CLI tool for interacting with the core library |
+| [`@liase/example-plugin`](packages/example-plugin) | An example plugin demonstrating how to extend liase |
+| [`@liase/output-viewer`](packages/output-viewer) | A Next.js web app for viewing liase output |
 
 ## Development
 
@@ -41,4 +41,4 @@ npm run lint
 ```
 
 ## Name
-It should probably be spelt "liaison" by my dyslexia-ass brain can't spell that reliabably 😆
+It should probably be spelt "liaise" by my silly dyslexia brain can't spell that reliabably 😆

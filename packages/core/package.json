@@ -1,5 +1,5 @@
 {
-  "name": "@liason/core",
+  "name": "@liase/core",
   "version": "0.0.0-version-set-when-releasing",
   "description": "The easiest way to programmatically fetch media content details on the internet",
   "main": "dist/index.js",

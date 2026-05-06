@@ -1,5 +1,5 @@
 {
-  "name": "liason-monorepo",
+  "name": "liase-monorepo",
   "private": true,
   "type": "module",
   "packageManager": "npm@11.10.1",

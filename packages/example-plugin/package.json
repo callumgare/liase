@@ -1,7 +1,7 @@
 {
-  "name": "@liason/example-plugin",
+  "name": "@liase/example-plugin",
   "version": "0.0.0-version-set-when-releasing",
-  "description": "An example plugin for @liason/core",
+  "description": "An example plugin for @liase/core",
   "main": "dist/index.js",
   "files": ["dist/*"],
   "scripts": {
@@ -20,7 +20,7 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "@liason/core": "*",
+    "@liase/core": "*",
     "@loopback/http-caching-proxy": "^6.0.4",
     "@refactorjs/http-proxy": "^0.2.14",
     "@tsconfig/node21": "^21.0.3",

@@ -1,24 +1,24 @@
 import { Command, Option } from "commander";
 import open from "open";
 import {
-  getLiasonDetailsFromArgs,
+  getLiaseDetailsFromArgs,
   getRequestFromArgs,
-  getSharedLiasonOptions,
-} from "../lib/liason-details.js";
-import { getLiasonQuery } from "../lib/liason-query.js";
+  getSharedLiaseOptions,
+} from "../lib/liase-details.js";
+import { getLiaseQuery } from "../lib/liase-query.js";
 import { startProxyServer } from "../lib/proxy.js";
 import { zodSchemaToSimpleSchema } from "../lib/zod.js";
 
 export async function getRunCommand(): Promise<Command> {
   const runCommand = new Command();
-  const liasonDetails = await getLiasonDetailsFromArgs();
+  const liaseDetails = await getLiaseDetailsFromArgs();
   const {
     sourceOption,
     requestHandlerOption,
     pluginsOption,
     cacheNetworkRequestsOption,
     secretsSetOption,
-  } = getSharedLiasonOptions(liasonDetails);
+  } = getSharedLiaseOptions(liaseDetails);
   runCommand
     .name("run")
     .addOption(sourceOption)
@@ -37,8 +37,8 @@ export async function getRunCommand(): Promise<Command> {
     )
     .action(async (options) => {
       const { outputFormat, cacheNetworkRequests, secretsSet } = options;
-      const request = getRequestFromArgs(options, liasonDetails.requestHandler);
-      const query = await getLiasonQuery({
+      const request = getRequestFromArgs(options, liaseDetails.requestHandler);
+      const query = await getLiaseQuery({
         request,
         loadPluginsFromArgs: true,
         cacheNetworkRequests,
@@ -88,7 +88,7 @@ export async function getRunCommand(): Promise<Command> {
       }
     });
 
-  const { requestHandler } = liasonDetails;
+  const { requestHandler } = liaseDetails;
 
   if (requestHandler) {
     const simpleSchema = zodSchemaToSimpleSchema(requestHandler.requestSchema);

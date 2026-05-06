@@ -6,7 +6,7 @@ export const genericMediaSchema = z
     mediaFinderSource: z
       .string()
       .regex(/^[a-z-]+$/)
-      .describe("The id of the liason source which found the media"),
+      .describe("The id of the liase source which found the media"),
     id: z
       .union([z.string(), z.number()])
       .describe(

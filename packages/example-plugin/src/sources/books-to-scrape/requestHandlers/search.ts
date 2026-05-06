@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import type { Constructor, RequestHandler } from "@liason/core";
-import type { DomSelection } from "@liason/core/dist/DomSelection.js";
+import type { Constructor, RequestHandler } from "@liase/core";
+import type { DomSelection } from "@liase/core/dist/DomSelection.js";
 import { rootUrl, sourceId } from "../shared.js";
 import { pageOfMediaResponseSchema } from "../types.js";
 

@@ -1,4 +1,4 @@
-import { type GenericResponse, createLiasonQuery } from "@/src/index.js";
+import { type GenericResponse, createLiaseQuery } from "@/src/index.js";
 import { getDuplicates, getOrdinal, hasNoDuplicates } from "@/src/lib/utils.js";
 import type { FinderOptionsInput } from "@/src/schemas/finderOptions.js";
 import type { QueryOptionsInput } from "@/src/schemas/queryOptions.js";
@@ -98,7 +98,7 @@ export function createBasicTestsForRequestHandlers<
           const deepMergeOptions = {
             isMergeableObject: isPlainObject,
           };
-          const mediaQuery = await createLiasonQuery({
+          const mediaQuery = await createLiaseQuery({
             request,
             queryOptions: deepmerge.all(
               [

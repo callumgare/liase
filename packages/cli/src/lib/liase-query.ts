@@ -1,13 +1,13 @@
 import {
   type GenericRequest,
-  type LiasonQuery,
+  type LiaseQuery,
   type Plugin,
-  createLiasonQuery,
-} from "@liason/core";
-import { getLiasonDetailsFromArgs } from "./liason-details.js";
+  createLiaseQuery,
+} from "@liase/core";
+import { getLiaseDetailsFromArgs } from "./liase-details.js";
 import { getSecretsSets } from "./secrets.js";
 
-export async function getLiasonQuery({
+export async function getLiaseQuery({
   request,
   secretsSet,
   cacheNetworkRequests,
@@ -17,11 +17,11 @@ export async function getLiasonQuery({
   secretsSet?: string;
   cacheNetworkRequests?: "never" | "auto" | "always";
   loadPluginsFromArgs?: boolean;
-}): Promise<LiasonQuery> {
+}): Promise<LiaseQuery> {
   const plugins: Plugin[] = [];
   if (loadPluginsFromArgs) {
-    const liasonDetails = await getLiasonDetailsFromArgs();
-    plugins.push(...liasonDetails.plugins);
+    const liaseDetails = await getLiaseDetailsFromArgs();
+    plugins.push(...liaseDetails.plugins);
   }
   let secrets = {};
   if (secretsSet) {
@@ -29,7 +29,7 @@ export async function getLiasonQuery({
     secrets = secretsSets[secretsSet];
   }
 
-  return createLiasonQuery({
+  return createLiaseQuery({
     request: request as GenericRequest,
     queryOptions: {
       secrets,

@@ -1,10 +1,10 @@
 {
-  "name": "@liason/cli",
+  "name": "@liase/cli",
   "version": "0.0.0-version-set-when-releasing",
   "main": "dist/index.js",
   "files": ["dist/*"],
   "bin": {
-    "liason": "dist/index.js",
+    "liase": "dist/index.js",
     "mf": "dist/index.js"
   },
   "scripts": {
@@ -15,14 +15,14 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/callumgare/liason.git"
+    "url": "git+https://github.com/callumgare/liase.git"
   },
   "author": "Callum Gare <callum@gare.au>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/callumgare/liason/issues"
+    "url": "https://github.com/callumgare/liase/issues"
   },
-  "homepage": "https://github.com/callumgare/liason#readme",
+  "homepage": "https://github.com/callumgare/liase#readme",
   "description": "",
   "dependencies": {
     "@loopback/http-caching-proxy": "^2.1.15",
@@ -42,7 +42,7 @@
     "typescript": "^5.7.2"
   },
   "peerDependencies": {
-    "@liason/core": "*"
+    "@liase/core": "*"
   },
   "overrides": {
     "conventional-changelog-conventionalcommits": ">= 8.0.0"

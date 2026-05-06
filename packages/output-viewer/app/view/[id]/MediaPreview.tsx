@@ -1,6 +1,6 @@
 "use client";
 
-import type { GenericFile, GenericMedia } from "@liason/core";
+import type { GenericFile, GenericMedia } from "@liase/core";
 import VideoPlayer, {
   type MuxPlayerRefAttributes,
 } from "@mux/mux-player-react";

@@ -1,5 +1,5 @@
 import booksToScrapeSource from "@/src/sources/books-to-scrape/index.js";
-import { createBasicTestsForRequestHandlers } from "@liason/core/dist/test/utils/vitest.js";
+import { createBasicTestsForRequestHandlers } from "@liase/core/dist/test/utils/vitest.js";
 import { expect } from "vitest";
 
 createBasicTestsForRequestHandlers({

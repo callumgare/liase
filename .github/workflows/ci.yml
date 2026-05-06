@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GIPHY_API_KEY: ${{ secrets.GIPHY_API_KEY }}
-      LIASON_SECRETS_FILE: ${{ vars.LIASON_SECRETS_FILE }}
+      LIASE_SECRETS_FILE: ${{ vars.LIASE_SECRETS_FILE }}
     steps:
       - uses: actions/checkout@v4
 

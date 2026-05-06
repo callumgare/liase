@@ -1,5 +1,5 @@
 {
-  "name": "@liason/output-viewer",
+  "name": "@liase/output-viewer",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -20,7 +20,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "@liason/core": "*",
+    "@liase/core": "*",
     "typescript": "^5"
   }
 }

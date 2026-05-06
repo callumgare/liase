@@ -1,4 +1,4 @@
-import type { Constructor } from "@liason/core";
+import type { Constructor } from "@liase/core";
 
 export const sourceId = "books-to-scrape";
 export const rootUrl = "https://books.toscrape.com/";

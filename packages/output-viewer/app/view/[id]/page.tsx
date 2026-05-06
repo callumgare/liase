@@ -1,6 +1,6 @@
 "use server";
 
-import type { GenericResponse } from "@liason/core";
+import type { GenericResponse } from "@liase/core";
 import { kv } from "@vercel/kv";
 import MediaPreview from "./MediaPreview";
 import style from "./page.module.css";

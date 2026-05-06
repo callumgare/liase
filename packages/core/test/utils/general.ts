@@ -4,15 +4,15 @@ import type { GenericRequest } from "@/src/index.js";
 
 export async function getSecrets(request: GenericRequest) {
   try {
-    const secretsPath = process.env.LIASON_SECRETS_FILE
-      ? path.resolve(process.env.LIASON_SECRETS_FILE)
+    const secretsPath = process.env.LIASE_SECRETS_FILE
+      ? path.resolve(process.env.LIASE_SECRETS_FILE)
       : path.join(import.meta.dirname, "../../.secrets.mjs");
     try {
       await fs.access(secretsPath);
     } catch (error) {
-      if (process.env.LIASON_SECRETS_FILE) {
+      if (process.env.LIASE_SECRETS_FILE) {
         throw Error(
-          `LIASON_SECRETS_FILE is set to ${process.env.LIASON_SECRETS_FILE} but secrets file not found or accessible`,
+          `LIASE_SECRETS_FILE is set to ${process.env.LIASE_SECRETS_FILE} but secrets file not found or accessible`,
         );
       }
       return {};

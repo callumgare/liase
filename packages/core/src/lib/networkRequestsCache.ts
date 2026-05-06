@@ -4,7 +4,7 @@ import stringify from "json-stable-stringify";
 import type { QueryOptions } from "../schemas/queryOptions.js";
 import { headersToNormalisedBasicObject, parseFetchArgs } from "./fetch.js";
 
-const cacheDir = "/tmp/liason/network-requests-cache/custom";
+const cacheDir = "/tmp/liase/network-requests-cache/custom";
 
 type CacheableRequest = {
   url: string;

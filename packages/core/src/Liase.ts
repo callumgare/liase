@@ -6,7 +6,7 @@ import {
 import type { Plugin } from "@/src/schemas/plugin.js";
 import type { Source } from "@/src/schemas/source.js";
 import type { Entries } from "type-fest";
-import type { LiasonHooks } from "./lib/hooks.js";
+import type { LiaseHooks } from "./lib/hooks.js";
 import { zodParseOrThrow } from "./lib/zod.js";
 import builtInSourcesPlugin from "./plugins/built-in-sources/index.js";
 import {
@@ -14,14 +14,14 @@ import {
   requestHandlerSchema,
 } from "./schemas/requestHandler.js";
 
-export default class Liason {
+export default class Liase {
   protected sourceMap: { [sourceName: string]: Source } = {};
   get sources(): Source[] {
     return Object.values(this.sourceMap);
   }
 
   _finderOptions: FinderOptions;
-  _hooks: LiasonHooks = {
+  _hooks: LiaseHooks = {
     loadUrl: [],
     getFetchClient: [],
   };

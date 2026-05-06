@@ -1,5 +1,5 @@
 > :warning: **This package is currently experimental and the API is both poorly documented and likely to change**
 
-# liason CLI (`@liason/cli`)
+# liase CLI (`@liase/cli`)
 
-A CLI tool for [liason](https://github.com/callumgare/liason).
+A CLI tool for [liase](https://github.com/callumgare/liase).
