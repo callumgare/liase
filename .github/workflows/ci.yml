@@ -83,7 +83,7 @@ jobs:
         run: npm clean-install
 
       - name: Build
-        run: npm run build -w packages/${{ matrix.package }}
+        run: npx turbo build --filter=@liase/${{ matrix.package }}
 
       - name: Verify provenance attestations and registry signatures
         run: npm audit signatures
