@@ -87,7 +87,9 @@ async function validateResponse(
     );
   } else {
     if (parsedResponse.page) {
-      throw Error("has page");
+      throw Error(
+        'Response has a page property but the request handler paginationType is "none"',
+      );
     }
   }
 

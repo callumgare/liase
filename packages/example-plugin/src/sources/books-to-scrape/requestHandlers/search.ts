@@ -50,7 +50,7 @@ const responseConstructor = {
     {
       _arrayMap: ($) => $().select(".row li article"),
       _setup: ($) => {
-        $.set("mediaId", $().select("h3 a").attr("href").split("/").at(-2));
+        $.set("mediaId", $().select("h3 a").attr("href")?.split("/").at(-2));
       },
       mediaFinderSource: sourceId,
       id: ($) => $("mediaId"),

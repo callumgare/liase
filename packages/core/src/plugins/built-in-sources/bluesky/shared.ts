@@ -104,7 +104,9 @@ function postsToMedia(posts: any): BlueskyMedia[] {
     const postUrl = `https://bsky.app/profile/${post.uri.split("/").at(2)}/post/${post.uri.split("/").at(-1)}`;
     if (post.record.embed?.images && post.embed?.images) {
       if (post.record.embed.images.length !== post.embed.images.length) {
-        throw Error();
+        throw Error(
+          `Bluesky post embed image count mismatch: record has ${post.record.embed.images.length} but view has ${post.embed.images.length}`,
+        );
       }
       for (let i = 0; i < post.embed.images.length; i++) {
         const fileCid = post.record.embed.images[i].image.ref.toString();
