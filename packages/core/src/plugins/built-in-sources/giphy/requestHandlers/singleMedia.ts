@@ -1,4 +1,3 @@
-import Giphy from "giphy-api";
 import { z } from "zod";
 
 import type { RequestHandler } from "@/src/schemas/requestHandler.js";
@@ -26,7 +25,19 @@ export default {
     {
       schema: responseSchema.omit({ page: true }),
       constructor: {
-        _setup: ($) => Giphy($.secrets.apiKey).id($.request.id),
+        // We use $.fetch rather than the giphy-api library because giphy-api uses Node's
+        // native http/https modules, which bypass the $.fetch caching wrapper.
+        _setup: async ($) => {
+          const params = new URLSearchParams({
+            api_key: $.secrets.apiKey,
+            ids: $.request.id,
+          });
+          const res = await $.fetch(`https://api.giphy.com/v1/gifs?${params}`);
+          if (!res.ok) {
+            throw new Error(`Giphy API error: ${res.status}`);
+          }
+          return res.json();
+        },
         media: mediaResponseConstructor,
         request: ($) => $.request,
       },

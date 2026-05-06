@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -49,18 +50,35 @@ export async function exportNetworkRequestsHistory({
     const mimeType =
       networkRequestsHistoryItem.response.headers["content-type"];
     const ext = mimeTypes.extension(mimeType ?? "") || "txt";
-    const filename = path.join(
-      tmpDir,
-      `${[
-        networkRequestsHistoryItem.constructorPath
-          .map((value) => (typeof value === "number" ? `[${value}]` : value))
-          .join("."),
-        constructorPathCount[constructorPath],
-        networkRequestsHistoryItem.request.url.href
-          .replaceAll(/(?:^\w+:\/\/|\/+$)/g, "")
-          .replaceAll("/", "."),
-      ].join("_")}.${ext}`,
-    );
+    const constructorPathStr = networkRequestsHistoryItem.constructorPath
+      .map((value) => (typeof value === "number" ? `[${value}]` : value))
+      .join(".");
+    const count = constructorPathCount[constructorPath];
+    const urlPart = networkRequestsHistoryItem.request.url.href
+      .replaceAll(/(?:^\w+:\/\/|\/+$)/g, "")
+      .replaceAll("/", ".");
+    const makeBasename = (url: string) =>
+      `${[constructorPathStr, count, url].join("_")}.${ext}`;
+    // Most OSes enforce a 255-character limit on filenames. URLs (especially
+    // those with long query strings) can easily exceed this, so we truncate the
+    // URL portion and append a short hash to keep the name unique.
+    const MAX_BASENAME_LENGTH = 242; // 255 minus len(".metadata.txt")
+    let basename = makeBasename(urlPart);
+    if (basename.length > MAX_BASENAME_LENGTH) {
+      const hash = crypto
+        .createHash("sha256")
+        .update(urlPart)
+        .digest("hex")
+        .slice(0, 12);
+      const prefix = `${[constructorPathStr, count].join("_")}_`;
+      const suffix = `_${hash}.${ext}`;
+      const availableForUrl =
+        MAX_BASENAME_LENGTH - prefix.length - suffix.length;
+      const truncatedUrl =
+        availableForUrl > 0 ? urlPart.slice(0, availableForUrl) : "";
+      basename = `${prefix}${truncatedUrl}${suffix}`;
+    }
+    const filename = path.join(tmpDir, basename);
     let body: string;
     if (ext === "json") {
       body = JSON.stringify(

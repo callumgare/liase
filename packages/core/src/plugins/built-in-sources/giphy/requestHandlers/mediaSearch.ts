@@ -1,4 +1,3 @@
-import Giphy, { type SearchOptions } from "giphy-api";
 import { z } from "zod";
 
 import type { RequestHandler } from "@/src/schemas/requestHandler.js";
@@ -6,10 +5,6 @@ import { mediaResponseConstructor } from "../shared.js";
 import { responseSchema } from "../types.js";
 
 const giphyRatings = ["y", "g", "pg", "pg-13", "r"] as const;
-
-// Validate that our array of ratings matches type used by Giphy API
-type IsEqual<Type1, Type2> = Type1 | Type2 extends Type1 & Type2 ? true : never;
-true satisfies IsEqual<(typeof giphyRatings)[number], SearchOptions["rating"]>;
 
 export default {
   id: "search",
@@ -45,13 +40,27 @@ export default {
     {
       schema: responseSchema,
       constructor: {
-        _setup: ($) =>
-          Giphy($.secrets.apiKey).search({
+        // We use $.fetch rather than the giphy-api library because giphy-api uses Node's
+        // native http/https modules, which bypass the $.fetch caching wrapper. Without
+        // caching, Giphy's dynamic ranking causes duplicate GIFs to appear across pages.
+        _setup: async ($) => {
+          const params = new URLSearchParams({
+            api_key: $.secrets.apiKey,
             q: $.request.searchText,
-            limit: $.request.pageSize,
-            rating: $.request.contentRating,
-            offset: $.request.cursor,
-          }),
+            limit: String($.request.pageSize),
+            rating: $.request.contentRating ?? "g",
+            ...($.request.cursor !== undefined
+              ? { offset: String($.request.cursor) }
+              : {}),
+          });
+          const res = await $.fetch(
+            `https://api.giphy.com/v1/gifs/search?${params}`,
+          );
+          if (!res.ok) {
+            throw new Error(`Giphy API error: ${res.status}`);
+          }
+          return res.json();
+        },
         page: {
           paginationType: () => "cursor",
           cursor: ($) => $().pagination.offset,

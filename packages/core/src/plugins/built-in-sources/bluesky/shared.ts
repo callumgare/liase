@@ -102,7 +102,7 @@ function postsToMedia(posts: any): BlueskyMedia[] {
   for (const post of posts) {
     const media: BlueskyMedia[] = [];
     const postUrl = `https://bsky.app/profile/${post.uri.split("/").at(2)}/post/${post.uri.split("/").at(-1)}`;
-    if (post.record.embed?.images) {
+    if (post.record.embed?.images && post.embed?.images) {
       if (post.record.embed.images.length !== post.embed.images.length) {
         throw Error();
       }
