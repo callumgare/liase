@@ -9,7 +9,7 @@ exports[`Run query "Single media" with: { "id": "at://did:plc:z72i7hdynmk6r22z27
       "files": [
         {
           "aspectRatio": undefined,
-          "ext": "jpeg",
+          "ext": "jpg",
           "fileSize": 148647,
           "image": true,
           "mimeType": "image/jpeg",
@@ -19,7 +19,7 @@ exports[`Run query "Single media" with: { "id": "at://did:plc:z72i7hdynmk6r22z27
         },
         {
           "aspectRatio": undefined,
-          "ext": "jpeg",
+          "ext": "jpg",
           "fileSize": undefined,
           "image": true,
           "mimeType": "image/jpeg",

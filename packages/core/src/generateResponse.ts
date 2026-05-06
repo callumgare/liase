@@ -121,7 +121,7 @@ export function requestWithDefaults(
   requestSchema: z.infer<typeof requestHandlerSchema.shape.requestSchema>,
 ): GenericRequest {
   try {
-    return requestSchema.parse(request);
+    return requestSchema.parse(request) as GenericRequest;
   } catch (err) {
     if (err instanceof z.ZodError) {
       const error = new FriendlyZodError(err, {

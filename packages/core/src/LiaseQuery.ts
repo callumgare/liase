@@ -28,8 +28,11 @@ import type { GenericSecrets } from "./schemas/secrets.js";
 const propsSchema = z
   .object({
     request: genericRequestSchema,
-    queryOptions: queryOptionsSchema.default({}),
-    finderOptions: finderOptionsSchema.default({}),
+    queryOptions: queryOptionsSchema.default(() => ({
+      secrets: {},
+      fetchCountLimit: 10,
+    })),
+    finderOptions: finderOptionsSchema.default(() => ({ plugins: [] })),
   })
   .strict();
 export type LiaseQueryProps = z.input<typeof propsSchema>;
@@ -179,13 +182,7 @@ export default class LiaseQuery extends Liase {
     );
   }
 
-  getResponseSchema(): z.ZodObject<
-    z.ZodRawShape,
-    z.UnknownKeysParam,
-    z.ZodTypeAny,
-    unknown,
-    unknown
-  > {
+  getResponseSchema(): z.ZodObject {
     return this.getResponseDetails().schema;
   }
 

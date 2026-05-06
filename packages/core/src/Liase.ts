@@ -6,7 +6,7 @@ import {
 import type { Plugin } from "@/src/schemas/plugin.js";
 import type { Source } from "@/src/schemas/source.js";
 import type { Entries } from "type-fest";
-import type { LiaseHooks } from "./lib/hooks.js";
+import type { Hook, LiaseHooks } from "./lib/hooks.js";
 import { zodParseOrThrow } from "./lib/zod.js";
 import builtInSourcesPlugin from "./plugins/built-in-sources/index.js";
 import {
@@ -121,7 +121,7 @@ export default class Liase {
       typeof hooks
     >) {
       if (hook) {
-        this._hooks[hookName].push(hook);
+        this._hooks[hookName as keyof LiaseHooks].push(hook as Hook);
       }
     }
   }

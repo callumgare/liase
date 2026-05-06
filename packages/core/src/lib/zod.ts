@@ -8,14 +8,14 @@ function isZodError(error: unknown): error is z.ZodError {
   return error?.constructor?.name === "ZodError";
 }
 
-export function zodParseOrThrow<Output, Def extends z.ZodTypeDef, Input>(
-  zodSchema: z.ZodType<Output, Def, Input>,
+export function zodParseOrThrow<Output>(
+  zodSchema: z.ZodType<Output>,
   // biome-ignore lint/suspicious/noExplicitAny: zod schema accepts any input for runtime validation
   input: any,
   options: { errorMessage?: string; context?: unknown } = {},
 ): Output {
   try {
-    return zodSchema.parse(input);
+    return zodSchema.parse(input) as Output;
   } catch (error) {
     // We might be passing a zodSchema from a plugin with a different instance of the Zod library
     // and thus if that gives an error it might not be an instance of the ZodError from the exact Zod library
@@ -52,7 +52,7 @@ export const getType = (value: unknown): ValueType => {
 
 function getPathInfo(
   inputData: unknown,
-  path: (string | number)[],
+  path: PropertyKey[],
 ): {
   exists: boolean;
   value: unknown;
@@ -63,11 +63,11 @@ function getPathInfo(
   // biome-ignore lint/suspicious/noExplicitAny: complex accumulator type in path traversal
   return path.reduce<any>(
     // biome-ignore lint/suspicious/noExplicitAny: complex accumulator type in path traversal
-    (accumulator: any, currentArrayValue: string | number) => {
+    (accumulator: any, currentArrayValue: PropertyKey) => {
       const exists =
         typeof accumulator.value !== "undefined" &&
-        currentArrayValue in accumulator.value;
-      const value = accumulator.value?.[currentArrayValue];
+        (currentArrayValue as string | number) in accumulator.value;
+      const value = accumulator.value?.[currentArrayValue as string | number];
       const type = getType(value);
       return {
         exists,
@@ -135,31 +135,40 @@ export class FriendlyZodError extends Error {
 
   formatZodIssue(issue: z.ZodIssue, includePath = true): string {
     const { path, ...detailWithoutPath } = issue;
-    const formattedPath = formatObjectPath(path);
-    let pathInfo = getPathInfo(this.#inputData, path);
+    const sanitisedPath = path.filter(
+      (s): s is string | number => typeof s !== "symbol",
+    );
+    const formattedPath = formatObjectPath(sanitisedPath);
+    let pathInfo = getPathInfo(this.#inputData, sanitisedPath);
     let issueMessage: string;
 
     if (issue.code === "invalid_type") {
+      // In Zod 4 the received type is not a named string; derive it from issue.input
+      const received = Array.isArray(issue.input)
+        ? "array"
+        : issue.input === null
+          ? "null"
+          : typeof issue.input;
       if (pathInfo.exists) {
         const includeValue = ["string", "number"].includes(pathInfo.type);
         issueMessage = `Expected ${includePath ? `${formattedPath} to be an` : ""}${issue.expected} but ${
           includeValue
             ? `the received value ${JSON.stringify(pathInfo.value)} was`
             : "received"
-        } a ${issue.received}.`;
+        } a ${received}.`;
       } else {
         const keyOrIndex = path.at(-1);
-        const parentPath = formatObjectPath(path.slice(0, -1));
+        const parentPath = formatObjectPath(sanitisedPath.slice(0, -1));
         const isIndex =
           pathInfo.typeAtLongestExistingPath === "array" &&
           typeof keyOrIndex === "number";
         issueMessage =
-          `Missing ${isIndex ? "element" : "key"} "${keyOrIndex}" at ${parentPath},` +
+          `Missing ${isIndex ? "element" : "key"} "${String(keyOrIndex)}" at ${parentPath},` +
           ` expected to receive a ${issue.expected}.`;
       }
     } else if (issue.code === "unrecognized_keys") {
       const keys = issue.keys.map((key) => {
-        pathInfo = getPathInfo(this.#inputData, [...path, key]);
+        pathInfo = getPathInfo(this.#inputData, [...sanitisedPath, key]);
         const includeValue = ["string", "number"].includes(pathInfo.type);
         const formattedValue = includeValue
           ? JSON.stringify(pathInfo.value)
@@ -167,9 +176,11 @@ export class FriendlyZodError extends Error {
         return `"${key}" (value ${formattedValue})`;
       });
       issueMessage = `Unexpected ${pluralize("key", keys.length)} found${includePath ? ` at ${formattedPath}` : ""}: ${keys.join(", ")}`;
-    } else if (issue.code === "invalid_string") {
-      issueMessage = `${includePath ? `${formattedPath} failed` : "Failed"} ${issue.validation} validation, received ${JSON.stringify(pathInfo.value)}`;
+    } else if (issue.code === "invalid_format") {
+      // Replaces Zod 3's "invalid_string" and covers format/regex/date validations
+      issueMessage = `${includePath ? `${formattedPath} failed` : "Failed"} ${issue.format} validation, received ${JSON.stringify(pathInfo.value)}`;
     } else if (issue.code === "too_small" || issue.code === "too_big") {
+      // In Zod 4, issue.type is now issue.origin
       let condition = "";
       let threshold: number | bigint = 0;
       if (issue.code === "too_small") {
@@ -193,80 +204,58 @@ export class FriendlyZodError extends Error {
       }
 
       if (
-        issue.type === "number" ||
-        issue.type === "bigint" ||
-        issue.type === "date"
+        issue.origin === "number" ||
+        issue.origin === "bigint" ||
+        issue.origin === "date"
       ) {
-        const capitalisedType = capitaliseType(issue.type);
+        const capitalisedType = capitaliseType(
+          issue.origin as "number" | "bigint" | "date",
+        );
         issueMessage =
           `${capitalisedType} ${includePath ? `at ${formattedPath} ` : ""}must be ${condition}` +
           ` ${threshold} but was ${pathInfo.value}.`;
       } else {
-        const nameForTypeElement = {
-          string: "character",
-          array: "element",
-          set: "element",
-        }[issue.type];
-        const capitalisedType = capitaliseType(issue.type);
+        const nameForTypeElement =
+          {
+            string: "character",
+            array: "element",
+            set: "element",
+          }[issue.origin as "string" | "array" | "set"] ?? "item";
+        const capitalisedType = capitaliseType(
+          issue.origin as "string" | "array" | "set",
+        );
         const length = (pathInfo.value as Array<unknown>).length;
         issueMessage =
           `${capitalisedType} ${includePath ? ` at ${formattedPath} ` : ""}must have ${condition}` +
-          ` ${threshold} ${nameForTypeElement}(s) but the received ${issue.type} had ${length}.`;
+          ` ${threshold} ${nameForTypeElement}(s) but the received ${issue.origin} had ${length}.`;
       }
-    } else if (issue.code === "invalid_date") {
-      issueMessage = `Expected date ${includePath ? `at ${formattedPath} ` : ""}but received value ${JSON.stringify(pathInfo.value)} is not a valid date.`;
     } else {
-      pathInfo = getPathInfo(this.#inputData, path);
+      pathInfo = getPathInfo(this.#inputData, sanitisedPath);
       issueMessage = `Issue with${includePath ? ` ${formattedPath}` : ""}: ${JSON.stringify(detailWithoutPath)} - ${JSON.stringify(pathInfo.value)}`;
     }
     return `${issueMessage}`;
   }
 
   formatZodErrorIssues(
-    error: z.ZodError = this.zodError,
+    issues: z.ZodIssue[] = this.zodError.issues,
     depth = 0,
     includePath = true,
   ): FriendlyZodErrorIssue[] {
     const indentSize = 2;
     const formattedIssues: FriendlyZodErrorIssue[] = [];
-    for (const issue of error.issues) {
+    for (const issue of issues) {
       if (issue.code === "invalid_union") {
         formattedIssues.push({
           formattedMessage: `${" ".repeat(depth * indentSize)}Invalid union:`,
           zodIssue: issue,
           depth,
         });
-        for (const error of issue.unionErrors) {
+        // In Zod 4, issue.errors is $ZodIssue[][] — one array per union branch
+        for (const branchIssues of issue.errors) {
           formattedIssues.push(
-            ...this.formatZodErrorIssues(error, depth + 1, includePath),
+            ...this.formatZodErrorIssues(branchIssues, depth + 1, includePath),
           );
         }
-      } else if (issue.code === "invalid_arguments") {
-        formattedIssues.push({
-          formattedMessage: `${" ".repeat(depth * indentSize)}Invalid arguments:`,
-          zodIssue: issue,
-          depth,
-        });
-        formattedIssues.push(
-          ...this.formatZodErrorIssues(
-            issue.argumentsError,
-            depth + 1,
-            includePath,
-          ),
-        );
-      } else if (issue.code === "invalid_return_type") {
-        formattedIssues.push({
-          formattedMessage: `${" ".repeat(depth * indentSize)}Invalid return type:`,
-          zodIssue: issue,
-          depth,
-        });
-        formattedIssues.push(
-          ...this.formatZodErrorIssues(
-            issue.returnTypeError,
-            depth + 1,
-            includePath,
-          ),
-        );
       } else {
         formattedIssues.push({
           formattedMessage:
@@ -285,7 +274,7 @@ export class FriendlyZodError extends Error {
     depth = 0,
     indentSize = 2,
   ): string {
-    return this.formatZodErrorIssues(error)
+    return this.formatZodErrorIssues(error.issues)
       .map(
         (friendlyZodIssue) =>
           `${" ".repeat((depth + friendlyZodIssue.depth) * indentSize)}- ${friendlyZodIssue.formattedMessage}`,
@@ -300,10 +289,18 @@ export class FriendlyZodError extends Error {
       issues: [],
       children: {},
     };
-    for (const friendlyZodIssue of this.formatZodErrorIssues(error, 0, false)) {
+    for (const friendlyZodIssue of this.formatZodErrorIssues(
+      error.issues,
+      0,
+      false,
+    )) {
       let issueSubtree = issuesTree;
       const path = friendlyZodIssue.zodIssue.path.reduce<string[]>(
         (segments, segment) => {
+          if (typeof segment === "symbol") {
+            // symbols are unusual in Zod paths; skip them
+            return segments;
+          }
           if (typeof segment === "number") {
             const formattedSegment = `[${segment}]`;
             if (segments.length) {

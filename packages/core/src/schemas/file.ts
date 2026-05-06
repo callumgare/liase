@@ -6,7 +6,7 @@ export const genericFileSchema = z
     type: z
       .union([z.literal("full"), z.literal("thumbnail"), z.string()])
       .describe(""),
-    url: z.string().url().describe(""),
+    url: z.url().describe(""),
     ext: z.string().regex(/^\w+$/).optional().describe(""),
     mimeType: z.string().optional().describe(""),
     image: z.boolean().optional(),

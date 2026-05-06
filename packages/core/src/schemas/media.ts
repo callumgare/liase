@@ -14,7 +14,7 @@ export const genericMediaSchema = z
           "source but two media from different sources could possibly share the same id.",
       ),
     files: z.array(genericFileSchema),
-    url: z.string().url().optional().describe(""),
+    url: z.url().optional().describe(""),
     nameOfUploader: z
       .string()
       .optional()

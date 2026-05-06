@@ -4,7 +4,7 @@ import { sourceId } from "./shared.js";
 export const fileSchema = z
   .object({
     type: z.enum(["thumbnail", "full"]),
-    url: z.string().url(),
+    url: z.url(),
     ext: z.string().regex(/^\w+$/),
     mimeType: z.string().describe(""),
     image: z.boolean(),
@@ -50,7 +50,7 @@ export const responseSchema = z
       })
       .strict(),
     media: z.array(mediaSchema),
-    request: z.record(z.unknown()),
+    request: z.record(z.string(), z.unknown()),
   })
   .strict();
 

@@ -19,8 +19,8 @@ export type ConstructorObject = {
 
 const ActionSchema: z.ZodType<Action> = z
   .function()
-  .args(z.instanceof(ActionContext))
-  .returns(z.promise(z.unknown()));
+  .input([z.instanceof(ActionContext)])
+  .output(z.promise(z.unknown()));
 
 // ConstructorSchema should be the following:
 //
@@ -42,11 +42,7 @@ const ActionSchema: z.ZodType<Action> = z
 // But until https://github.com/colinhacks/zod/issues/3485 is resolved this fails.
 // So instead we use the following which works except it will also accept giving _arrayMap and _setup
 // as Constructor which should be invalid
-export const ConstructorSchema: z.ZodType<
-  Constructor,
-  z.ZodTypeDef,
-  Constructor
-> = z.union([
+export const ConstructorSchema: z.ZodType<Constructor> = z.union([
   z.record(
     z.string(),
     z.lazy(() => ConstructorSchema),

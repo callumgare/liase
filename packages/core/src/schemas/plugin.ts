@@ -3,8 +3,8 @@ import { sourceSchema } from "./source.js";
 
 const hookSchema = z
   .function()
-  .args(z.any(), z.function().args(z.any()).returns(z.promise(z.any())))
-  .returns(z.promise(z.any()))
+  .input([z.any(), z.function().input([z.any()]).output(z.promise(z.any()))])
+  .output(z.promise(z.any()))
   .optional();
 
 export const pluginSchema = z

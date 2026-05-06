@@ -32,7 +32,7 @@ export async function getShowSchemaCommand(): Promise<Command> {
         );
       }
 
-      let schema: z.AnyZodObject;
+      let schema: z.ZodObject;
       if (options.schemaType === "request") {
         schema = requestHandler.requestSchema;
       } else if (options.schemaType === "secrets") {

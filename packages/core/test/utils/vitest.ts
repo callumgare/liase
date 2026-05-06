@@ -126,7 +126,7 @@ export function createBasicTestsForRequestHandlers<
 
           if (expectError) {
             expect.assertions(1);
-            expect(() => mediaQuery.getNext()).rejects.toThrowError(
+            await expect(() => mediaQuery.getNext()).rejects.toThrowError(
               expectError,
             );
             return;

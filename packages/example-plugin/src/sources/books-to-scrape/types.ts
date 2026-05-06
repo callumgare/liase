@@ -4,7 +4,7 @@ import { sourceId } from "./shared.js";
 export const fileSchema = z
   .object({
     type: z.literal("full"),
-    url: z.string().url(),
+    url: z.url(),
     ext: z.string().regex(/^\w+$/),
     mimeType: z.string().describe(""),
     image: z.boolean(),

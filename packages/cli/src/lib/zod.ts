@@ -1,20 +1,17 @@
-import {
-  type Primitive,
-  type ZodFirstPartySchemaTypes,
-  ZodFirstPartyTypeKind,
-  type z,
-} from "zod";
+import type { z } from "zod";
+
+type Primitive = string | number | boolean | null | undefined | bigint | symbol;
 
 type SimpleSchema = (
   | {
       type: "string";
       default?: string;
-      checks?: z.ZodStringCheck[];
+      checks?: unknown[];
     }
   | {
       type: "number";
       default?: number;
-      checks?: Array<z.ZodNumberCheck | z.ZodBigIntCheck>;
+      checks?: unknown[];
     }
   | {
       type: "boolean";
@@ -23,7 +20,7 @@ type SimpleSchema = (
   | {
       type: "date";
       default?: Date | string;
-      checks?: z.ZodDateCheck[];
+      checks?: unknown[];
     }
   | {
       type: "object";
@@ -52,7 +49,7 @@ type SimpleSchema = (
   | {
       type: "other" | "undefined";
       default?: unknown;
-      zodTypeName: ZodFirstPartySchemaTypes["_def"]["typeName"];
+      zodTypeName: string;
     }
 ) & {
   optional?: boolean;
@@ -73,21 +70,21 @@ type ZodFirstPartySchemaTypesNameMap = {
   ZodNever: z.ZodNever;
   ZodVoid: z.ZodVoid;
   // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
-  ZodArray: z.ZodArray<any, any>;
+  ZodArray: z.ZodArray<any>;
   // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
-  ZodObject: z.ZodObject<any, any, any>;
+  ZodObject: z.ZodObject<any>;
   // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
   ZodUnion: z.ZodUnion<any>;
   // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
-  ZodDiscriminatedUnion: z.ZodDiscriminatedUnion<any, any>;
+  ZodDiscriminatedUnion: z.ZodDiscriminatedUnion<any>;
   // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
   ZodIntersection: z.ZodIntersection<any, any>;
   // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
-  ZodTuple: z.ZodTuple<any, any>;
+  ZodTuple: z.ZodTuple<any>;
   // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
   ZodRecord: z.ZodRecord<any, any>;
   // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
-  ZodMap: z.ZodMap<any>;
+  ZodMap: z.ZodMap<any, any>;
   // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
   ZodSet: z.ZodSet<any>;
   // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
@@ -99,10 +96,6 @@ type ZodFirstPartySchemaTypesNameMap = {
   // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
   ZodEnum: z.ZodEnum<any>;
   // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
-  ZodEffects: z.ZodEffects<any, any, any>;
-  // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
-  ZodNativeEnum: z.ZodNativeEnum<any>;
-  // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
   ZodOptional: z.ZodOptional<any>;
   // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
   ZodNullable: z.ZodNullable<any>;
@@ -113,27 +106,33 @@ type ZodFirstPartySchemaTypesNameMap = {
   // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
   ZodPromise: z.ZodPromise<any>;
   // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
-  ZodBranded: z.ZodBranded<any, any>;
-  // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
-  ZodPipeline: z.ZodPipeline<any, any>;
-  // biome-ignore lint/suspicious/noExplicitAny: This is a third-party zod type
   ZodReadonly: z.ZodReadonly<any>;
   ZodSymbol: z.ZodSymbol;
+  // These types were removed in Zod 4 but may still appear from Zod 3 schemas
+  // biome-ignore lint/suspicious/noExplicitAny: Legacy Zod 3 types
+  ZodEffects: any;
+  // biome-ignore lint/suspicious/noExplicitAny: Legacy Zod 3 types
+  ZodNativeEnum: any;
+  // biome-ignore lint/suspicious/noExplicitAny: Legacy Zod 3 types
+  ZodBranded: any;
+  // biome-ignore lint/suspicious/noExplicitAny: Legacy Zod 3 types
+  ZodPipeline: any;
 };
 
 function isZodType<T extends keyof ZodFirstPartySchemaTypesNameMap>(
-  zodSchema: ZodFirstPartySchemaTypesNameMap[keyof ZodFirstPartySchemaTypesNameMap],
+  // biome-ignore lint/suspicious/noExplicitAny: Must accept any Zod type including future/external versions
+  zodSchema: any,
   type: T,
 ): zodSchema is ZodFirstPartySchemaTypesNameMap[T] {
   return zodSchema?.constructor?.name === type;
 }
 
-export function zodSchemaToSimpleSchema(
-  zodSchema: ZodFirstPartySchemaTypes,
-): SimpleSchema {
+export function zodSchemaToSimpleSchema(zodSchema: z.ZodType): SimpleSchema {
+  // biome-ignore lint/suspicious/noExplicitAny: _def is internal Zod API that varies between versions
+  const def: any = (zodSchema as any)._def;
   let simpleSchema: SimpleSchema;
-  const zodTypeName = zodSchema._def.typeName;
-  const description = zodSchema._def.description;
+  const zodTypeName = zodSchema.constructor.name;
+  const description = (zodSchema as { description?: string }).description;
   const defaultProps = {
     ...(description ? { description } : {}),
   };
@@ -146,17 +145,17 @@ export function zodSchemaToSimpleSchema(
       children: {},
     };
     for (const [name, zodType] of Object.entries(
-      zodSchema._def.shape() as { [key: string]: ZodFirstPartySchemaTypes },
+      def.shape as { [key: string]: z.ZodType },
     )) {
       simpleSchema.children[name] = zodSchemaToSimpleSchema(zodType);
     }
   } else if (isZodType(zodSchema, "ZodIntersection")) {
     type SimpleSchemaObject = Extract<SimpleSchema, { type: "object" }>;
     const left = zodSchemaToSimpleSchema(
-      zodSchema._def.left as z.AnyZodObject,
+      def.left as z.ZodObject,
     ) as SimpleSchemaObject;
     const right = zodSchemaToSimpleSchema(
-      zodSchema._def.right as z.AnyZodObject,
+      def.right as z.ZodObject,
     ) as SimpleSchemaObject;
 
     simpleSchema = {
@@ -168,19 +167,19 @@ export function zodSchemaToSimpleSchema(
     simpleSchema = {
       ...defaultProps,
       type: "array",
-      children: zodSchemaToSimpleSchema(zodSchema._def.type),
+      children: zodSchemaToSimpleSchema(def.element),
     };
   } else if (isZodType(zodSchema, "ZodSet")) {
     simpleSchema = {
       ...defaultProps,
       type: "array",
-      children: zodSchemaToSimpleSchema(zodSchema._def.valueType),
+      children: zodSchemaToSimpleSchema(def.valueType),
     };
   } else if (
     isZodType(zodSchema, "ZodUnion") ||
     isZodType(zodSchema, "ZodDiscriminatedUnion")
   ) {
-    const zodTypesInUnion: ZodFirstPartySchemaTypes[] = zodSchema._def.options;
+    const zodTypesInUnion: z.ZodType[] = def.options;
     const simpleSchemaTypesInUnion = zodTypesInUnion.map(
       zodSchemaToSimpleSchema,
     );
@@ -195,30 +194,27 @@ export function zodSchemaToSimpleSchema(
   } else if (isZodType(zodSchema, "ZodOptional")) {
     simpleSchema = {
       ...defaultProps,
-      ...zodSchemaToSimpleSchema(zodSchema._def.innerType),
+      ...zodSchemaToSimpleSchema(def.innerType),
       optional: true,
     };
   } else if (isZodType(zodSchema, "ZodString")) {
     simpleSchema = { ...defaultProps, type: "string" };
-    if (zodSchema._def.checks.length)
-      simpleSchema.checks = zodSchema._def.checks;
+    if (def.checks.length) simpleSchema.checks = def.checks;
   } else if (
     isZodType(zodSchema, "ZodNumber") ||
     isZodType(zodSchema, "ZodBigInt")
   ) {
     simpleSchema = { ...defaultProps, type: "number" };
-    if (zodSchema._def.checks.length)
-      simpleSchema.checks = zodSchema._def.checks;
+    if (def.checks.length) simpleSchema.checks = def.checks;
   } else if (isZodType(zodSchema, "ZodBoolean")) {
     simpleSchema = { ...defaultProps, type: "boolean" };
   } else if (isZodType(zodSchema, "ZodDate")) {
     simpleSchema = { ...defaultProps, type: "date" };
-    if (zodSchema._def.checks.length)
-      simpleSchema.checks = zodSchema._def.checks;
+    if (def.checks.length) simpleSchema.checks = def.checks;
   } else if (isZodType(zodSchema, "ZodNull")) {
     simpleSchema = { ...defaultProps, type: "null" };
   } else if (isZodType(zodSchema, "ZodLiteral")) {
-    const value = zodSchema._def.value as Primitive;
+    const value = (def.values as Primitive[])[0];
     let valueType: "string" | "number" | "boolean" | "null" | "other";
     if (typeof value === "string") {
       valueType = "string";
@@ -238,51 +234,50 @@ export function zodSchemaToSimpleSchema(
       valueType,
     };
   } else if (isZodType(zodSchema, "ZodEnum")) {
-    const enumValues: string[] = zodSchema._def.values;
+    const enumValues: string[] = Object.keys(
+      def.entries as Record<string, string>,
+    );
     simpleSchema = {
       ...defaultProps,
       type: enumValues.map((enumValue) => ({
-        type: "literal",
+        type: "literal" as const,
         value: enumValue,
-        valueType: "string",
-        zodTypeName: ZodFirstPartyTypeKind.ZodLiteral,
+        valueType: "string" as const,
+        zodTypeName: "ZodLiteral",
       })),
     };
   } else if (isZodType(zodSchema, "ZodEffects")) {
     simpleSchema = {
       ...defaultProps,
-      ...zodSchemaToSimpleSchema(zodSchema._def.schema),
+      ...zodSchemaToSimpleSchema(def.schema),
     };
   } else if (isZodType(zodSchema, "ZodNativeEnum")) {
     simpleSchema = { ...defaultProps, type: "number" };
   } else if (isZodType(zodSchema, "ZodNullable")) {
     simpleSchema = {
       ...defaultProps,
-      type: [
-        zodSchemaToSimpleSchema(zodSchema._def.innerType),
-        { type: "null" },
-      ],
+      type: [zodSchemaToSimpleSchema(def.innerType), { type: "null" }],
     };
   } else if (isZodType(zodSchema, "ZodDefault")) {
     simpleSchema = {
       ...defaultProps,
-      ...zodSchemaToSimpleSchema(zodSchema._def.innerType),
-      default: zodSchema._def.defaultValue(),
+      ...zodSchemaToSimpleSchema(def.innerType),
+      default: def.defaultValue,
     };
   } else if (isZodType(zodSchema, "ZodCatch")) {
     simpleSchema = {
       ...defaultProps,
-      ...zodSchemaToSimpleSchema(zodSchema._def.innerType),
+      ...zodSchemaToSimpleSchema(def.innerType),
     };
   } else if (isZodType(zodSchema, "ZodBranded")) {
     simpleSchema = {
       ...defaultProps,
-      ...zodSchemaToSimpleSchema(zodSchema._def.type),
+      ...zodSchemaToSimpleSchema(def.innerType ?? def.type),
     };
   } else if (isZodType(zodSchema, "ZodPipeline")) {
     simpleSchema = {
       ...defaultProps,
-      ...zodSchemaToSimpleSchema(zodSchema._def.in),
+      ...zodSchemaToSimpleSchema(def.in),
     };
   } else if (
     isZodType(zodSchema, "ZodAny") ||
@@ -307,7 +302,7 @@ export function zodSchemaToSimpleSchema(
       zodTypeName,
     };
   } else {
-    zodSchema satisfies never; // Ensure we have a case for every type in ZodFirstPartySchemaTypes
+    zodSchema satisfies never; // Ensure we have a case for every Zod type
     simpleSchema = {
       ...defaultProps,
       type: "other",

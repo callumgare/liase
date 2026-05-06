@@ -25,38 +25,38 @@
     "url": "git+https://github.com/callumgare/liase.git"
   },
   "dependencies": {
-    "@atproto/api": "^0.13.19",
+    "@atproto/api": "^0.19.13",
     "@refactorjs/http-proxy": "^0.2.14",
-    "cacache": "^19.0.1",
+    "cacache": "^20.0.4",
     "chalk": "^5.3.0",
     "cheerio": "^1.0.0",
-    "commander": "^12.0.0",
+    "commander": "^14.0.3",
     "deepmerge": "^4.3.1",
     "dotenv-flow": "^4.1.0",
-    "entities": "^4.5.0",
+    "entities": "^8.0.0",
     "got-scraping": "^4.0.8",
     "json-stable-stringify": "^1.2.1",
-    "mime-types": "^2.1.28",
-    "open": "^10.1.0",
+    "mime-types": "^3.0.2",
+    "open": "^11.0.0",
     "pluralize": "^8.0.0",
     "tsx": "^4.15.9",
-    "type-fest": "^4.23.0",
-    "zod": "^3.21.4"
+    "type-fest": "^5.6.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@loopback/http-caching-proxy": "^6.0.3",
+    "@loopback/http-caching-proxy": "^7.0.11",
     "@tsconfig/node21": "^21.0.3",
-    "@types/cacache": "^17.0.2",
+    "@types/cacache": "^20.0.1",
     "@types/make-fetch-happen": "^10.0.4",
-    "@types/mime-types": "^2.1.1",
-    "@types/node": "^22.1.0",
+    "@types/mime-types": "^3.0.1",
+    "@types/node": "^25.6.0",
     "@types/pluralize": "^0.0.33",
     "copy-anything": "^4.0.2",
     "semantic-release": "^25.0.3",
     "semantic-release-monorepo": "^8.0.2",
     "tsc-alias": "^1.8.8",
-    "typescript": "^5.5.3",
-    "vitest": "^1.6.0"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
   },
   "optionalDependencies": {
     "fsevents": "^2.3.2"
