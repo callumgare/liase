@@ -19,6 +19,10 @@
   "author": "Callum Gare <callum@gare.au>",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/callumgare/liase.git"
+  },
   "dependencies": {
     "zod": "^3.21.4"
   },

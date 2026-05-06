@@ -20,6 +20,10 @@
   "author": "Callum Gare <callum@gare.au>",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/callumgare/liase.git"
+  },
   "dependencies": {
     "@atproto/api": "^0.13.19",
     "@refactorjs/http-proxy": "^0.2.14",
