@@ -1,6 +1,9 @@
 {
   "name": "@liase/core",
   "version": "0.0.0-version-set-when-releasing",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "The easiest way to programmatically fetch media content details on the internet",
   "main": "dist/index.js",
   "files": ["dist/*"],

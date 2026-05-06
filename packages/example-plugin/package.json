@@ -1,6 +1,9 @@
 {
   "name": "@liase/example-plugin",
   "version": "0.0.0-version-set-when-releasing",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "An example plugin for @liase/core",
   "main": "dist/index.js",
   "files": ["dist/*"],

@@ -1,6 +1,9 @@
 {
   "name": "@liase/cli",
   "version": "0.0.0-version-set-when-releasing",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "files": ["dist/*"],
   "bin": {

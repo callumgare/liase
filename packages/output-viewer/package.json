@@ -1,7 +1,9 @@
 {
   "name": "@liase/output-viewer",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.0.0-version-set-when-releasing",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
