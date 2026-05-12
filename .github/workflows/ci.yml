@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - internal-testing-*
+      - ci-publish-test
 
 permissions:
   contents: write # to be able to publish a GitHub release
@@ -63,7 +63,7 @@ jobs:
 
   publish:
     name: Publish ${{ matrix.package }}
-    if: (github.event_name == 'push') && ((github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/internal-testing-'))
+    if: (github.event_name == 'push') && ((github.ref == 'refs/heads/main') || (github.ref == 'refs/heads/ci-publish-test'))
     runs-on: ubuntu-latest
     needs: [lint, test]
     strategy:
@@ -100,3 +100,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
+
+      - name: Print publish info
+        working-directory: packages/${{ matrix.package }}
+        run: |
+          VERSION=$(jq -r '.version' package.json)
+          if [[ ! "$VERSION" == 0.0.0* ]]; then
+            prefix_message="Published new version of ${{ matrix.package }}:"
+            echo -e "### :rocket: $prefix_message \n\`\`\`\n$VERSION\n\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo -e "$prefix_message\n\e[1m$VERSION\e[0m"
+          else
+            message="No publishable changes made to ${{ matrix.package }} since last version"
+            echo "### $message" >> $GITHUB_STEP_SUMMARY
+            echo -e "\e[1m$message\e[0m"
+          fi

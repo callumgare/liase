@@ -10,6 +10,7 @@
   "scripts": {
     "build": "rm -rf ./dist && tsc -p ./tsconfig.dist.json && tsc -p test/tsconfig.dist.json && tsc-alias",
     "watch": "tsc -p ./tsconfig.dist.json --watch",
+    "typecheck": "tsc --noEmit",
     "lint": "biome check",
     "lint:fix": "biome check --fix",
     "test": "vitest run",

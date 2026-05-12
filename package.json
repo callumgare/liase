@@ -7,8 +7,9 @@
   "scripts": {
     "build": "turbo build",
     "test": "turbo test",
-    "lint": "turbo lint",
-    "lint:fix": "turbo lint:fix",
+    "lint": "turbo lint && biome check --config-path ./biome.root.json .",
+    "lint:fix": "turbo lint:fix && biome check --write --config-path ./biome.root.json .",
+    "typecheck": "turbo typecheck",
     "prepare": "husky",
     "commit": "lint-staged && commit"
   },

@@ -1,5 +1,1 @@
-export default {
-  extends: "semantic-release-monorepo",
-  branches: ["main", { name: "internal-testing-*", prerelease: true }],
-  preset: "conventionalcommits",
-};
+export { default } from "../../release.config.js";

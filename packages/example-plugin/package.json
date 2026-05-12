@@ -10,6 +10,7 @@
   "scripts": {
     "build": "rm -rf ./dist && tsc && tsc-alias",
     "watch": "npm run build -- --watch",
+    "typecheck": "tsc --noEmit",
     "lint": "biome check",
     "lint:fix": "biome check --fix",
     "test": "vitest run",

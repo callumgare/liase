@@ -12,6 +12,7 @@
   },
   "scripts": {
     "build": "rm -rf ./dist && tsc -p ./tsconfig.dist.json && cp -r src/web-ui dist",
+    "typecheck": "tsc --noEmit",
     "lint": "biome check",
     "lint:fix": "biome check --fix"
   },
