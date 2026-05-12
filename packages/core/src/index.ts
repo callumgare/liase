@@ -15,3 +15,6 @@ export type { Source } from "@/src/schemas/source.js";
 export type { Plugin } from "@/src/schemas/plugin.js";
 export type { RequestHandler } from "@/src/schemas/requestHandler.js";
 export type { Constructor } from "@/src/schemas/constructor.js";
+export type { LoadUrlResponsePage } from "@/src/loadUrl.js";
+export { PlaywrightDomSelection } from "@/src/DomSelection.js";
+export { shutdownBrowser } from "@/src/lib/playwrightBrowser.js";

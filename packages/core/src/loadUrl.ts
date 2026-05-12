@@ -5,19 +5,30 @@ import {
   type OptionsInit as GotOptionsInit,
   gotScraping,
 } from "got-scraping";
+import type { Page } from "playwright";
 import type { ActionContext } from "./ActionContext.js";
-import { CheerioDomSelection, type DomSelection } from "./DomSelection.js";
+import {
+  CheerioDomSelection,
+  type DomSelection,
+  PlaywrightDomSelection,
+} from "./DomSelection.js";
 import { headersToNormalisedBasicObject } from "./lib/fetch.js";
 import {
   cacheResponse,
   getCachedResponse,
 } from "./lib/networkRequestsCache.js";
+import { getPage, releasePage } from "./lib/playwrightBrowser.js";
 
-type LoadUrlOptionsPlaywright = {
+/** Options for Playwright requests that return an interactive page handle. */
+type LoadUrlOptionsPlaywrightPage = {
   agent: "playwright";
-  responseType?: "dom";
+  responseType: "page";
   headers?: Record<string, string>;
+  waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
+  timeout?: number;
 };
+
+type LoadUrlOptionsPlaywright = LoadUrlOptionsPlaywrightPage;
 
 type LoadUrlOptionsGot = {
   agent?: "got";
@@ -37,6 +48,7 @@ type LoadUrlOptionsGot = {
   | "url"
   | "json"
   | "form"
+  | "agent" // omit so it doesn't intersect with our own agent field above
 >;
 
 export type LoadUrlOptions = LoadUrlOptionsPlaywright | LoadUrlOptionsGot;
@@ -61,10 +73,53 @@ type LoadUrlResponseText = LoadURLSharedResponse & {
   data: string;
 };
 
+/**
+ * Response type for `responseType: "page"`. Provides an interactive Playwright
+ * `Page` object. The caller MUST call `close()` when done to release resources
+ * back to the shared browser pool.
+ */
+export type LoadUrlResponsePage = {
+  /** The Playwright Page — use this to interact with the loaded page. */
+  page: Page;
+  /**
+   * Release the page back to the browser pool and close it.
+   * Always call this when you are done with the page.
+   */
+  close: () => Promise<void>;
+  /** URL after navigation (may differ from the requested URL after redirects). */
+  finalUrl: string;
+  statusCode: number;
+  headers: Record<string, string>;
+  cached: false;
+  cachedOn: null;
+  request: {
+    headers: Record<string, string>;
+  };
+  /** Lazily fetches the rendered page HTML and returns a parsed DOM selection. */
+  root: Promise<PlaywrightDomSelection>;
+};
+
 export type LoadUrlResponse =
   | LoadUrlResponseDom
   | LoadUrlResponseJson
-  | LoadUrlResponseText;
+  | LoadUrlResponseText
+  | LoadUrlResponsePage;
+
+export function isLoadUrlResponsePage(
+  r: LoadUrlResponse,
+): r is LoadUrlResponsePage {
+  return "page" in r;
+}
+
+export function isLoadUrlResponseDom(
+  r: LoadUrlResponse,
+): r is LoadUrlResponseDom {
+  return "root" in r && !("page" in r);
+}
+export async function loadUrl(
+  url: string,
+  options: LoadUrlOptions & { agent: "playwright"; responseType: "page" },
+): Promise<LoadUrlResponsePage>;
 export async function loadUrl(
   url: string,
   options: LoadUrlOptions & { responseType: "json" },
@@ -202,7 +257,48 @@ export async function loadUrl(
     throw Error(`Unknown response type "${options.responseType}"`);
   }
   if (options.agent === "playwright") {
-    throw Error("Playwright not supported yet");
+    if (options.responseType === "page") {
+      const page = await getPage();
+
+      // Set extra HTTP headers if provided
+      if (options.headers) {
+        await page.setExtraHTTPHeaders(options.headers);
+      }
+
+      const response = await page.goto(url, {
+        waitUntil: options.waitUntil ?? "networkidle",
+        timeout: options.timeout,
+      });
+
+      const statusCode = response?.status() ?? 0;
+      const rawHeaders = response?.headers() ?? {};
+      // Playwright returns header names in lowercase already
+      const headers: Record<string, string> = rawHeaders as Record<
+        string,
+        string
+      >;
+
+      let _root: PlaywrightDomSelection | undefined;
+      return {
+        page,
+        close: () => releasePage(page),
+        get root(): Promise<PlaywrightDomSelection> {
+          if (_root) return Promise.resolve(_root);
+          return PlaywrightDomSelection.fromPage(page).then((dom) => {
+            _root = dom;
+            return dom;
+          });
+        },
+        finalUrl: page.url(),
+        statusCode,
+        headers,
+        cached: false,
+        cachedOn: null,
+        request: {
+          headers: options.headers ?? {},
+        },
+      } satisfies LoadUrlResponsePage;
+    }
   }
   options.agent satisfies never;
   throw Error(`Unknown agent "${options.agent}"`);

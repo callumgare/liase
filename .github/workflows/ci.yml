@@ -56,6 +56,9 @@ jobs:
 
       - run: npm clean-install
 
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
       - name: Test all packages
         # Use "-u" to ignore snapshot mismatches. Sites may occasionally return different values
         # over time or depending on requester-specific details like geographical location.

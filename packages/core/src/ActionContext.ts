@@ -10,7 +10,12 @@ import {
 import { headersToNormalisedBasicObject, parseFetchArgs } from "./lib/fetch.js";
 import { addCachingFetchWrapper } from "./lib/networkRequestsCache.js";
 import type { NetworkRequestsHistoryItem } from "./lib/networkRequestsHistory.js";
-import { type LoadUrlResponse, loadUrl } from "./loadUrl.js";
+import {
+  type LoadUrlResponse,
+  isLoadUrlResponseDom,
+  isLoadUrlResponsePage,
+  loadUrl,
+} from "./loadUrl.js";
 import type { Action } from "./schemas/constructor.js";
 import type { GenericRequest } from "./schemas/request.js";
 import type { RequestHandler } from "./schemas/requestHandler.js";
@@ -186,7 +191,10 @@ export class ActionContext extends Function {
     )) as LoadUrlResponse;
 
     let stringifiedBody: string;
-    if ("root" in response) {
+    if (isLoadUrlResponsePage(response)) {
+      // Page responses are interactive — record the URL but not the body
+      stringifiedBody = `[Playwright page: ${response.finalUrl}]`;
+    } else if (isLoadUrlResponseDom(response)) {
       stringifiedBody = response.root.nativeSelector.html() ?? "";
     } else if (typeof response.data === "string") {
       stringifiedBody = response.data;

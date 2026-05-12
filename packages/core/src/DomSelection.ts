@@ -1,5 +1,7 @@
+import * as cheerio from "cheerio";
 import type { Cheerio, CheerioAPI } from "cheerio";
 import type { AnyNode } from "domhandler";
+import type { Page } from "playwright";
 
 export abstract class DomSelection {
   // eslint-disable-next-line no-use-before-define -- We have to use DomSelection before it's defined because it's recursive
@@ -85,5 +87,12 @@ export class CheerioDomSelection extends DomSelection {
 
   get value(): string | undefined | string[] {
     return this.#nativeSelector.val();
+  }
+}
+
+export class PlaywrightDomSelection extends CheerioDomSelection {
+  static async fromPage(page: Page): Promise<PlaywrightDomSelection> {
+    const html = await page.content();
+    return new PlaywrightDomSelection(cheerio.load(html));
   }
 }
