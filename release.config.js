@@ -24,6 +24,7 @@ export default {
           { type: "ci", release: "patch" },
           { type: "refactor", release: "patch" },
           { type: "chore", release: "patch" },
+          { type: "wip", release: "patch" },
           { type: "docs", scope: "help-text", release: "patch" },
           { type: "test", release: false },
           { scope: "no-release", release: false },
