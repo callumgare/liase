@@ -42,5 +42,15 @@ createBasicTestsForRequestHandlers({
       duplicateMediaPossible: true,
       timeout: 10 * 1000,
     },
+    "user-feed": {
+      request: {
+        userHandle: "bsky.app",
+      },
+      checkResponse: (response) =>
+        expect(response.media.length).toBeGreaterThan(0),
+      numOfPagesToLoad: 1,
+      duplicateMediaPossible: false,
+      timeout: 10 * 1000,
+    },
   },
 });
