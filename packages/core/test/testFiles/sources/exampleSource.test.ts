@@ -17,7 +17,7 @@ createBasicTestsForRequestHandlers({
     },
   },
   queriesShared: {
-    finderOptions: {
+    liaseOptions: {
       plugins: [
         {
           sources: [exampleSource],

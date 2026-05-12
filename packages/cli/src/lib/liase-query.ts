@@ -35,7 +35,7 @@ export async function getLiaseQuery({
       secrets,
       cacheNetworkRequests,
     },
-    finderOptions: {
+    liaseOptions: {
       plugins,
     },
   });

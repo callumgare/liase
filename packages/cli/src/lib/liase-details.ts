@@ -33,7 +33,7 @@ export async function getLiaseDetailsFromArgs(): Promise<LiaseDetails> {
     const silenceCommand = (command: Command) =>
       command
         .helpCommand(false)
-        .helpOption("")
+        .helpOption(false)
         .exitOverride()
         .configureOutput({
           writeOut: () => {},
@@ -84,9 +84,9 @@ export async function getLiaseDetailsFromArgs(): Promise<LiaseDetails> {
         ),
     ).then((modules) => modules.map((module) => module.default));
 
-    const mediaFinder = new Liase({ plugins });
+    const liase = new Liase({ plugins });
 
-    const source: Source | undefined = mediaFinder.sources.find(
+    const source: Source | undefined = liase.sources.find(
       (source) => source.id === sourceId,
     );
 
@@ -111,7 +111,7 @@ export async function getLiaseDetailsFromArgs(): Promise<LiaseDetails> {
 export function getSharedLiaseOptions({ source, plugins }: LiaseDetails) {
   const sourceOption = new Option(
     "-s, --source <source id>",
-    "Media finder source ID",
+    "Liase source ID",
   ).makeOptionMandatory(true);
 
   const requestHandlerOption = new Option(
@@ -137,8 +137,8 @@ export function getSharedLiaseOptions({ source, plugins }: LiaseDetails) {
     .choices(["never", "auto", "always"])
     .default("always");
 
-  const mediaFinder = new Liase({ plugins });
-  sourceOption.choices(mediaFinder.sources.map((source) => source.id));
+  const liase = new Liase({ plugins });
+  sourceOption.choices(liase.sources.map((source) => source.id));
 
   if (source) {
     requestHandlerOption.choices(

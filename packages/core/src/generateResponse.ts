@@ -57,10 +57,10 @@ async function validateResponse(
   assert.deepEqual(constructorContext.request, parsedResponse.request);
 
   for (const [index, media] of Object.entries(parsedResponse.media)) {
-    if (media.mediaFinderSource !== constructorContext.sourceId) {
+    if (media.liaseSource !== constructorContext.sourceId) {
       throw Error(
         `Request was for source ${constructorContext.sourceId} but media number ${index} ` +
-          `has source set to ${media.mediaFinderSource}`,
+          `has source set to ${media.liaseSource}`,
       );
     }
   }

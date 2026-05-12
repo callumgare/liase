@@ -1,6 +1,6 @@
 import { type GenericResponse, createLiaseQuery } from "@/src/index.js";
 import { getDuplicates, getOrdinal, hasNoDuplicates } from "@/src/lib/utils.js";
-import type { FinderOptionsInput } from "@/src/schemas/finderOptions.js";
+import type { LiaseOptionsInput } from "@/src/schemas/liaseOptions.js";
 import type { QueryOptionsInput } from "@/src/schemas/queryOptions.js";
 import type { Source } from "@/src/schemas/source.js";
 import { copy } from "copy-anything";
@@ -30,7 +30,7 @@ export function createBasicTestsForRequestHandlers<
     numOfPagesToLoad?: number;
     numOfPagesToExpect?: number;
     queryOptions?: QueryOptionsInput;
-    finderOptions?: FinderOptionsInput;
+    liaseOptions?: LiaseOptionsInput;
     duplicateMediaPossible?: boolean;
     timeout?: number;
     testName?: string;
@@ -115,8 +115,8 @@ export function createBasicTestsForRequestHandlers<
               ],
               deepMergeOptions,
             ),
-            finderOptions: deepmerge.all(
-              [queriesShared?.finderOptions || {}, query?.finderOptions || {}],
+            liaseOptions: deepmerge.all(
+              [queriesShared?.liaseOptions || {}, query?.liaseOptions || {}],
               deepMergeOptions,
             ),
           });

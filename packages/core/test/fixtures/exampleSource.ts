@@ -14,7 +14,7 @@ const exampleFileSchema = z
 
 const exampleMediaSchema = z
   .object({
-    mediaFinderSource: z.literal(sourceId),
+    liaseSource: z.literal(sourceId),
     id: z.string(),
     title: z.string(),
     files: z.array(exampleFileSchema),
@@ -60,7 +60,7 @@ export default {
             _setup: ($) => $.loadUrl("https://example.com/"),
             media: [
               {
-                mediaFinderSource: () => sourceId,
+                liaseSource: () => sourceId,
                 id: "1234",
                 title: ($) =>
                   $.request.id === "test-getWebpage"
@@ -99,7 +99,7 @@ export default {
             },
             media: [
               {
-                mediaFinderSource: sourceId,
+                liaseSource: sourceId,
                 id: ($) => `${$.request.pageNumber}-a`,
                 title: "Media Title",
                 files: [],

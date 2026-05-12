@@ -81,7 +81,7 @@ export default {
         const res = await fetch("/", {
           method: "POST",
           body: JSON.stringify({
-            mediaFinderRequest: JSON.parse(currentQuery.value?.requestString),
+            liaseRequest: JSON.parse(currentQuery.value?.requestString),
             secretsSet: currentQuery.value?.secretsSet,
             cacheNetworkRequests: currentQuery.value?.cacheNetworkRequests,
           }),

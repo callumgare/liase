@@ -29,7 +29,7 @@ exports[`Run query "Single media" with: { "id": "at://did:plc:z72i7hdynmk6r22z27
         },
       ],
       "id": "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3jt6walwmos2y#bafkreidf3ystxebv33boyb5hr2ggwmlee5x53vubwelsuvmcw3tq4p36pi",
-      "mediaFinderSource": "bluesky",
+      "liaseSource": "bluesky",
       "nameOfUploader": "Bluesky",
       "title": "How it started:",
       "url": "https://bsky.app/profile/did:plc:z72i7hdynmk6r22z27h6tvur/post/3jt6walwmos2y",

@@ -124,7 +124,7 @@ createBasicTestsForRequestHandlers({
     ],
   },
   queriesShared: {
-    finderOptions: {
+    liaseOptions: {
       plugins: [
         {
           sources: [currentTimeSource],

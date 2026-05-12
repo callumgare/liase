@@ -3,7 +3,7 @@ import { genericFileSchema } from "./file.js";
 
 export const genericMediaSchema = z
   .object({
-    mediaFinderSource: z
+    liaseSource: z
       .string()
       .regex(/^[a-z-]+$/)
       .describe("The id of the liase source which found the media"),

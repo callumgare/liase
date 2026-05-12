@@ -27,7 +27,7 @@ createBasicTestsForRequestHandlers({
     ],
   },
   queriesShared: {
-    finderOptions: {
+    liaseOptions: {
       plugins: [
         {
           sources: [booksToScrapeSource],

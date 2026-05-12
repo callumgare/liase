@@ -5,7 +5,7 @@ export const sourceId = "giphy";
 export const mediaResponseConstructor = [
   {
     _arrayMap: ($) => $().data,
-    mediaFinderSource: sourceId,
+    liaseSource: sourceId,
     id: ($) => $().id,
     title: ($) => $().title,
     url: ($) => $().url,
@@ -14,11 +14,11 @@ export const mediaResponseConstructor = [
     files: [
       {
         _arrayMap: ($) => [
-          { ...$().images.original, mediaFinderType: "full" },
-          { ...$().images.preview, mediaFinderType: "thumbnail" },
+          { ...$().images.original, liaseType: "full" },
+          { ...$().images.preview, liaseType: "thumbnail" },
         ],
         _setup: ($) => $.set("mediaInfo", $.guessMediaInfoFromUrl($().mp4)),
-        type: ($) => $().mediaFinderType,
+        type: ($) => $().liaseType,
         url: ($) => $().mp4,
         ext: ($) => $("mediaInfo").ext,
         mimeType: ($) => $("mediaInfo").mimeType,

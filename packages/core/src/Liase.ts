@@ -1,8 +1,8 @@
 import {
-  type FinderOptions,
-  type FinderOptionsInput,
-  finderOptionsSchema,
-} from "@/src/schemas/finderOptions.js";
+  type LiaseOptions,
+  type LiaseOptionsInput,
+  liaseOptionsSchema,
+} from "@/src/schemas/liaseOptions.js";
 import type { Plugin } from "@/src/schemas/plugin.js";
 import type { Source } from "@/src/schemas/source.js";
 import type { Entries } from "type-fest";
@@ -20,16 +20,16 @@ export default class Liase {
     return Object.values(this.sourceMap);
   }
 
-  _finderOptions: FinderOptions;
+  _liaseOptions: LiaseOptions;
   _hooks: LiaseHooks = {
     loadUrl: [],
     getFetchClient: [],
   };
 
-  constructor(finderOptions: FinderOptionsInput = {}) {
-    this._finderOptions = finderOptionsSchema.parse(finderOptions);
+  constructor(liaseOptions: LiaseOptionsInput = {}) {
+    this._liaseOptions = liaseOptionsSchema.parse(liaseOptions);
     this.loadPlugin(builtInSourcesPlugin);
-    for (const plugin of this._finderOptions.plugins) {
+    for (const plugin of this._liaseOptions.plugins) {
       this.loadPlugin(plugin);
     }
   }

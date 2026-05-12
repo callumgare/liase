@@ -11,7 +11,7 @@ export const postsToMediaResponseConstructor = [
       ).filter((bskyMedia) =>
         $.request.id ? bskyMedia.id === $.request.id : true,
       ),
-    mediaFinderSource: sourceId,
+    liaseSource: sourceId,
     id: ($) => $().id,
     contentHash: ($) => $().fileCid,
     title: ($) => $().postTextContents,
@@ -23,16 +23,16 @@ export const postsToMediaResponseConstructor = [
       {
         _arrayMap: ($) => [
           ...($().fullsizeUrl
-            ? [{ ...$(), url: $().fullsizeUrl, mediaFinderType: "full" }]
+            ? [{ ...$(), url: $().fullsizeUrl, liaseType: "full" }]
             : []),
           ...($().playlistUrl
-            ? [{ ...$(), url: $().playlistUrl, mediaFinderType: "full" }]
+            ? [{ ...$(), url: $().playlistUrl, liaseType: "full" }]
             : []),
           ...($().thumbnailUrl
             ? [
                 {
                   url: $().thumbnailUrl,
-                  mediaFinderType: "thumbnail",
+                  liaseType: "thumbnail",
                   // For image posts use the image mimeType; for video posts the
                   // thumbnail is always a JPEG image regardless of video format
                   mimeType: $().fullsizeUrl ? $().mimeType : "image/jpeg",
@@ -55,7 +55,7 @@ export const postsToMediaResponseConstructor = [
               { mimeType: $().mimeType },
             ),
           ),
-        type: ($) => $().mediaFinderType,
+        type: ($) => $().liaseType,
         url: ($) => $().url,
         ext: ($) => $("mediaInfo").ext,
         mimeType: ($) => $("mediaInfo").mimeType,

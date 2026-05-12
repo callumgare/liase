@@ -62,16 +62,13 @@ export async function getRunCommand(): Promise<Command> {
           }
         }
 
-        const res = await fetch(
-          "https://mediafinderviewer.cals.cafe/api/output",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(response),
+        const res = await fetch("https://liaseviewer.cals.cafe/api/output", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify(response),
+        });
         const data = await res.json();
         if (
           data &&

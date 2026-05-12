@@ -29,7 +29,7 @@ export default {
         },
         media: [
           {
-            mediaFinderSource: sourceId,
+            liaseSource: sourceId,
             id: ($) => $.request.id,
             url: ($) => $("url"),
             title: ($) => $().select(".product_page h1").text,

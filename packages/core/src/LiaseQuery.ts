@@ -1,6 +1,6 @@
 import { ZodError, z } from "zod";
 
-import { finderOptionsSchema } from "@/src/schemas/finderOptions.js";
+import { liaseOptionsSchema } from "@/src/schemas/liaseOptions.js";
 import {
   type QueryOptions,
   queryOptionsSchema,
@@ -32,7 +32,7 @@ const propsSchema = z
       secrets: {},
       fetchCountLimit: 10,
     })),
-    finderOptions: finderOptionsSchema.default(() => ({ plugins: [] })),
+    liaseOptions: liaseOptionsSchema.default(() => ({ plugins: [] })),
   })
   .strict();
 export type LiaseQueryProps = z.input<typeof propsSchema>;
@@ -56,7 +56,7 @@ export default class LiaseQuery extends Liase {
       }
       throw err;
     }
-    super(parsedProps.finderOptions);
+    super(parsedProps.liaseOptions);
     this.#request = parsedProps.request;
     this.#queryOptions = parsedProps.queryOptions;
     this.#iterator = this.getIterator();

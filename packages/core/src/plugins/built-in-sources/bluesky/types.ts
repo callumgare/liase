@@ -21,7 +21,7 @@ export type File = z.infer<typeof fileSchema>;
 
 export const mediaSchema = z
   .object({
-    mediaFinderSource: z.literal(sourceId),
+    liaseSource: z.literal(sourceId),
     id: z.string(),
     title: z.string(),
     url: z.string(),

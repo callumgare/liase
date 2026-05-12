@@ -86,12 +86,11 @@ function handleMediaQueryRequest(
     body += chunk;
   });
   req.on("end", async () => {
-    const { mediaFinderRequest, secretsSet, cacheNetworkRequests } =
-      JSON.parse(body);
+    const { liaseRequest, secretsSet, cacheNetworkRequests } = JSON.parse(body);
     let response: unknown;
     try {
       const query = await getLiaseQuery({
-        request: mediaFinderRequest,
+        request: liaseRequest,
         secretsSet,
         loadPluginsFromArgs: true,
         cacheNetworkRequests,

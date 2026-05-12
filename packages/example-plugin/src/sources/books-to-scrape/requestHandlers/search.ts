@@ -52,7 +52,7 @@ const responseConstructor = {
       _setup: ($) => {
         $.set("mediaId", $().select("h3 a").attr("href")?.split("/").at(-2));
       },
-      mediaFinderSource: sourceId,
+      liaseSource: sourceId,
       id: ($) => $("mediaId"),
       url: ($) => `${rootUrl}catalogue/${$("mediaId")}/index.html`,
       title: ($) => $().select("h3").text,

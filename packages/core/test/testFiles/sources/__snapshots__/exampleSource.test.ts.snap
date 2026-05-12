@@ -6,7 +6,7 @@ exports[`Run query "Search media" with: { "searchText": "search text" } 1`] = `
     {
       "files": [],
       "id": "1-a",
-      "mediaFinderSource": "example-source",
+      "liaseSource": "example-source",
       "title": "Media Title",
     },
   ],
@@ -31,7 +31,7 @@ exports[`Run query "Search media" with: { "searchText": "search text" } 2`] = `
     {
       "files": [],
       "id": "2-a",
-      "mediaFinderSource": "example-source",
+      "liaseSource": "example-source",
       "title": "Media Title",
     },
   ],
@@ -58,7 +58,7 @@ exports[`Run query "Single media" with: { "id": "test-getWebpage" } 1`] = `
     {
       "files": [],
       "id": "1234",
-      "mediaFinderSource": "example-source",
+      "liaseSource": "example-source",
       "title": "Example Domain",
     },
   ],
