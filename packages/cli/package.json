@@ -7,8 +7,7 @@
   "main": "dist/index.js",
   "files": ["dist/*"],
   "bin": {
-    "liase": "dist/index.js",
-    "mf": "dist/index.js"
+    "liase": "dist/index.js"
   },
   "scripts": {
     "build": "rm -rf ./dist && tsc -p ./tsconfig.dist.json && cp -r src/web-ui dist",
