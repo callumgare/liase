@@ -25,6 +25,26 @@ import { exportNetworkRequestsHistoryIfRelevantError } from "./lib/networkReques
 import { FriendlyZodError } from "./lib/zod.js";
 import type { GenericSecrets } from "./schemas/secrets.js";
 
+class QueryError extends Error {
+  constructor(
+    request: GenericRequest,
+    secrets: GenericSecrets,
+    cause: unknown,
+  ) {
+    const sanitizedSecrets = Object.fromEntries(
+      Object.keys(secrets).map((key) => [key, "***"]),
+    );
+    const hasSecrets = Object.keys(secrets).length > 0;
+    let message = `An error occurred when running the query \`${JSON.stringify(request)}\``;
+    if (hasSecrets) {
+      message += ` with secrets \`${JSON.stringify(sanitizedSecrets)}\``;
+    }
+    super(message, { cause });
+    this.name = "QueryError";
+    Object.setPrototypeOf(this, QueryError.prototype);
+  }
+}
+
 const propsSchema = z
   .object({
     request: genericRequestSchema,
@@ -163,7 +183,7 @@ export default class LiaseQuery extends Liase {
         }
       } catch (error) {
         await exportNetworkRequestsHistoryIfRelevantError(error);
-        throw error;
+        throw new QueryError(parsedRequest, this.#queryOptions.secrets, error);
       }
     }
   }
