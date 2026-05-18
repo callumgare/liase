@@ -7,11 +7,52 @@
  *   the browser is shut down automatically.
  * - Callers must call `releasePage(page)` when done so the idle timer can
  *   start. Calling `releasePage` also closes the page to free resources.
+ * - Storage state (cookies, localStorage) is persisted to disk by default so
+ *   sessions survive across runs. Configure with `configureBrowser()`.
  */
 
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
 import type { Browser, BrowserContext, Page } from "playwright";
 
 const IDLE_TIMEOUT_MS = 60_000; // 1 minute
+
+/** Default path for persisting browser storage state between runs. */
+const DEFAULT_STORAGE_STATE_PATH = join(
+  homedir(),
+  ".cache",
+  "liase",
+  "playwright-storage-state.json",
+);
+
+interface BrowserConfig {
+  /**
+   * Path to persist Playwright storage state (cookies, localStorage) between
+   * runs. Defaults to `~/.cache/liase/playwright-storage-state.json`.
+   * Pass `null` to disable persistence.
+   */
+  storageStatePath: string | null;
+}
+
+let config: BrowserConfig = {
+  storageStatePath: DEFAULT_STORAGE_STATE_PATH,
+};
+
+/**
+ * Configure global browser options.
+ *
+ * @example
+ * // Use a custom path
+ * configureBrowser({ storageStatePath: '/tmp/my-browser-state.json' });
+ *
+ * @example
+ * // Disable persistence entirely
+ * configureBrowser({ storageStatePath: null });
+ */
+export function configureBrowser(options: Partial<BrowserConfig>): void {
+  config = { ...config, ...options };
+}
 
 // Lazy-imported so playwright is only required when actually needed.
 let chromium: typeof import("playwright")["chromium"] | undefined;
@@ -37,10 +78,16 @@ async function ensureBrowser(): Promise<BrowserContext> {
         "--disable-blink-features=AutomationControlled",
       ],
     });
+    const { storageStatePath } = config;
+    const storageState =
+      storageStatePath && existsSync(storageStatePath)
+        ? storageStatePath
+        : undefined;
     context = await browser.newContext({
       userAgent:
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
       viewport: { width: 1280, height: 800 },
+      storageState,
     });
     await context.addInitScript(() => {
       // Remove the webdriver flag that bot-detection scripts look for
@@ -83,14 +130,33 @@ export async function getPage(): Promise<Page> {
 }
 
 /**
+ * Saves the current browser context's storage state (cookies, localStorage)
+ * to disk at the configured path. No-op if persistence is disabled or no
+ * context is open.
+ */
+async function saveStorageState(): Promise<void> {
+  const { storageStatePath } = config;
+  if (!storageStatePath || !context) return;
+  try {
+    const state = await context.storageState();
+    mkdirSync(dirname(storageStatePath), { recursive: true });
+    writeFileSync(storageStatePath, JSON.stringify(state), "utf-8");
+  } catch {
+    // Non-fatal — a failure to persist state should not break the caller.
+  }
+}
+
+/**
  * Closes the page and decrements the active-page counter.
- * Starts the idle shutdown timer if no pages remain open.
+ * Persists storage state to disk then starts the idle shutdown timer if no
+ * pages remain open.
  */
 export async function releasePage(page: Page): Promise<void> {
   try {
     if (!page.isClosed()) {
       await page.close();
     }
+    await saveStorageState();
   } finally {
     activePageCount = Math.max(0, activePageCount - 1);
     scheduleIdleShutdown();

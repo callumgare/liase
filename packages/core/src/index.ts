@@ -17,4 +17,7 @@ export type { RequestHandler } from "@/src/schemas/requestHandler.js";
 export type { Constructor } from "@/src/schemas/constructor.js";
 export type { LoadUrlResponsePage } from "@/src/loadUrl.js";
 export { PlaywrightDomSelection } from "@/src/DomSelection.js";
-export { shutdownBrowser } from "@/src/lib/playwrightBrowser.js";
+export {
+  shutdownBrowser,
+  configureBrowser,
+} from "@/src/lib/playwrightBrowser.js";
