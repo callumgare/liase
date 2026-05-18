@@ -17,6 +17,7 @@ export async function getShowSchemaCommand(): Promise<Command> {
     .name("show-schema")
     .addOption(sourceOption)
     .addOption(requestHandlerOption)
+    .addOption(pluginsOption)
     .addOption(
       new Option(
         "-t, --schemaType <schemaType>",
