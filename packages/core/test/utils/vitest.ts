@@ -110,6 +110,8 @@ export function createBasicTestsForRequestHandlers<
                 {
                   secrets: {
                     ...(await getSecrets(request)),
+                    ...queriesShared?.secrets,
+                    ...query?.secrets,
                   },
                 },
               ],
