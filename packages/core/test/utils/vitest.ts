@@ -126,8 +126,23 @@ export function createBasicTestsForRequestHandlers<
 
           if (expectError) {
             expect.assertions(1);
-            await expect(() => mediaQuery.getNext()).rejects.toThrowError(
-              expectError,
+            await expect(() => mediaQuery.getNext()).rejects.toSatisfy(
+              (err) => {
+                // Walk the cause chain so that wrapper errors (e.g. QueryError)
+                // don't hide the underlying message we actually want to test.
+                let current: unknown = err;
+                while (current instanceof Error) {
+                  if (
+                    typeof expectError === "string"
+                      ? current.message.includes(expectError)
+                      : expectError.test(current.message)
+                  ) {
+                    return true;
+                  }
+                  current = current.cause;
+                }
+                return false;
+              },
             );
             return;
           }

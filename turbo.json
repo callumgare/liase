@@ -6,7 +6,7 @@
       "outputs": ["dist/**"]
     },
     "test": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["build", "^build"],
       "env": ["LIASE_SECRETS_FILE", "GIPHY_API_KEY"]
     },
     "typecheck": {
