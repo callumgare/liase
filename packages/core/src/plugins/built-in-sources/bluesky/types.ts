@@ -27,7 +27,7 @@ export const mediaSchema = z
     url: z.string(),
     dateUploaded: z.date(),
     usernameOfUploader: z.string(),
-    nameOfUploader: z.string(),
+    nameOfUploader: z.string().optional(),
     files: z.tuple([
       fileSchema.extend({ type: z.literal("full") }),
       fileSchema.extend({ type: z.literal("thumbnail") }),
