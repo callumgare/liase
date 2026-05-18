@@ -40,7 +40,8 @@ export async function getLiaseDetailsFromArgs(): Promise<LiaseDetails> {
           writeErr: () => {},
           outputError: () => {},
         })
-        .allowUnknownOption();
+        .allowUnknownOption()
+        .allowExcessArguments(true);
 
     silenceCommand(program);
 
