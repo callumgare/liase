@@ -199,40 +199,45 @@ export function zodSchemaToSimpleSchema(zodSchema: z.ZodType): SimpleSchema {
     };
   } else if (isZodType(zodSchema, "ZodString")) {
     simpleSchema = { ...defaultProps, type: "string" };
-    if (def.checks.length) simpleSchema.checks = def.checks;
+    if (def.checks?.length) simpleSchema.checks = def.checks;
   } else if (
     isZodType(zodSchema, "ZodNumber") ||
     isZodType(zodSchema, "ZodBigInt")
   ) {
     simpleSchema = { ...defaultProps, type: "number" };
-    if (def.checks.length) simpleSchema.checks = def.checks;
+    if (def.checks?.length) simpleSchema.checks = def.checks;
   } else if (isZodType(zodSchema, "ZodBoolean")) {
     simpleSchema = { ...defaultProps, type: "boolean" };
   } else if (isZodType(zodSchema, "ZodDate")) {
     simpleSchema = { ...defaultProps, type: "date" };
-    if (def.checks.length) simpleSchema.checks = def.checks;
+    if (def.checks?.length) simpleSchema.checks = def.checks;
   } else if (isZodType(zodSchema, "ZodNull")) {
     simpleSchema = { ...defaultProps, type: "null" };
   } else if (isZodType(zodSchema, "ZodLiteral")) {
-    const value = (def.values as Primitive[])[0];
-    let valueType: "string" | "number" | "boolean" | "null" | "other";
-    if (typeof value === "string") {
-      valueType = "string";
-    } else if (typeof value === "number" || typeof value === "bigint") {
-      valueType = "number";
-    } else if (typeof value === "boolean") {
-      valueType = "boolean";
-    } else if (value === null) {
-      valueType = "null";
-    } else {
-      valueType = "other";
-    }
-    simpleSchema = {
-      ...defaultProps,
-      type: "literal",
-      value,
-      valueType,
+    const values = def.values as Primitive[];
+    const valueToLiteralSchema = (v: Primitive): SimpleSchema => {
+      let valueType: "string" | "number" | "boolean" | "null" | "other";
+      if (typeof v === "string") {
+        valueType = "string";
+      } else if (typeof v === "number" || typeof v === "bigint") {
+        valueType = "number";
+      } else if (typeof v === "boolean") {
+        valueType = "boolean";
+      } else if (v === null) {
+        valueType = "null";
+      } else {
+        valueType = "other";
+      }
+      return { type: "literal", value: v, valueType };
     };
+    if (values.length === 1) {
+      simpleSchema = { ...defaultProps, ...valueToLiteralSchema(values[0]) };
+    } else {
+      simpleSchema = {
+        ...defaultProps,
+        type: values.map(valueToLiteralSchema),
+      };
+    }
   } else if (isZodType(zodSchema, "ZodEnum")) {
     const enumValues: string[] = Object.keys(
       def.entries as Record<string, string>,

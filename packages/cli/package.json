@@ -13,7 +13,9 @@
     "build": "rm -rf ./dist && tsc -p ./tsconfig.dist.json && cp -r src/web-ui dist",
     "typecheck": "tsc --noEmit",
     "lint": "biome check",
-    "lint:fix": "biome check --fix"
+    "lint:fix": "biome check --fix",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
   },
   "type": "module",
   "repository": {
@@ -42,7 +44,8 @@
     "semantic-release": "^25.0.3",
     "semantic-release-monorepo": "^8.0.2",
     "tsx": "^4.19.2",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
   },
   "peerDependencies": {
     "@liase/core": "*"
