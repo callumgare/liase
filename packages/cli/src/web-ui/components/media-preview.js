@@ -99,28 +99,41 @@ export default {
     <div
       class="MediaPreview"
     >
-			<div
+			<a
 				v-if="displayElement === 'video'"
-				class="videoContainer"
+				:href="mediaAsset?.url"
+				:data-pswp-src="mediaAsset?.url"
+				data-pswp-type="video"
+				:data-pswp-width="mediaAsset?.width || previewAsset?.width"
+				:data-pswp-height="mediaAsset?.height || previewAsset?.height"
+				:data-pswp-media-type="mediaAsset?.mimeType"
+				@mouseenter="handleMouseEnter"
+				@mouseleave="handleMouseLeave"
 			>
-				<video
-					ref="video-elm"
-					preload="none"
-					playsinline="true"
-					muted="true"
-					:poster="previewAsset?.url"
-					:style="mediaAsset.aspectRatio ? {'aspect-ratio': mediaAsset.aspectRatio.width + ' / ' + mediaAsset.aspectRatio.height} : {}"
-					controls="true"
-				></video>
-				<img
-					v-if="previewAsset"
-					:src="previewAsset?.url"
-				>
-			</div>
-      <img
+				<div class="videoContainer">
+					<video
+						ref="video-elm"
+						preload="none"
+						playsinline="true"
+						muted="true"
+						:poster="previewAsset?.url"
+						:style="mediaAsset.aspectRatio ? {'aspect-ratio': mediaAsset.aspectRatio.width + ' / ' + mediaAsset.aspectRatio.height} : {}"
+					></video>
+					<img
+						v-if="previewAsset"
+						:src="previewAsset?.url"
+					>
+				</div>
+			</a>
+      <a
         v-else-if="displayElement === 'image'"
-        :src="mediaAsset?.url"
+        :href="mediaAsset?.url"
+        :data-pswp-src="mediaAsset?.url"
+        :data-pswp-width="mediaAsset?.width"
+        :data-pswp-height="mediaAsset?.height"
       >
+        <img :src="mediaAsset?.url" />
+      </a>
       <div v-else>
         Unknown display type {{ displayElement }}
       </div>

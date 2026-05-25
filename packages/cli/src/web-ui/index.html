@@ -3,6 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <title>liase preview</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@5/dist/photoswipe.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/video.js@8/dist/video-js.css" />
   </head>
 
   <body>
@@ -123,6 +125,17 @@
         .info {
           max-width: 200px;
         }
+        a {
+          display: block;
+        }
+      }
+      .pswp__video-container {
+        width: 100%;
+        height: 100%;
+      }
+      .pswp__video-container .video-js {
+        width: 100%;
+        height: 100%;
       }
     </style>
   </body>
@@ -131,6 +144,9 @@
       "imports": {
         "@alenaksu/json-viewer": "https://unpkg.com/@alenaksu/json-viewer@2.1.0/dist/json-viewer.bundle.js",
         "hls.js": "https://unpkg.com/hls.js@1.5.17/dist/hls.js",
+        "video.js": "https://cdn.jsdelivr.net/npm/video.js@8/dist/video.min.js",
+        "photoswipe": "https://cdn.jsdelivr.net/npm/photoswipe@5/dist/photoswipe.esm.js",
+        "photoswipe/lightbox": "https://cdn.jsdelivr.net/npm/photoswipe@5/dist/photoswipe-lightbox.esm.js",
         "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
       }
     }
