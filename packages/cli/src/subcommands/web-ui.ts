@@ -2,12 +2,17 @@ import fs from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
 import util from "node:util";
+import { Liase } from "@liase/core";
 import AnsiToHtml from "ansi-to-html";
 import { Command } from "commander";
 import mimeTypes from "mime-types";
-import { getSharedLiaseOptions } from "../lib/liase-details.js";
+import {
+  getLiaseDetailsFromArgs,
+  getSharedLiaseOptions,
+} from "../lib/liase-details.js";
 import { getLiaseQuery } from "../lib/liase-query.js";
 import { getSecretsSets } from "../lib/secrets.js";
+import { zodSchemaToSimpleSchema } from "../lib/zod.js";
 
 export async function getWebUiCommand(): Promise<Command> {
   const webUiCommand = new Command();
@@ -34,6 +39,8 @@ function startServer(): Promise<void> {
         res.end(JSON.stringify(buildId));
       } else if (req.method === "GET" && req.url === "/secrets-sets") {
         return handleSecretSetsRequest(req, res);
+      } else if (req.method === "GET" && req.url === "/sources") {
+        return handleSourcesRequest(req, res);
       } else if (req.method === "POST") {
         console.log(`${req.method} ${req.url}`);
         return handleMediaQueryRequest(req, res);
@@ -73,6 +80,45 @@ async function handleSecretSetsRequest(
     "Access-Control-Allow-Origin": "*",
   });
   res.end(JSON.stringify(Object.keys(secretSets)));
+}
+
+async function handleSourcesRequest(
+  req: http.IncomingMessage,
+  res: http.ServerResponse<http.IncomingMessage> & {
+    req: http.IncomingMessage;
+  },
+) {
+  const { plugins } = await getLiaseDetailsFromArgs();
+  const liase = new Liase({ plugins });
+  const sources = liase.sources.map((source) => ({
+    id: source.id,
+    displayName: source.displayName,
+    description: source.description,
+    requestHandlers: source.requestHandlers.map((handler) => {
+      const fullSchema = zodSchemaToSimpleSchema(handler.requestSchema);
+      if (fullSchema.type !== "object") {
+        throw new Error(
+          `Expected object schema for request handler ${handler.id}`,
+        );
+      }
+      const schemaFields = Object.fromEntries(
+        Object.entries(fullSchema.children).filter(
+          ([key]) => key !== "source" && key !== "queryType",
+        ),
+      );
+      return {
+        id: handler.id,
+        displayName: handler.displayName,
+        description: handler.description,
+        schemaFields,
+      };
+    }),
+  }));
+  res.writeHead(200, {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+  });
+  res.end(JSON.stringify(sources));
 }
 
 function handleMediaQueryRequest(

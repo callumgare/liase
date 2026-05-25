@@ -44,6 +44,35 @@
       .error {
         text-wrap: auto;
       }
+      .schema-fields {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5em;
+
+        .field-row {
+          display: grid;
+          grid-template-columns: 12em 1fr;
+          grid-template-rows: auto auto;
+          align-items: center;
+          gap: 0.25em 0.5em;
+
+          label {
+            font-weight: 500;
+            white-space: nowrap;
+          }
+          .field-description {
+            grid-column: 2;
+            color: #888;
+            font-size: 0.85em;
+          }
+          input[type="text"],
+          input[type="number"],
+          select {
+            width: 100%;
+            box-sizing: border-box;
+          }
+        }
+      }
       .buttons {
         display: flex;
         flex-wrap: wrap;

@@ -1,9 +1,11 @@
 import { computed, ref, useTemplateRef, watch } from "vue";
 import DisplayMedia from "./display-media.js";
+import QueryControls from "./query-controls.js";
 import "@alenaksu/json-viewer";
 export default {
   components: {
     DisplayMedia,
+    QueryControls,
   },
   setup() {
     const emptyQuery = {
@@ -61,14 +63,6 @@ export default {
     }
     updateSecretsSets();
 
-    const requestValid = computed(() => {
-      try {
-        JSON.parse(currentQuery.value?.requestString);
-        return true;
-      } catch (error) {
-        return false;
-      }
-    });
     const responseView = ref(localStorage.getItem("responseView") || "visual");
     watch(responseView, () => {
       localStorage.setItem("responseView", responseView.value);
@@ -109,14 +103,6 @@ export default {
       currentQueryId.value = newQuery.id;
     }
 
-    function handleRequestChange(event) {
-      currentQuery.value.requestString = JSON.stringify(
-        JSON.parse(event.target.value),
-        null,
-        2,
-      );
-    }
-
     const jsonViewerRef = useTemplateRef("json-viewer");
 
     watch([response, responseView], () => {
@@ -130,9 +116,7 @@ export default {
       response,
       fetchMedia,
       responseView,
-      requestValid,
       loadingStatus,
-      handleRequestChange,
       secretsSets,
       currentQuery,
       currentQueryId,
@@ -141,45 +125,15 @@ export default {
     };
   },
   template: /* html */ `
-    <div class="options">
-			<div class="group">
-				<div class="group">
-					<label for="current-query">Current query:</label>
-					<select name="current-query" id="current-query" v-model="currentQueryId">
-						<option v-for="query, index in queries" :value="query.id">{{index}} - {{query.name}}</option>
-					</select>
-				</div>
-				<div class="group">
-					<label for="query-name">Query name:</label>
-					<input name="query-name" id="query-name" v-model="currentQuery.name" />
-					</div>
-				<button @click="duplicateQuery">Duplicate query</button>
-			</div>
-      <textarea
-        :style="{'background-color': requestValid ? 'rgba(56, 255, 0, 0.06)' : '#ff00001a'}"
-        id="request"
-        v-model="currentQuery.requestString"
-        @change="handleRequestChange"
-      ></textarea>
-			<div class="group">
-				<div class="group">
-					<label for="secret-set">Secrets Set:</label>
-					<select name="secret-set" id="secret-set" v-model="currentQuery.secretsSet">
-						<option value="">--None--</option>
-						<option v-for="secretsSet in secretsSets" :value="secretsSet">{{secretsSet}}</option>
-					</select>
-				</div>
-				<div class="group">
-					<label for="cache-network-requests">Cache Network Requests:</label>
-					<select name="cache-network-requests" id="cache-network-requests" v-model="currentQuery.cacheNetworkRequests">
-						<option value="never">Never</option>
-						<option value="auto">Auto</option>
-						<option value="always">Always</option>
-					</select>
-				</div>
-				<button @click="fetchMedia" :disabled="!requestValid">Fetch</button>
-			</div>
-    </div>
+    <query-controls
+      :current-query="currentQuery"
+      :current-query-id="currentQueryId"
+      :queries="queries"
+      :secrets-sets="secretsSets"
+      @update:currentQueryId="currentQueryId = $event"
+      @fetch="fetchMedia"
+      @duplicate="duplicateQuery"
+    />
     <div class="buttons">
       <button @click="responseView = responseView === 'json' ? 'visual' : 'json'">Show {{responseView === 'json' ? 'Media' : 'JSON'}}</button>
     </div>
