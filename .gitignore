@@ -5,4 +5,3 @@ dist/
 .env*
 .secrets.mjs
 .local
-.cache

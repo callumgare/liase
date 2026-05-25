@@ -4,7 +4,7 @@ import path from "node:path";
 import util from "node:util";
 import { Liase } from "@liase/core";
 import AnsiToHtml from "ansi-to-html";
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import mimeTypes from "mime-types";
 import {
   getLiaseDetailsFromArgs,
@@ -20,13 +20,18 @@ export async function getWebUiCommand(): Promise<Command> {
   webUiCommand
     .name("web-ui")
     .addOption(pluginsOption)
-    .action(async () => {
-      await startServer();
+    .addOption(
+      new Option("--port <port>", "Port to listen on")
+        .default(4000)
+        .argParser(Number),
+    )
+    .action(async (options) => {
+      await startServer(options.port);
     });
   return webUiCommand;
 }
 
-function startServer(): Promise<void> {
+function startServer(port = 4000): Promise<void> {
   const buildId = Date.now();
 
   const server = http
@@ -49,21 +54,24 @@ function startServer(): Promise<void> {
         return handleStaticFileRequest(req, res);
       }
     })
-    .listen(4000);
+    .listen(port);
 
-  function cleanup() {
-    server.close();
-  }
-  process.on("SIGINT", cleanup);
-  process.on("SIGQUIT", cleanup);
-  process.on("SIGTERM", cleanup);
-
-  const serverAddress = server.address();
-  console.log(
-    "Server listening:",
-    `http://localhost:${typeof serverAddress === "object" && serverAddress?.port}`,
-  );
   return new Promise((resolve, reject) => {
+    server.once("listening", () => {
+      const serverAddress = server.address();
+      console.log(
+        "Server listening:",
+        `http://localhost:${typeof serverAddress === "object" && serverAddress?.port}`,
+      );
+    });
+
+    function cleanup() {
+      server.close();
+    }
+    process.on("SIGINT", cleanup);
+    process.on("SIGQUIT", cleanup);
+    process.on("SIGTERM", cleanup);
+
     server.on("close", resolve);
   });
 }

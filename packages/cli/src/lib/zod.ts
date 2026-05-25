@@ -205,7 +205,22 @@ export function zodSchemaToSimpleSchema(zodSchema: z.ZodType): SimpleSchema {
     isZodType(zodSchema, "ZodBigInt")
   ) {
     simpleSchema = { ...defaultProps, type: "number" };
-    if (def.checks?.length) simpleSchema.checks = def.checks;
+    if (def.checks?.length) {
+      // biome-ignore lint/suspicious/noExplicitAny: Zod 4 stores checks in _zod.def; Zod 3 stores them directly
+      simpleSchema.checks = def.checks.map((check: any) => {
+        const zodDef = check?._zod?.def;
+        if (zodDef) {
+          const kind =
+            zodDef.check === "greater_than"
+              ? "min"
+              : zodDef.check === "less_than"
+                ? "max"
+                : zodDef.check;
+          return { kind, value: zodDef.value, inclusive: zodDef.inclusive };
+        }
+        return check;
+      });
+    }
   } else if (isZodType(zodSchema, "ZodBoolean")) {
     simpleSchema = { ...defaultProps, type: "boolean" };
   } else if (isZodType(zodSchema, "ZodDate")) {
