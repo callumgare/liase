@@ -1,3 +1,4 @@
+import rawMimeDb from "mime-db";
 import mimeTypes from "mime-types";
 
 export function guessMediaInfoFromUrl<
@@ -32,12 +33,14 @@ export function guessMediaInfoFromUrl<
   } catch (error) {
     throw new Error(`Invalid URL/path: ${urlOrPath}`);
   }
+
   // If not given the file extension try to extract from the url/path.
   let ext = additionalValues?.ext;
   if (!ext) {
     for (const pathSegment of path.split("/").reverse()) {
-      ext = pathSegment.match(/\.([a-zA-Z0-9]+)$/)?.[1];
-      if (ext) {
+      const possibleExt = pathSegment.match(/.+\.([a-zA-Z0-9]+)$/)?.[1];
+      if (possibleExt && getValidMediaExtentions().includes(possibleExt)) {
+        ext = possibleExt;
         break;
       }
     }
@@ -48,7 +51,9 @@ export function guessMediaInfoFromUrl<
   if (!mimeType && ext && typeof ext === "string") {
     mimeType = mimeTypes.lookup(ext) || "";
     if (!mimeType) {
-      throw new Error(`Couldn't derive mime type from extension "${ext}"`);
+      throw new Error(
+        `Couldn't derive mime type from extension "${ext}" (url/path: ${urlOrPath})`,
+      );
     }
   } else if (!ext && mimeType && typeof mimeType === "string") {
     // Incase we couldn't get the file extension from the url/path but we were given the mime type, try to derive it
@@ -56,7 +61,7 @@ export function guessMediaInfoFromUrl<
     ext = mimeTypes.extension(mimeType) || "";
     if (!ext) {
       throw new Error(
-        `Couldn't derive file extension from mime type "${mimeType}"`,
+        `Couldn't derive file extension from mime type "${mimeType}" (url/path: ${urlOrPath})`,
       );
     }
   }
@@ -149,4 +154,24 @@ function guessBasicMediaType({
     throw new Error(`Unable to determine type of media: ${mimeType || ext}`);
   }
   throw new Error(`Resource does not appear to be media: ${mimeType || ext}`);
+}
+
+let _validMediaExtensions: string[] | null = null;
+function getValidMediaExtentions() {
+  if (!_validMediaExtensions) {
+    const validMediaExtensions = [];
+    for (const [mimeType, mimeInfo] of Object.entries(rawMimeDb)) {
+      try {
+        guessBasicMediaType({ mimeType: mimeType });
+      } catch (e) {
+        // Skip any mime types that don't appear to be media
+        continue;
+      }
+      if (mimeInfo.extensions) {
+        validMediaExtensions.push(...mimeInfo.extensions);
+      }
+    }
+    _validMediaExtensions = validMediaExtensions;
+  }
+  return _validMediaExtensions;
 }

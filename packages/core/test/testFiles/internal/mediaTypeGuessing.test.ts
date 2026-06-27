@@ -60,6 +60,20 @@ test.extend({ url })(`Guess media type from "${url}"`, ({ url }) => {
   });
 });
 
+url =
+  "https://d-cdn77.cdn.tld/c6371/videos/202606/09/51694935/original_51694935.mov/plain/ex:1:no/bg:0:0:0/rs:fit:320:180/vts:4.9?hash=xki2PucwQ5tJ_4fZX9-xv_8aA2M=&validto=1782461954";
+test.extend({ url })(`Guess media type from "${url}"`, ({ url }) => {
+  const res = guessMediaInfoFromUrl(url);
+  expect(res).toStrictEqual({
+    url,
+    ext: "mov",
+    mimeType: "video/quicktime",
+    video: true,
+    image: false,
+    audio: undefined,
+  });
+});
+
 url = "http://example.com/path/file";
 test.extend({ url })(
   `Throw when guessing media type from "${url}"`,
@@ -75,7 +89,7 @@ test.extend({ url })(
   `Throw when guessing media type from "${url}"`,
   ({ url }) => {
     expect(() => guessMediaInfoFromUrl(url)).toThrow(
-      /Couldn't derive mime type from extension/,
+      /Couldn't derive file type from/,
     );
   },
 );
