@@ -130,7 +130,7 @@ type ConstructorExecutionErrorOptions = {
 };
 export class ConstructorExecutionError extends Error {
   errorOccurredAtPath;
-  log;
+  #log;
   actionContext;
 
   constructor({
@@ -148,7 +148,9 @@ export class ConstructorExecutionError extends Error {
     // Use class name as the name of the error
     ConstructorExecutionError.prototype.name = this.constructor.name;
     this.errorOccurredAtPath = actionContext.path;
-    this.log = log;
+    // We make log private so that vitest doesn't try to serialize it when printing the error as logs can be massive
+    // and are likely to confuse things more than they help.
+    this.#log = log;
     this.actionContext = actionContext;
 
     this.message = this.getFormattedErrorInfo();
@@ -156,6 +158,10 @@ export class ConstructorExecutionError extends Error {
     // Explicitly set the prototype to maintain the correct prototype chain is
     // required for "instanceOf" to work as expected
     Object.setPrototypeOf(this, ConstructorExecutionError.prototype);
+  }
+
+  getLog() {
+    return this.#log.join("\n");
   }
 
   getFormattedErrorInfo() {

@@ -17,9 +17,10 @@ const errorThrowingSource = {
       paginationType: "none" as const,
       responses: [
         {
-          schema: z.object({}).passthrough(),
+          schema: z.object({ prop1: z.string() }),
           constructor: {
-            _setup: () => {
+            _setup: () => true,
+            prop1: () => {
               throw new Error("original error");
             },
           },
@@ -45,6 +46,9 @@ test("errors thrown during query execution are wrapped in QueryError with reques
   expect(error.message).toContain('"source":"error-throwing"');
   expect(error.message).toContain('"queryType":"test-query"');
   expect(error.cause).toBeDefined();
+  expect(error.cause.getLog()).toBe(
+    "Executing action for $._setup\nExecuting action for $.prop1",
+  );
 });
 
 test("QueryError message includes sanitized secrets when secrets are present", async () => {
