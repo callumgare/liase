@@ -10,7 +10,7 @@ export function guessMediaInfoFromUrl<
     audio?: boolean;
   },
 >(
-  url: string,
+  urlOrPath: string,
   additionalValues: AdditionalValues = {} as AdditionalValues,
 ): {
   url: string;
@@ -20,20 +20,52 @@ export function guessMediaInfoFromUrl<
   image: boolean;
   audio?: boolean;
 } & AdditionalValues {
-  let ext = additionalValues?.ext || url.match(/\.(\w+)(?:\?[^?]*)?$/)?.[1];
+  let url = null;
+  let path: string;
+  try {
+    const fallbackDomain = "fallback:/";
+    const urlObj = new URL(urlOrPath, fallbackDomain);
+    path = urlObj.pathname;
+    if (!urlObj.href.startsWith(fallbackDomain)) {
+      url = urlObj.href;
+    }
+  } catch (error) {
+    throw new Error(`Invalid URL/path: ${urlOrPath}`);
+  }
+  // If not given the file extension try to extract from the url/path.
+  let ext = additionalValues?.ext;
+  if (!ext) {
+    for (const pathSegment of path.split("/").reverse()) {
+      ext = pathSegment.match(/\.([a-zA-Z0-9]+)$/)?.[1];
+      if (ext) {
+        break;
+      }
+    }
+  }
+
+  // If not given the mime type try to derive from the file extension.
   let mimeType = additionalValues?.mimeType;
   if (!mimeType && ext && typeof ext === "string") {
     mimeType = mimeTypes.lookup(ext) || "";
+    if (!mimeType) {
+      throw new Error(`Couldn't derive mime type from extension "${ext}"`);
+    }
   } else if (!ext && mimeType && typeof mimeType === "string") {
+    // Incase we couldn't get the file extension from the url/path but we were given the mime type, try to derive it
+    // from the mime type.
     ext = mimeTypes.extension(mimeType) || "";
+    if (!ext) {
+      throw new Error(
+        `Couldn't derive file extension from mime type "${mimeType}"`,
+      );
+    }
   }
   if (!ext || !mimeType) {
-    console.info(`url: ${url}\next: ${ext}\nmimeType: ${mimeType}`);
-    throw new Error("Couldn't derive file type");
+    throw new Error(`Couldn't derive file type from url/path "${urlOrPath}"`);
   }
   const { video, image, audio } = guessBasicMediaType({ mimeType, ext });
   return {
-    url,
+    url: urlOrPath, // we return as `url` for backwards compatibility
     ext,
     mimeType,
     video,

@@ -47,15 +47,36 @@ test.extend({ url })(`Guess media type from "${url}"`, ({ url }) => {
   });
 });
 
+url = "/path/file.avi/subpath/final.sub-path";
+test.extend({ url })(`Guess media type from "${url}"`, ({ url }) => {
+  const res = guessMediaInfoFromUrl(url);
+  expect(res).toStrictEqual({
+    url,
+    ext: "avi",
+    mimeType: "video/x-msvideo",
+    video: true,
+    image: false,
+    audio: undefined,
+  });
+});
+
 url = "http://example.com/path/file";
 test.extend({ url })(
   `Throw when guessing media type from "${url}"`,
   ({ url }) => {
-    vi.spyOn(console, "info").mockImplementation(() => {});
-    expect(() => guessMediaInfoFromUrl(url)).toThrowError(
+    expect(() => guessMediaInfoFromUrl(url)).toThrow(
       /Couldn't derive file type/,
     );
-    vi.restoreAllMocks();
+  },
+);
+
+url = "http://example.com/path/file.invalidext";
+test.extend({ url })(
+  `Throw when guessing media type from "${url}"`,
+  ({ url }) => {
+    expect(() => guessMediaInfoFromUrl(url)).toThrow(
+      /Couldn't derive mime type from extension/,
+    );
   },
 );
 
@@ -110,7 +131,7 @@ mimeType = "invalid/mime/type";
 test.extend({ mimeType })(
   "Throw when guessing media type from invalid mime type",
   ({ mimeType }) => {
-    expect(() => guessMediaInfoFromMimeType(mimeType)).toThrowError(
+    expect(() => guessMediaInfoFromMimeType(mimeType)).toThrow(
       /Resource does not appear to be media/,
     );
   },
