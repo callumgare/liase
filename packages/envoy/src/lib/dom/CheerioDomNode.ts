@@ -33,6 +33,10 @@ export class CheerioDomNode extends DomNode {
       return this.get(parsedSelector).length > 0;
     }
 
+    if (parsedSelector.type === "text") {
+      return this.text === parsedSelector.query;
+    }
+
     return this.#$node.is(parsedSelector.query);
   }
 
@@ -44,6 +48,10 @@ export class CheerioDomNode extends DomNode {
     }
 
     if (parsedSelector.type === "xpath") {
+      return this.getFirst(parsedSelector);
+    }
+
+    if (parsedSelector.type === "text") {
       return this.getFirst(parsedSelector);
     }
 
@@ -102,6 +110,14 @@ export class CheerioDomNode extends DomNode {
 
   get siblings(): CheerioDomSelection {
     return new CheerioDomSelection(this.#$, this.#$node.siblings());
+  }
+
+  get previousSiblings(): CheerioDomSelection {
+    return new CheerioDomSelection(this.#$, this.#$node.prevAll());
+  }
+
+  get nextSiblings(): CheerioDomSelection {
+    return new CheerioDomSelection(this.#$, this.#$node.nextAll());
   }
 
   get previousSibling(): CheerioDomNode | null {

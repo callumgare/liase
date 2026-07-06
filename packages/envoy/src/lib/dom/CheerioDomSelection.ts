@@ -120,6 +120,16 @@ export class CheerioDomSelection extends DomSelection {
       return this.#selectXpath(parsedSelector.query);
     }
 
+    if (parsedSelector.type === "text") {
+      return new CheerioDomSelection(
+        this.#$,
+        this.#$node.find("*").filter((_, node) => {
+          const text = this.#$(node).text();
+          return text === parsedSelector.query;
+        }),
+      );
+    }
+
     return new CheerioDomSelection(
       this.#$,
       this.#$node.find(parsedSelector.query),
@@ -150,6 +160,16 @@ export class CheerioDomSelection extends DomSelection {
         this.#$node.filter((_, node) => {
           const html = this.#$.html(node) ?? "";
           return matchedNodes.has(html);
+        }),
+      );
+    }
+
+    if (parsedSelector.type === "text") {
+      return new CheerioDomSelection(
+        this.#$,
+        this.#$node.filter((_, node) => {
+          const text = this.#$(node).text();
+          return text === parsedSelector.query;
         }),
       );
     }

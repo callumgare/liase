@@ -2,7 +2,7 @@ import type { DomNode } from "./DomNode.js";
 
 export type DomSelector =
   | {
-      type: "css" | "xpath";
+      type: "css" | "xpath" | "text";
       query: string;
     }
   | {
@@ -27,6 +27,10 @@ export function normaliseDomSelector(
 
   if (selector.startsWith("xpath=")) {
     return { type: "xpath", query: selector.slice(6) };
+  }
+
+  if (selector.startsWith("text=")) {
+    return { type: "text", query: selector.slice(5) };
   }
 
   return { type: "css", query: selector };

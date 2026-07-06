@@ -76,6 +76,16 @@ export class PlaywrightDomSelection extends RenderedDomSelection {
       });
     }
 
+    if (parsedSelector.type === "text") {
+      return new PlaywrightDomSelection({
+        page: this.#page,
+        locator: this.#locator.locator("*", {
+          hasText: parsedSelector.query,
+        }),
+        snapshot: this.#snapshot.get(parsedSelector),
+      });
+    }
+
     return new PlaywrightDomSelection({
       page: this.#page,
       locator: this.#locator.locator(parsedSelector.query),
@@ -105,6 +115,14 @@ export class PlaywrightDomSelection extends RenderedDomSelection {
         locator: this.#locator.and(
           this.#page.locator(`xpath=${parsedSelector.query}`),
         ),
+        snapshot: this.#snapshot.filter(parsedSelector),
+      });
+    }
+
+    if (parsedSelector.type === "text") {
+      return new PlaywrightDomSelection({
+        page: this.#page,
+        locator: this.#locator.filter({ hasText: parsedSelector.query }),
         snapshot: this.#snapshot.filter(parsedSelector),
       });
     }

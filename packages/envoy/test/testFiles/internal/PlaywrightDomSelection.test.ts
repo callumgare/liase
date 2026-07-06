@@ -257,4 +257,41 @@ describe("PlaywrightDomSelection", () => {
 
     await result.close();
   });
+
+  it("supports text selectors with exact text matching", async () => {
+    const result = await boundEnvoy(serverUrl, {
+      agent: "playwright",
+      responseType: "rendered dom",
+    });
+
+    const root = await result.dom;
+    const titles = root.get(".name");
+    const nodeA = assertNode(root.getFirst("#a"));
+    const alpha = assertNode(root.getFirst({ type: "text", query: "Alpha" }));
+    expect(alpha.text).toBe("Alpha");
+
+    expect(root.get({ type: "text", query: "Alpha" }).length).toBe(1);
+    expect(root.get({ type: "text", query: "Does not exist" }).length).toBe(0);
+    expect(root.get("text=Beta").length).toBe(1);
+
+    // DomSelection methods that accept DomSelector
+    expect(titles.get({ type: "text", query: "Alpha" }).length).toBe(0);
+    expect(titles.getFirst({ type: "text", query: "Alpha" })).toBeNull();
+    expect(titles.filter({ type: "text", query: "Alpha" }).length).toBe(1);
+    expect(titles.anyMatches({ type: "text", query: "Alpha" })).toBe(true);
+    expect(titles.allMatches({ type: "text", query: "Alpha" })).toBe(false);
+    expect(titles.first({ type: "text", query: "Alpha" })?.text).toBe("Alpha");
+    expect(titles.last({ type: "text", query: "Beta" })?.text).toBe("Beta");
+
+    // DomNode methods that accept DomSelector
+    expect(nodeA.get({ type: "text", query: "Alpha" }).length).toBe(1);
+    expect(nodeA.getFirst({ type: "text", query: "Alpha" })?.text).toBe(
+      "Alpha",
+    );
+    expect(alpha.matches({ type: "text", query: "Alpha" })).toBe(true);
+    expect(alpha.matches({ type: "text", query: "Beta" })).toBe(false);
+    expect(alpha.closest({ type: "text", query: "Alpha" })).toBeNull();
+
+    await result.close();
+  });
 });
