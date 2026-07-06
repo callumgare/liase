@@ -1,5 +1,5 @@
 import { DomNode, DomSelection } from "@liase/envoy";
-import { ActionContext, excludeFieldSymbol } from "./ActionContext.js";
+import { ActionContext, excludeFieldMarker } from "./ActionContext.js";
 import {
   ConstructorExecutionError,
   formatObjectPath,
@@ -123,7 +123,7 @@ export async function executeConstructorObject(
   // Remove any fields/array elements who's value is the ExcludeField symbol
   for (const key of Object.keys(awaitedReturnObject)) {
     const value = awaitedReturnObject[key];
-    if (value === excludeFieldSymbol) {
+    if (value === excludeFieldMarker) {
       delete awaitedReturnObject[key];
     }
   }
@@ -182,7 +182,7 @@ export async function executeConstructorArray(
 
   const awaitedReturnArray = await Promise.all(resultArray);
   // Remove any array elements who's value is the ExcludeField symbol
-  return awaitedReturnArray.filter((element) => element !== excludeFieldSymbol);
+  return awaitedReturnArray.filter((element) => element !== excludeFieldMarker);
 }
 
 async function executeAction(

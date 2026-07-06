@@ -21,7 +21,7 @@ import type { RequestHandler } from "./schemas/requestHandler.js";
 import type { GenericSecrets } from "./schemas/secrets.js";
 import type { ConstructorExecutionContext } from "./types.js";
 
-export const excludeFieldSymbol = Symbol("ExcludeField");
+export const excludeFieldMarker = Symbol("ExcludeField");
 
 export class ActionContext extends Function {
   constructor(args: {
@@ -327,7 +327,7 @@ export class ActionContext extends Function {
     return totalSeconds;
   };
 
-  excludeField = excludeFieldSymbol;
+  excludeField = excludeFieldMarker;
 
   get path() {
     return this.#path;
