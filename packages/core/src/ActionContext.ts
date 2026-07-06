@@ -190,7 +190,7 @@ export class ActionContext extends Function {
       // Page responses are interactive — record the URL but not the body
       stringifiedBody = `[Playwright page: ${response.finalUrl}]`;
     } else if (response.type === "dom") {
-      stringifiedBody = await response.html();
+      stringifiedBody = response.html;
     } else if (response.type === "text") {
       stringifiedBody = response.data;
     } else {

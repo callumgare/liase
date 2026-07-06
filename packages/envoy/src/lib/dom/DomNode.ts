@@ -43,6 +43,12 @@ export abstract class DomNode {
   // Returns sibling nodes.
   abstract get siblings(): DomSelection;
 
+  // Returns all siblings that appear before this node.
+  abstract get previousSiblings(): DomSelection;
+
+  // Returns all siblings that appear after this node.
+  abstract get nextSiblings(): DomSelection;
+
   // Returns the previous sibling node.
   abstract get previousSibling(): DomNode | null;
 

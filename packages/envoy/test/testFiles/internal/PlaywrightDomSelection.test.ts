@@ -103,6 +103,8 @@ describe("PlaywrightDomSelection", () => {
     const rootFirst = assertNode(root.first());
     const nodeARootParent = assertNode(nodeA.parent);
     const nodeAFirstChild = assertNode(nodeA.children.first());
+    const nodeBPreviousSiblings = nodeB.previousSiblings;
+    const nodeANextSiblings = nodeA.nextSiblings;
     const nodeBPreviousSibling = assertNode(nodeB.previousSibling);
     const nodeANextSibling = assertNode(nodeA.nextSibling);
     const itemsFirst = assertNode(items.first());
@@ -149,6 +151,10 @@ describe("PlaywrightDomSelection", () => {
     expect(nodeA.parents.anyMatches("body")).toBe(true);
     expect(nodeAFirstChild.text).toBe("Alpha");
     expect(nodeA.siblings.length).toBeGreaterThan(1);
+    expect(nodeBPreviousSiblings.length).toBeGreaterThanOrEqual(1);
+    expect(nodeBPreviousSiblings.first()?.attr("id")).toBe("a");
+    expect(nodeANextSiblings.length).toBeGreaterThanOrEqual(1);
+    expect(nodeANextSiblings.first()?.attr("id")).toBe("b");
     expect(nodeBPreviousSibling.attr("id")).toBe("a");
     expect(nodeANextSibling.attr("id")).toBe("b");
     expect(itemsFirst.attr("id")).toBe("a");
@@ -158,6 +164,7 @@ describe("PlaywrightDomSelection", () => {
     expect(root.getFirst("#missing")).toBeNull();
     expect(items.first({ type: "css", query: "#missing" })).toBeNull();
     expect(nodeA.previousSibling).toBeNull();
+    expect(nodeA.previousSiblings.length).toBe(0);
 
     expect(await result.firstJsonLD).toMatchObject({ "@type": "WebPage" });
     expect(await result.jsonLD).toHaveLength(1);
@@ -245,8 +252,8 @@ describe("PlaywrightDomSelection", () => {
     await nav.click();
     await navPromise;
 
-    expect(await result.html()).toContain("Next page");
-    expect(await result.title()).toBe("Next");
+    expect(await result.html).toContain("Next page");
+    expect(await result.title).toBe("Next");
 
     await result.close();
   });

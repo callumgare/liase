@@ -155,8 +155,8 @@ describe("envoy response handles", () => {
     expect(await response.firstJsonLD).toEqual({});
     expect(await response.canonicalUrl).toBeUndefined();
 
-    expect(await response.title()).toBe("Root");
-    expect(await response.html()).toContain("Root Page");
+    expect(await response.title).toBe("Root");
+    expect(await response.html).toContain("Root Page");
 
     const screenshot = await response.screenshot();
     expect(screenshot.byteLength).toBeGreaterThan(0);
@@ -170,8 +170,8 @@ describe("envoy response handles", () => {
     await assertNode((await response.dom).getFirst("#go")).click();
     await navPromise;
 
-    expect(await response.html()).toContain("Next Page");
-    expect(await response.title()).toBe("Next");
+    expect(await response.html).toContain("Next Page");
+    expect(await response.title).toBe("Next");
 
     await response.close();
   });

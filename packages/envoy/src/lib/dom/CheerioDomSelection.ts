@@ -1,4 +1,4 @@
-import { DOMParser } from "@xmldom/xmldom";
+import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
 import type { Cheerio, CheerioAPI } from "cheerio";
 import * as cheerio from "cheerio";
 import type { AnyNode } from "domhandler";
@@ -55,7 +55,7 @@ export class CheerioDomSelection extends DomSelection {
 
     const fragments = this.#$node
       .toArray()
-      .map((node) => this.#$.html(node) ?? "")
+      .map((node) => this.#$.xml(node) ?? "")
       .filter(Boolean)
       .map((fragment) => fragment.replace(/<!doctype[^>]*>/gi, ""))
       .map(xmlSafeFragment);
@@ -76,11 +76,26 @@ export class CheerioDomSelection extends DomSelection {
       ? xpathResult
       : [xpathResult];
 
-    const resultNodes = selectedValues
-      .filter((value): value is Node => xpath.isNodeLike(value))
-      .map((node) => node.toString());
+    const serializer = new XMLSerializer();
+    const resultNodes = selectedValues.flatMap((value) => {
+      if (
+        typeof value !== "object" ||
+        value === null ||
+        !("nodeType" in value)
+      ) {
+        return [];
+      }
 
-    const $ = cheerio.load(`<liase-root>${resultNodes.join("")}</liase-root>`);
+      return [
+        serializer.serializeToString(
+          value as unknown as Parameters<XMLSerializer["serializeToString"]>[0],
+        ),
+      ];
+    });
+
+    const $ = cheerio.load(`<liase-root>${resultNodes.join("")}</liase-root>`, {
+      xmlMode: true,
+    });
     return new CheerioDomSelection($, $("liase-root").children());
   }
 

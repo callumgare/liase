@@ -89,8 +89,8 @@ describe("envoy with responseType: page (Playwright)", () => {
     expect(result.cached).toBe(false);
     expect(result.cachedOn).toBe(null);
     expect(typeof result.close).toBe("function");
-    expect(typeof result.html).toBe("function");
-    expect(typeof result.title).toBe("function");
+    expect(result.html).toBeInstanceOf(Promise);
+    expect(await result.title).toBe("Playwright Test Page");
     expect(typeof result.refetch).toBe("function");
     expect(typeof result.refresh).toBe("function");
     expect(typeof result.screenshot).toBe("function");
@@ -115,21 +115,21 @@ describe("envoy with responseType: page (Playwright)", () => {
   });
 
   it("dom selection supports interactive fill and click", async () => {
-    const { dom, html, close } = await boundEnvoy(serverUrl, {
+    const result = await boundEnvoy(serverUrl, {
       agent: "playwright",
       responseType: "rendered dom",
     });
 
-    const selection = await dom;
+    const selection = await result.dom;
     await assertNode(selection.getFirst("#text-input")).fill(
       "hello playwright",
     );
     await assertNode(selection.getFirst("#submit-btn")).click();
 
-    const renderedHtml = await html();
+    const renderedHtml = await result.html;
     expect(renderedHtml).toContain('<p id="result">hello playwright</p>');
 
-    await close();
+    await result.close();
   });
 
   it("browser is lazily started — not running before first call", async () => {

@@ -206,8 +206,13 @@ export async function envoy(
         jsonLD,
         firstJsonLD,
         canonicalUrl,
+        get title(): string {
+          return dom.getFirst("title")?.text ?? "";
+        },
+        get html(): string {
+          return body;
+        },
         refetch: async () => {},
-        html: async () => body,
         statusCode,
         headers,
         cached: Boolean(cachedOn),
@@ -334,6 +339,12 @@ export async function envoy(
             dom.getFirst("link[rel=canonical]")?.attr("href"),
           );
         },
+        get title(): Promise<string> {
+          return page.title();
+        },
+        get html(): Promise<string> {
+          return page.content();
+        },
         screenshot: () => page.screenshot(),
         waitForUrl: async () => {
           await page.waitForURL("**");
@@ -344,8 +355,6 @@ export async function envoy(
         refresh: async () => {
           await page.reload();
         },
-        html: () => page.content(),
-        title: () => page.title(),
         statusCode,
         headers,
         cached: false,

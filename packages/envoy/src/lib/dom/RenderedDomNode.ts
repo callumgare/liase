@@ -23,6 +23,12 @@ export abstract class RenderedDomNode extends DomNode {
   // Returns siblings with rendered capabilities.
   abstract get siblings(): RenderedDomSelection;
 
+  // Returns all previous siblings with rendered capabilities.
+  abstract get previousSiblings(): RenderedDomSelection;
+
+  // Returns all next siblings with rendered capabilities.
+  abstract get nextSiblings(): RenderedDomSelection;
+
   // Returns the previous sibling with rendered capabilities.
   abstract get previousSibling(): RenderedDomNode | null;
 

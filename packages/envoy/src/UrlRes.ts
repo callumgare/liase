@@ -32,13 +32,21 @@ export type UrlResDom = UrlRes<"dom"> & {
   jsonLD: Array<Record<string, unknown>>;
   firstJsonLD: Record<string, unknown>;
   canonicalUrl: string | undefined;
+  title: string;
+  html: string;
   refetch(): Promise<void>;
-  html(): Promise<string>;
 };
 
 export type UrlResRenderedDom = Omit<
   UrlResDom,
-  "type" | "dom" | "root" | "jsonLD" | "firstJsonLD" | "canonicalUrl"
+  | "type"
+  | "dom"
+  | "root"
+  | "jsonLD"
+  | "firstJsonLD"
+  | "canonicalUrl"
+  | "title"
+  | "html"
 > & {
   type: "rendered dom";
   dom: Promise<RenderedDomSelection>;
@@ -46,7 +54,8 @@ export type UrlResRenderedDom = Omit<
   jsonLD: Promise<Array<Record<string, unknown>>>;
   firstJsonLD: Promise<Record<string, unknown>>;
   canonicalUrl: Promise<string | undefined>;
-  title(): Promise<string>;
+  title: Promise<string>;
+  html: Promise<string>;
   refresh(): Promise<void>;
   screenshot(): Promise<Buffer>;
   waitForUrl(): Promise<void>;
