@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import type { Constructor, RequestHandler } from "@liase/core";
-import type { DomSelection } from "@liase/core/dist/DomSelection.js";
+import type { DomNode } from "@liase/core/envoy";
 import { rootUrl, sourceId } from "../shared.js";
 import { pageOfMediaResponseSchema } from "../types.js";
 
@@ -10,8 +10,8 @@ const responseConstructor = {
     const res = await $.loadUrl(`${rootUrl}index.html`);
     const categorySlugMap = Object.fromEntries(
       res.root
-        .select(".side_categories ul li a")
-        .map((elm: DomSelection) => [
+        .get(".side_categories ul li a")
+        .map((elm: DomNode) => [
           (elm.text as string).trim(),
           elm.attr("href")?.split("/").at(-2),
         ]),
@@ -35,12 +35,12 @@ const responseConstructor = {
     pageNumber: ($) =>
       Number.parseInt(
         $()
-          .select(".pager .current")
+          .get(".pager .current")
           .text?.match(/^Page (\d+)/)?.[1] ?? "1",
       ),
     totalPages: ($) =>
       Number.parseInt(
-        $().select(".pager .current").text?.match(/\d+$/)?.[0] ?? "1",
+        $().get(".pager .current").text?.match(/\d+$/)?.[0] ?? "1",
       ),
     isLastPage: ($) => !$().exists(".pager .next"),
     url: ($) => $("url"),
@@ -48,18 +48,20 @@ const responseConstructor = {
   },
   media: [
     {
-      _arrayMap: ($) => $().select(".row li article"),
+      _arrayMap: ($) => $().get(".row li article"),
       _setup: ($) => {
-        $.set("mediaId", $().select("h3 a").attr("href")?.split("/").at(-2));
+        $.set("mediaId", $().getFirst("h3 a").attr("href")?.split("/").at(-2));
       },
       liaseSource: sourceId,
       id: ($) => $("mediaId"),
       url: ($) => `${rootUrl}catalogue/${$("mediaId")}/index.html`,
-      title: ($) => $().select("h3").text,
+      title: ($) => $().getFirst("h3 a").text,
       files: [
         {
           _setup: ($) => {
-            const relativeUrl = $().select(".image_container img").attr("src");
+            const relativeUrl = $()
+              .getFirst(".image_container img")
+              .attr("src");
             const url = new URL(relativeUrl, $("url"));
             return $.guessMediaInfoFromUrl(url.href);
           },
@@ -76,7 +78,7 @@ const responseConstructor = {
   request: ($) => $.request,
 } satisfies Constructor;
 
-export default {
+const requestHandler: RequestHandler = {
   id: "search",
   displayName: "Search",
   description: "Finds books by category.",
@@ -95,4 +97,6 @@ export default {
       constructor: responseConstructor,
     },
   ],
-} as const satisfies RequestHandler;
+};
+
+export default requestHandler;

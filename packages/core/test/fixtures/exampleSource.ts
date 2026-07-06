@@ -64,7 +64,7 @@ export default {
                 id: "1234",
                 title: ($) =>
                   $.request.id === "test-getWebpage"
-                    ? $().root.select("h1")
+                    ? $().root.get("h1")
                     : "Media Title",
                 files: [],
               },

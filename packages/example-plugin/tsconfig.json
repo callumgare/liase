@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "outDir": "./dist/",
-    "rootDir": "./src",
+    "rootDir": ".",
     "declaration": true,
     "declarationMap": true,
     "forceConsistentCasingInFileNames": true,
@@ -10,6 +10,7 @@
       "@/src/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist", "coverage", ".turbo"],
   "extends": "@tsconfig/node21/tsconfig.json"
 }

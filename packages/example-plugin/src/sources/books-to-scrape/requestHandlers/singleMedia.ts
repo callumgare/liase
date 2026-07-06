@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { RequestHandler } from "@liase/core";
+import type { Constructor, RequestHandler } from "@liase/core";
 import { rootUrl, sourceId } from "../shared.js";
 import { singleMediaResponseSchema } from "../types.js";
 
@@ -12,7 +12,42 @@ const requestSchema = z
   })
   .strict();
 
-export default {
+const responseConstructor = {
+  _setup: async ($) => {
+    const encodedId = encodeURIComponent($.request.id);
+    $.set("url", `${rootUrl}catalogue/${encodedId}/index.html`);
+    return $.loadUrl($("url")).then((res) => res.root);
+  },
+  media: [
+    {
+      liaseSource: sourceId,
+      id: ($) => $.request.id,
+      url: ($) => $("url"),
+      title: ($) => $().getFirst(".product_page h1").text,
+      description: ($) => $().getFirst("#product_description + p").text,
+      files: [
+        {
+          _setup: ($) => {
+            const relativeUrl = $()
+              .getFirst("#product_gallery img")
+              .attr("src");
+            const url = new URL(relativeUrl, $("url"));
+            return $.guessMediaInfoFromUrl(url.href);
+          },
+          type: "full",
+          url: ($) => $().url,
+          ext: ($) => $().ext,
+          mimeType: ($) => $().mimeType,
+          image: ($) => $().image,
+          video: ($) => $().video,
+        },
+      ],
+    },
+  ],
+  request: ($) => $.request,
+} satisfies Constructor;
+
+const requestHandler: RequestHandler = {
   id: "single-media",
   displayName: "Single media",
   description: "Find book with given id",
@@ -21,40 +56,9 @@ export default {
   responses: [
     {
       schema: singleMediaResponseSchema.extend({ request: requestSchema }),
-      constructor: {
-        _setup: async ($) => {
-          const encodedId = encodeURIComponent($.request.id);
-          $.set("url", `${rootUrl}catalogue/${encodedId}/index.html`);
-          return $.loadUrl($("url")).then((res) => res.root);
-        },
-        media: [
-          {
-            liaseSource: sourceId,
-            id: ($) => $.request.id,
-            url: ($) => $("url"),
-            title: ($) => $().select(".product_page h1").text,
-            description: ($) => $().select("#product_description + p").text,
-            files: [
-              {
-                _setup: ($) => {
-                  const relativeUrl = $()
-                    .select("#product_gallery img")
-                    .attr("src");
-                  const url = new URL(relativeUrl, $("url"));
-                  return $.guessMediaInfoFromUrl(url.href);
-                },
-                type: "full",
-                url: ($) => $().url,
-                ext: ($) => $().ext,
-                mimeType: ($) => $().mimeType,
-                image: ($) => $().image,
-                video: ($) => $().video,
-              },
-            ],
-          },
-        ],
-        request: ($) => $.request,
-      },
+      constructor: responseConstructor,
     },
   ],
-} as const satisfies RequestHandler;
+};
+
+export default requestHandler;

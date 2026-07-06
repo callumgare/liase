@@ -1,5 +1,5 @@
+import { DomNode, DomSelection } from "@liase/envoy";
 import { ActionContext, excludeFieldSymbol } from "./ActionContext.js";
-import { DomSelection } from "./DomSelection.js";
 import {
   ConstructorExecutionError,
   formatObjectPath,
@@ -33,9 +33,15 @@ export async function executeConstructor(
     if (typeof constructorDef === "function") {
       return executeAction(constructorDef, context)
         .then((context) => context.lastResult())
-        .then((result) =>
-          result instanceof DomSelection ? result.text : result,
-        );
+        .then((result) => {
+          if (result instanceof DomNode) {
+            return result.text;
+          }
+          if (result instanceof DomSelection) {
+            return result.map((node) => node.text).join(" ");
+          }
+          return result;
+        });
     }
     return constructorDef;
   } catch (error) {
@@ -152,7 +158,7 @@ export async function executeConstructorArray(
       if (Array.isArray(data)) {
         elementsToMap = data;
       } else if (data instanceof DomSelection) {
-        elementsToMap = data.selectedNodes;
+        elementsToMap = data.nodes;
       } else {
         throw handleExecutionError(
           new Error(

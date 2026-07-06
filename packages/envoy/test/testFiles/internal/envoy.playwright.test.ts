@@ -1,8 +1,8 @@
 /**
- * Tests for the Playwright `responseType: "page"` support in loadUrl.
+ * Tests for the Playwright `responseType: "page"` support in envoy.
  *
  * These tests verify:
- * 1. loadUrl returns a Page object for responseType:"page"
+ * 1. envoy returns a Page object for responseType:"page"
  * 2. The page can be used interactively (fill, click, navigate)
  * 3. close() releases the page
  * 4. The browser is lazily started (not running before first call)
@@ -10,18 +10,18 @@
  */
 
 import { type Server, createServer } from "node:http";
-import { PlaywrightDomSelection } from "@/src/DomSelection.js";
+import { envoy } from "@/src/envoy.js";
+import { PlaywrightDomSelection } from "@/src/lib/dom/PlaywrightDomSelection.js";
 import {
   isBrowserRunning,
   shutdownBrowser,
 } from "@/src/lib/playwrightBrowser.js";
-import { loadUrl } from "@/src/loadUrl.js";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-// loadUrl uses `this.cacheNetworkRequests`; bind a minimal context and cast to
-// preserve the overload signatures (loadUrl.call() drops overload dispatch).
+// envoy uses `this.cacheNetworkRequests`; bind a minimal context and cast to
+// preserve the overload signatures (envoy.call() drops overload dispatch).
 const callCtx = { cacheNetworkRequests: "never" as const };
-const boundLoadUrl = loadUrl.bind(callCtx) as typeof loadUrl;
+const boundEnvoy = envoy.bind(callCtx) as typeof envoy;
 
 // Simple HTML server for testing page interaction
 let server: Server;
@@ -57,7 +57,16 @@ function stopTestServer() {
   });
 }
 
-describe("loadUrl with responseType: page (Playwright)", () => {
+function assertNode<T>(value: T | null): T {
+  expect(value).not.toBeNull();
+  if (value === null) {
+    throw new Error("Expected node to exist");
+  }
+
+  return value;
+}
+
+describe("envoy with responseType: page (Playwright)", () => {
   beforeEach(async () => {
     await startTestServer();
     // Ensure browser is not running before each test
@@ -70,44 +79,55 @@ describe("loadUrl with responseType: page (Playwright)", () => {
   });
 
   it("returns a page response with correct shape", async () => {
-    const result = await boundLoadUrl(serverUrl, {
+    const result = await boundEnvoy(serverUrl, {
       agent: "playwright",
-      responseType: "page",
+      responseType: "rendered dom",
     });
 
-    expect(result.page).toBeDefined();
     expect(result.finalUrl).toMatch(/^http:\/\/127\.0\.0\.1:/);
     expect(result.statusCode).toBe(200);
     expect(result.cached).toBe(false);
     expect(result.cachedOn).toBe(null);
     expect(typeof result.close).toBe("function");
+    expect(typeof result.html).toBe("function");
+    expect(typeof result.title).toBe("function");
+    expect(typeof result.refetch).toBe("function");
+    expect(typeof result.refresh).toBe("function");
+    expect(typeof result.screenshot).toBe("function");
+    expect(typeof result.waitForUrl).toBe("function");
 
+    expect(result.requestedUrl).toBe(serverUrl);
     await result.close();
   });
 
-  it("page object is interactive — can read DOM content", async () => {
-    const { page, close } = await boundLoadUrl(serverUrl, {
+  it("dom selection can read DOM content", async () => {
+    const { dom, close } = await boundEnvoy(serverUrl, {
       agent: "playwright",
-      responseType: "page",
+      responseType: "rendered dom",
     });
 
-    const heading = await page.locator("#heading").textContent();
-    expect(heading).toBe("Hello from test server");
+    const selection = await dom;
+    expect(assertNode(selection.getFirst("#heading")).text).toBe(
+      "Hello from test server",
+    );
 
     await close();
   });
 
-  it("page supports interactive fill and click", async () => {
-    const { page, close } = await boundLoadUrl(serverUrl, {
+  it("dom selection supports interactive fill and click", async () => {
+    const { dom, html, close } = await boundEnvoy(serverUrl, {
       agent: "playwright",
-      responseType: "page",
+      responseType: "rendered dom",
     });
 
-    await page.fill("#text-input", "hello playwright");
-    await page.click("#submit-btn");
+    const selection = await dom;
+    await assertNode(selection.getFirst("#text-input")).fill(
+      "hello playwright",
+    );
+    await assertNode(selection.getFirst("#submit-btn")).click();
 
-    const resultText = await page.locator("#result").textContent();
-    expect(resultText).toBe("hello playwright");
+    const renderedHtml = await html();
+    expect(renderedHtml).toContain('<p id="result">hello playwright</p>');
 
     await close();
   });
@@ -115,9 +135,9 @@ describe("loadUrl with responseType: page (Playwright)", () => {
   it("browser is lazily started — not running before first call", async () => {
     expect(isBrowserRunning()).toBe(false);
 
-    const { close } = await boundLoadUrl(serverUrl, {
+    const { close } = await boundEnvoy(serverUrl, {
       agent: "playwright",
-      responseType: "page",
+      responseType: "rendered dom",
     });
 
     expect(isBrowserRunning()).toBe(true);
@@ -125,17 +145,17 @@ describe("loadUrl with responseType: page (Playwright)", () => {
   });
 
   it("browser stays alive between consecutive page requests", async () => {
-    const r1 = await boundLoadUrl(serverUrl, {
+    const r1 = await boundEnvoy(serverUrl, {
       agent: "playwright",
-      responseType: "page",
+      responseType: "rendered dom",
     });
     await r1.close();
 
     expect(isBrowserRunning()).toBe(true);
 
-    const r2 = await boundLoadUrl(serverUrl, {
+    const r2 = await boundEnvoy(serverUrl, {
       agent: "playwright",
-      responseType: "page",
+      responseType: "rendered dom",
     });
     await r2.close();
 
@@ -143,9 +163,9 @@ describe("loadUrl with responseType: page (Playwright)", () => {
   });
 
   it("shutdownBrowser() immediately stops the browser", async () => {
-    const { close } = await boundLoadUrl(serverUrl, {
+    const { close } = await boundEnvoy(serverUrl, {
       agent: "playwright",
-      responseType: "page",
+      responseType: "rendered dom",
     });
     await close();
 
@@ -160,9 +180,9 @@ describe("loadUrl with responseType: page (Playwright)", () => {
       receivedHeader = req.headers["x-test-header"] as string | undefined;
     });
 
-    const { close } = await boundLoadUrl(serverUrl, {
+    const { close } = await boundEnvoy(serverUrl, {
       agent: "playwright",
-      responseType: "page",
+      responseType: "rendered dom",
       headers: { "x-test-header": "test-value" },
     });
     await close();
@@ -170,30 +190,33 @@ describe("loadUrl with responseType: page (Playwright)", () => {
     expect(receivedHeader).toBe("test-value");
   });
 
-  it("root getter returns a PlaywrightDomSelection with correct DOM content", async () => {
-    const result = await boundLoadUrl(serverUrl, {
+  it("dom getter returns a PlaywrightDomSelection with correct DOM content", async () => {
+    const result = await boundEnvoy(serverUrl, {
       agent: "playwright",
-      responseType: "page",
+      responseType: "rendered dom",
     });
 
-    const root = await result.root;
+    const dom = await result.dom;
 
-    expect(root).toBeInstanceOf(PlaywrightDomSelection);
-    expect(root.select("#heading").text).toBe("Hello from test server");
+    expect(dom).toBeInstanceOf(PlaywrightDomSelection);
+    expect(assertNode(dom.getFirst("#heading")).text).toBe(
+      "Hello from test server",
+    );
+    expect((await result.root).matches("html")).toBe(true);
 
     await result.close();
   });
 
-  it("root getter caches the result — returns the same instance on repeated access", async () => {
-    const result = await boundLoadUrl(serverUrl, {
+  it("dom getter caches the result — returns the same instance on repeated access", async () => {
+    const result = await boundEnvoy(serverUrl, {
       agent: "playwright",
-      responseType: "page",
+      responseType: "rendered dom",
     });
 
-    const root1 = await result.root;
-    const root2 = await result.root;
+    const dom1 = await result.dom;
+    const dom2 = await result.dom;
 
-    expect(root1).toBe(root2);
+    expect(dom1).toBe(dom2);
 
     await result.close();
   });

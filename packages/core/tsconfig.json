@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "noEmit": true,
+    "rootDir": ".",
     "outDir": "./dist/",
     "declaration": true,
     "declarationMap": true,
@@ -10,6 +11,7 @@
       "@/src/*": ["./src/*"]
     }
   },
-  "include": ["./**/*"],
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist", "coverage", ".turbo"],
   "extends": "@tsconfig/node21/tsconfig.json"
 }

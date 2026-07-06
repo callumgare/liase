@@ -3,7 +3,7 @@ import type { Constructor } from "@liase/core";
 export const sourceId = "books-to-scrape";
 export const rootUrl = "https://books.toscrape.com/";
 
-export const mediaResponseConstructor = [
+export const mediaResponseConstructor: Constructor = [
   {
     _arrayMap: ($) => $().data,
     liaseSource: sourceId,
@@ -31,4 +31,4 @@ export const mediaResponseConstructor = [
       },
     ],
   },
-] satisfies Constructor;
+];

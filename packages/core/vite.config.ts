@@ -9,5 +9,6 @@ export default defineConfig({
   },
   test: {
     setupFiles: ["dotenv-flow/config"],
+    exclude: ["dist/**"],
   },
 });

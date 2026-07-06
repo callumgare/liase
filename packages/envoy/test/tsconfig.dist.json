@@ -1,0 +1,12 @@
+{
+  "//": "We compile and distribute the test dir for package-local tests.",
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "../dist/test",
+    "paths": {
+      "@/src/*": ["../dist/*"]
+    }
+  },
+  "include": ["./**/*"]
+}

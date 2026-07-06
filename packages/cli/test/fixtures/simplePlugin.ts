@@ -1,7 +1,7 @@
 import type { Plugin } from "@liase/core";
 import { z } from "zod";
 
-export default {
+const plugin: Plugin = {
   sources: [
     {
       id: "test-source",
@@ -45,4 +45,6 @@ export default {
       ],
     },
   ],
-} satisfies Plugin;
+};
+
+export default plugin;

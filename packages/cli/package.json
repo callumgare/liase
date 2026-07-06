@@ -31,6 +31,7 @@
   "homepage": "https://github.com/callumgare/liase#readme",
   "description": "",
   "dependencies": {
+    "@liase/core": "*",
     "@loopback/http-caching-proxy": "^6.0.14",
     "@refactorjs/http-proxy": "^0.2.14",
     "@types/mime-types": "^3.0.1",
@@ -47,9 +48,6 @@
     "tsx": "^4.19.2",
     "typescript": "^6.0.3",
     "vitest": "^4.1.5"
-  },
-  "peerDependencies": {
-    "@liase/core": "*"
   },
   "overrides": {
     "conventional-changelog-conventionalcommits": ">= 8.0.0"

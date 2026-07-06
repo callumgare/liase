@@ -1,8 +1,9 @@
 import cacache from "cacache";
 import type { OptionsInit as GotOptionsInit } from "got-scraping";
 import stringify from "json-stable-stringify";
-import type { QueryOptions } from "../schemas/queryOptions.js";
 import { headersToNormalisedBasicObject, parseFetchArgs } from "./fetch.js";
+
+export type CacheNetworkRequests = "never" | "auto" | "always" | undefined;
 
 const cacheDir = "/tmp/liase/network-requests-cache/custom";
 
@@ -72,7 +73,7 @@ function getCacheKeyFromReq(req: CacheableRequest): string {
 
 export function addCachingFetchWrapper(
   originalFetch: typeof fetch,
-  cacheNetworkRequests: QueryOptions["cacheNetworkRequests"],
+  cacheNetworkRequests: CacheNetworkRequests,
 ): typeof fetch {
   return async (
     input: Parameters<typeof fetch>[0],

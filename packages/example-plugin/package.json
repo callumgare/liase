@@ -8,7 +8,7 @@
   "main": "dist/index.js",
   "files": ["dist/*"],
   "scripts": {
-    "build": "rm -rf ./dist && tsc && tsc-alias",
+    "build": "rm -rf ./dist && tsc -p ./tsconfig.dist.json && tsc-alias",
     "watch": "npm run build -- --watch",
     "typecheck": "tsc --noEmit",
     "lint": "biome check",

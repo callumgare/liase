@@ -10,7 +10,7 @@
       "env": ["LIASE_SECRETS_FILE", "GIPHY_API_KEY"]
     },
     "typecheck": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^typecheck"]
     },
     "lint": {},
     "lint:fix": {}

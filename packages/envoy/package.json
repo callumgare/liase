@@ -1,0 +1,61 @@
+{
+  "name": "@liase/envoy",
+  "version": "0.0.0-version-set-when-releasing",
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "envoy and DOM selection primitives for Liase",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist/*"],
+  "scripts": {
+    "build": "rm -rf ./dist && tsc -p ./tsconfig.dist.json && tsc-alias",
+    "watch": "tsc -p ./tsconfig.dist.json --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check",
+    "lint:fix": "biome check --fix",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
+  },
+  "keywords": ["media", "envoy"],
+  "author": "Callum Gare <callum@gare.au>",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/callumgare/liase.git"
+  },
+  "dependencies": {
+    "@xmldom/xmldom": "^0.9.8",
+    "cacache": "^20.0.4",
+    "cheerio": "^1.0.0",
+    "deepmerge": "^4.3.1",
+    "domhandler": "^5.0.3",
+    "got-scraping": "^4.2.1",
+    "json-stable-stringify": "^1.2.1",
+    "playwright": "^1.60.0",
+    "xpath": "^0.0.34"
+  },
+  "devDependencies": {
+    "@tsconfig/node21": "^21.0.3",
+    "@types/node": "^25.6.0",
+    "semantic-release": "^25.0.3",
+    "semantic-release-monorepo": "^8.0.2",
+    "tsc-alias": "^1.8.8",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  },
+  "optionalDependencies": {
+    "fsevents": "^2.3.2"
+  },
+  "overrides": {
+    "conventional-changelog-conventionalcommits": ">= 8.0.0"
+  }
+}

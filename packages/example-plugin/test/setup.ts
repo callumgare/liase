@@ -1,7 +1,8 @@
-import { vitestSetupCachingProxy } from "@liase/core/dist/test/utils/globalSetup.js";
-import type { GlobalSetupContext } from "vitest/node";
+import { vitestSetupCachingProxy } from "@liase/core/testing/setup";
 
-export default async function (context: GlobalSetupContext) {
+export default async function (context: {
+  provide: (key: string, value: unknown) => void;
+}) {
   const cleanup = await vitestSetupCachingProxy(context);
 
   return async () => {

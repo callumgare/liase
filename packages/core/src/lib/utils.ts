@@ -143,6 +143,9 @@ export class ConstructorExecutionError extends Error {
 
     if (cause) {
       this.stack = cause.stack;
+      if (cause.cause) {
+        this.cause = cause.cause;
+      }
     }
 
     // Use class name as the name of the error

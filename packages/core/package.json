@@ -6,9 +6,32 @@
   },
   "description": "The easiest way to programmatically fetch media content details on the internet",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/vitest.d.ts",
+      "import": "./dist/testing/vitest.js",
+      "default": "./dist/testing/vitest.js"
+    },
+    "./testing/setup": {
+      "types": "./dist/testing/setup.d.ts",
+      "import": "./dist/testing/setup.js",
+      "default": "./dist/testing/setup.js"
+    },
+    "./envoy": {
+      "types": "./dist/envoy.d.ts",
+      "import": "./dist/envoy.js",
+      "default": "./dist/envoy.js"
+    }
+  },
   "files": ["dist/*"],
   "scripts": {
-    "build": "rm -rf ./dist && tsc -p ./tsconfig.dist.json && tsc -p test/tsconfig.dist.json && tsc-alias",
+    "build": "rm -rf ./dist && tsc -p ./tsconfig.dist.json && tsc-alias",
     "watch": "tsc -p ./tsconfig.dist.json --watch",
     "typecheck": "tsc --noEmit",
     "lint": "biome check",
@@ -26,21 +49,18 @@
     "url": "git+https://github.com/callumgare/liase.git"
   },
   "dependencies": {
+    "@liase/envoy": "*",
     "@atproto/api": "^0.19.13",
     "@refactorjs/http-proxy": "^0.2.14",
     "cacache": "^20.0.4",
     "chalk": "^5.3.0",
-    "cheerio": "^1.0.0",
     "commander": "^14.0.3",
-    "deepmerge": "^4.3.1",
     "dotenv-flow": "^4.1.0",
     "entities": "^8.0.0",
-    "got-scraping": "^4.0.8",
     "json-stable-stringify": "^1.2.1",
     "mime-db": "^1.54.0",
     "mime-types": "^3.0.2",
     "open": "^11.0.0",
-    "playwright": "^1.60.0",
     "pluralize": "^8.0.0",
     "tsx": "^4.15.9",
     "type-fest": "^5.6.0",

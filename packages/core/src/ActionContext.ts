@@ -1,3 +1,10 @@
+import {
+  type UrlResAny,
+  addCachingFetchWrapper,
+  headersToNormalisedBasicObject,
+  envoy as loadUrl,
+  parseFetchArgs,
+} from "@liase/envoy";
 import { decodeHTML } from "entities";
 import {
   guessMediaInfoFromMimeType,
@@ -7,15 +14,7 @@ import {
   generateResponse,
   getResponseDetailsBasedOnRequest,
 } from "./generateResponse.js";
-import { headersToNormalisedBasicObject, parseFetchArgs } from "./lib/fetch.js";
-import { addCachingFetchWrapper } from "./lib/networkRequestsCache.js";
 import type { NetworkRequestsHistoryItem } from "./lib/networkRequestsHistory.js";
-import {
-  type LoadUrlResponse,
-  isLoadUrlResponseDom,
-  isLoadUrlResponsePage,
-  loadUrl,
-} from "./loadUrl.js";
 import type { Action } from "./schemas/constructor.js";
 import type { GenericRequest } from "./schemas/request.js";
 import type { RequestHandler } from "./schemas/requestHandler.js";
@@ -179,35 +178,33 @@ export class ActionContext extends Function {
     return this.#constructorContext.cacheNetworkRequests;
   }
 
-  loadUrl: typeof loadUrl = (async (
-    url: string,
-    options?: Parameters<typeof loadUrl>[1],
-  ) => {
-    const response = (await loadUrl.call(
-      this,
-      url,
-      // @ts-expect-error -- Not sure why ts doesn't like this being undefined
-      options,
-    )) as LoadUrlResponse;
+  loadUrl = (async (url: string, options?: Parameters<typeof loadUrl>[1]) => {
+    const response = await loadUrl.call(this, url, options);
+
+    const requestMethod =
+      options && "method" in options ? (options.method ?? "GET") : "GET";
+    const requestBody = options && "body" in options ? options.body : undefined;
 
     let stringifiedBody: string;
-    if (isLoadUrlResponsePage(response)) {
+    if (response.type === "rendered dom") {
       // Page responses are interactive — record the URL but not the body
       stringifiedBody = `[Playwright page: ${response.finalUrl}]`;
-    } else if (isLoadUrlResponseDom(response)) {
-      stringifiedBody = response.root.nativeSelector.html() ?? "";
-    } else if (typeof response.data === "string") {
+    } else if (response.type === "dom") {
+      stringifiedBody = await response.html();
+    } else if (response.type === "text") {
       stringifiedBody = response.data;
     } else {
+      response.type satisfies "json";
       stringifiedBody = JSON.stringify(response.data, null, 2);
     }
+
     this.#networkRequestsHistory.push({
       constructorPath: this.#path,
       request: {
         url: new URL(url),
-        method: options?.method || "GET",
+        method: requestMethod,
         headers: response.request.headers,
-        body: options?.body,
+        body: requestBody,
       },
       response: {
         headers: response.headers,
@@ -219,8 +216,8 @@ export class ActionContext extends Function {
     });
 
     return response;
-    // biome-ignore lint/suspicious/noExplicitAny: cast needed for complex overloaded function assignment
-  }) as any;
+    // We cast here so that we loadUrl inherts the overload signatures of the original loadUrl function
+  }) as unknown as typeof loadUrl;
 
   get networkRequestsHistory() {
     return this.#networkRequestsHistory;
