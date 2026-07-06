@@ -3,9 +3,6 @@ name: CI
 on:
   pull_request:
   push:
-    branches:
-      - main
-      - ci-publish-test
 
 permissions:
   contents: write # to be able to publish a GitHub release
@@ -65,8 +62,8 @@ jobs:
         run: npx turbo test -- -u
 
   publish:
-    name: Publish ${{ matrix.package }}
-    if: (github.event_name == 'push') && ((github.ref == 'refs/heads/main') || (github.ref == 'refs/heads/ci-publish-test'))
+    name: ${{ (github.ref == 'refs/heads/main' && format('Publish {0}', matrix.package)) || (github.ref == 'refs/heads/ci-publish-test' && format('Publish (ci-publish-test) {0}', matrix.package)) || format('Preview publish {0}', matrix.package) }}
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     needs: [lint, test]
     strategy:
@@ -98,22 +95,46 @@ jobs:
         run: npm audit signatures
 
       - name: Release
+        if: (github.ref == 'refs/heads/main') || (github.ref == 'refs/heads/ci-publish-test')
         working-directory: packages/${{ matrix.package }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
 
+      - name: Preview release (dry-run)
+        if: (github.ref != 'refs/heads/main') && (github.ref != 'refs/heads/ci-publish-test')
+        working-directory: packages/${{ matrix.package }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npx semantic-release --dry-run --no-ci --branches "${GITHUB_REF_NAME}" | tee /tmp/semantic-release-dry-run-${{ matrix.package }}.log
+
       - name: Print publish info
         working-directory: packages/${{ matrix.package }}
         run: |
-          VERSION=$(jq -r '.version' package.json)
-          if [[ ! "$VERSION" == 0.0.0* ]]; then
-            prefix_message="Published new version of ${{ matrix.package }}:"
-            echo -e "### :rocket: $prefix_message \n\`\`\`\n$VERSION\n\`\`\`" >> $GITHUB_STEP_SUMMARY
-            echo -e "$prefix_message\n\e[1m$VERSION\e[0m"
+          if [[ "${GITHUB_REF}" == "refs/heads/main" || "${GITHUB_REF}" == "refs/heads/ci-publish-test" ]]; then
+            VERSION=$(jq -r '.version' package.json)
+            if [[ ! "$VERSION" == 0.0.0* ]]; then
+              prefix_message="Published new version of ${{ matrix.package }}:"
+              echo -e "### :rocket: $prefix_message \n\`\`\`\n$VERSION\n\`\`\`" >> $GITHUB_STEP_SUMMARY
+              echo -e "$prefix_message\n\e[1m$VERSION\e[0m"
+            else
+              message="No publishable changes made to ${{ matrix.package }} since last version"
+              echo "### $message" >> $GITHUB_STEP_SUMMARY
+              echo -e "\e[1m$message\e[0m"
+            fi
           else
-            message="No publishable changes made to ${{ matrix.package }} since last version"
-            echo "### $message" >> $GITHUB_STEP_SUMMARY
-            echo -e "\e[1m$message\e[0m"
+            LOG_FILE="/tmp/semantic-release-dry-run-${{ matrix.package }}.log"
+            VERSION=$(sed -nE 's/.*next release version is ([0-9]+\.[0-9]+\.[0-9][^ ]*).*/\1/p' "$LOG_FILE" | tail -1)
+            if [[ -n "$VERSION" ]]; then
+              message="Would publish new version of ${{ matrix.package }} on this branch:"
+              echo -e "### :test_tube: $message \n\`\`\`\n$VERSION\n\`\`\`" >> $GITHUB_STEP_SUMMARY
+              echo -e "$message\n\e[1m$VERSION\e[0m"
+            else
+              message="No publishable changes for ${{ matrix.package }} on branch ${GITHUB_REF_NAME}"
+              echo "### $message" >> $GITHUB_STEP_SUMMARY
+              echo -e "\e[1m$message\e[0m"
+            fi
           fi
