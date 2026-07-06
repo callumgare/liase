@@ -1,12 +1,69 @@
 import { copy } from "copy-anything";
 import deepmerge from "deepmerge";
 import { expect, test } from "vitest";
+import { ActionContext } from "../ActionContext.js";
+import { executeActions } from "../constructorExecution.js";
 import { type GenericResponse, createLiaseQuery } from "../index.js";
 import { getDuplicates, getOrdinal, hasNoDuplicates } from "../lib/utils.js";
 import type { LiaseOptionsInput } from "../schemas/liaseOptions.js";
 import type { QueryOptionsInput } from "../schemas/queryOptions.js";
+import {
+  type GenericRequest,
+  genericRequestSchema,
+} from "../schemas/request.js";
+import type { RequestHandler } from "../schemas/requestHandler.js";
+import { genericResponseSchema } from "../schemas/response.js";
 import type { Source } from "../schemas/source.js";
+import type { ConstructorExecutionContext } from "../types.js";
 import { getSecrets } from "./secrets.js";
+
+export function createExampleActionContext(
+  options: {
+    request?: Partial<GenericRequest>;
+  } = {},
+) {
+  const request = genericRequestSchema.parse({
+    source: "example-source",
+    queryType: "example-query",
+    ...options.request,
+  });
+
+  const requestHandler = {
+    id: request.queryType,
+    displayName: "Example Request Handler",
+    description: "Example request handler for constructor testing",
+    requestSchema: genericRequestSchema,
+    paginationType: "none",
+    responses: [
+      {
+        description: "Example response details",
+        schema: genericResponseSchema,
+        constructor: {
+          request: ($) => $.request,
+          media: [],
+        },
+      },
+    ],
+  } as const satisfies RequestHandler;
+
+  const constructorContext: ConstructorExecutionContext = {
+    request,
+    secrets: {},
+    requestHandler,
+    responseDetails: requestHandler.responses[0],
+    sourceId: request.source,
+    hooks: {
+      loadUrl: [],
+      getFetchClient: [],
+    },
+  };
+
+  return new ActionContext({
+    constructorContext,
+    executeActions,
+    path: [],
+  });
+}
 
 export function createBasicTestsForRequestHandlers<
   S extends Source,

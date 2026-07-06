@@ -16,13 +16,7 @@ describe("executeConstructor excludeFieldMarker", () => {
         keepNestedUndefined: undefined,
         removeNested: excludeFieldMarker,
       },
-      arrayValues: [
-        "a",
-        excludeFieldMarker,
-        "b",
-        excludeFieldMarker,
-        null,
-      ],
+      arrayValues: ["a", excludeFieldMarker, "b", excludeFieldMarker, null],
     } satisfies Constructor;
 
     const context = createExampleActionContext();
