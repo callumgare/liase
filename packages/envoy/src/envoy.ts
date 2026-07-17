@@ -1,6 +1,9 @@
 import * as cheerio from "cheerio";
-import { fetch as wreqFetch } from "wreq-js";
-import type { RequestInit as WreqRequestInit } from "wreq-js";
+import { createSession, fetch as wreqFetch } from "wreq-js";
+import type {
+  CreateSessionOptions,
+  RequestInit as WreqRequestInit,
+} from "wreq-js";
 import type {
   UrlResAny,
   UrlResDom,
@@ -42,6 +45,20 @@ export type EnvoyContext = {
   cacheNetworkRequests?: "never" | "auto" | "always";
 };
 
+// Internal extension — not exported; used to thread a custom fetch function
+// through envoy when a session is active.
+type EnvoyInternalContext = EnvoyContext & {
+  fetchFn?: typeof wreqFetch;
+};
+
+export type EnvoySessionOptions = CreateSessionOptions &
+  Pick<EnvoyContext, "cacheNetworkRequests">;
+
+export type EnvoySession = {
+  envoy: typeof envoy;
+  close: () => Promise<void>;
+};
+
 export async function envoy(
   url: string,
   options: EnvoyOptions & { responseType: "text" },
@@ -59,13 +76,13 @@ export async function envoy(
   options: EnvoyOptions & { responseType: "rendered dom" },
 ): Promise<UrlResRenderedDom>;
 export async function envoy(
-  this: EnvoyContext | undefined,
+  this: EnvoyInternalContext | undefined,
   url: string,
   options?: EnvoyOptions,
 ): Promise<UrlResAny>;
 
 export async function envoy(
-  this: EnvoyContext | undefined,
+  this: EnvoyInternalContext | undefined,
   url: string,
   options?: EnvoyOptions,
 ): Promise<UrlResAny> {
@@ -112,7 +129,8 @@ export async function envoy(
     }
 
     if (!res) {
-      const fetchRes = await wreqFetch(url, requestOptions);
+      const fetchFn = this?.fetchFn ?? wreqFetch;
+      const fetchRes = await fetchFn(url, requestOptions);
       if (!fetchRes.ok) {
         const errorBody = await fetchRes.text();
         throw Error(
@@ -326,4 +344,18 @@ export async function envoy(
   }
   options.agent satisfies never;
   throw Error(`Unknown agent "${options.agent}"`);
+}
+
+export async function createEnvoySession(
+  options?: EnvoySessionOptions,
+): Promise<EnvoySession> {
+  const { cacheNetworkRequests, ...sessionOptions } = options ?? {};
+  const session = await createSession(sessionOptions);
+  return {
+    envoy: envoy.bind({
+      fetchFn: session.fetch.bind(session),
+      cacheNetworkRequests,
+    } satisfies EnvoyInternalContext) as typeof envoy,
+    close: () => session.close(),
+  };
 }

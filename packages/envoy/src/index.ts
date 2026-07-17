@@ -9,8 +9,12 @@ export { RenderedDomNode } from "./lib/dom/RenderedDomNode.js";
 export { RenderedDomSelection } from "./lib/dom/RenderedDomSelection.js";
 export { PlaywrightDomSelection } from "./lib/dom/PlaywrightDomSelection.js";
 export { PlaywrightDomNode } from "./lib/dom/PlaywrightDomNode.js";
-export { envoy } from "./envoy.js";
-export type { EnvoyOptions } from "./envoy.js";
+export { envoy, createEnvoySession } from "./envoy.js";
+export type {
+  EnvoyOptions,
+  EnvoySession,
+  EnvoySessionOptions,
+} from "./envoy.js";
 export type {
   UrlRes,
   UrlResAny,
