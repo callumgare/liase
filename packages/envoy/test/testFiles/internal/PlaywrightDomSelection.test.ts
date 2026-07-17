@@ -1,6 +1,5 @@
 import { type Server, createServer } from "node:http";
 import { envoy } from "@/src/envoy.js";
-import { shutdownBrowser } from "@/src/lib/playwrightBrowser.js";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const callCtx = { cacheNetworkRequests: "never" as const };
@@ -79,11 +78,9 @@ function assertNode<T>(value: T | null): T {
 describe("PlaywrightDomSelection", () => {
   beforeEach(async () => {
     await startServer();
-    await shutdownBrowser();
   });
 
   afterEach(async () => {
-    await shutdownBrowser();
     await stopServer();
   });
 

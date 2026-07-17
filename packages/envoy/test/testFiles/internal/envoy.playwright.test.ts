@@ -69,12 +69,9 @@ function assertNode<T>(value: T | null): T {
 describe("envoy with responseType: page (Playwright)", () => {
   beforeEach(async () => {
     await startTestServer();
-    // Ensure browser is not running before each test
-    await shutdownBrowser();
   });
 
   afterEach(async () => {
-    await shutdownBrowser();
     await stopTestServer();
   });
 

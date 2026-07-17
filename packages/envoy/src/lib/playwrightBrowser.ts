@@ -182,3 +182,47 @@ export async function shutdownBrowser(): Promise<void> {
 export function isBrowserRunning(): boolean {
   return Boolean(browser?.isConnected());
 }
+
+/**
+ * Captures screenshots of all active pages in the browser context.
+ * Useful for debugging test failures. Screenshots are saved with a timestamp
+ * and page title in the specified directory.
+ *
+ * @param outputDir - Directory to save screenshots (will be created if needed)
+ * @returns Array of paths to the saved screenshot files
+ */
+export async function captureDebugScreenshots(
+  outputDir: string,
+): Promise<string[]> {
+  if (!browser || !context || !browser.isConnected()) {
+    return [];
+  }
+
+  const { mkdirSync, existsSync } = await import("node:fs");
+  const { join } = await import("node:path");
+
+  // Ensure output directory exists
+  if (!existsSync(outputDir)) {
+    mkdirSync(outputDir, { recursive: true });
+  }
+
+  const pages = context.pages();
+  const screenshots: string[] = [];
+
+  for (const page of pages) {
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const title = await page.title().catch(() => "untitled");
+      const safeTitle = title.replace(/[^a-z0-9]/gi, "-").slice(0, 50);
+      const filename = `screenshot-${timestamp}-${safeTitle}.png`;
+      const filepath = join(outputDir, filename);
+
+      await page.screenshot({ path: filepath, fullPage: true });
+      screenshots.push(filepath);
+    } catch {
+      // Ignore errors for individual pages — continue with others
+    }
+  }
+
+  return screenshots;
+}

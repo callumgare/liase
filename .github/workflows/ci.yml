@@ -43,6 +43,7 @@ jobs:
     env:
       GIPHY_API_KEY: ${{ secrets.GIPHY_API_KEY }}
       LIASE_SECRETS_FILE: ${{ vars.LIASE_SECRETS_FILE }}
+      DEBUG: "pw:browser"
     steps:
       - uses: actions/checkout@v4
 
@@ -54,21 +55,60 @@ jobs:
       - run: npm clean-install
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium && npx playwright --version
 
       - name: Test all packages
         # Use "-u" to ignore snapshot mismatches. Sites may occasionally return different values
         # over time or depending on requester-specific details like geographical location.
         run: npx turbo test -- -u
 
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            **/test-results/
+            **/coverage/
+          retention-days: 7
+
+  list-packages:
+    name: List packages
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.list-packages.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: List packages
+        id: list-packages
+        run: |
+          # Get all package names from packages directory, excluding output-viewer
+          PACKAGES=$(find packages -name "package.json" -exec dirname {} \; | xargs -I {} basename {} | grep -v "^output-viewer$" | jq -R . | jq -s . | jq -c .)
+          echo "packages=$PACKAGES" >> $GITHUB_OUTPUT
+          echo "Discovered packages: $PACKAGES"
+
   publish:
-    name: ${{ (github.ref == 'refs/heads/main' && format('Publish {0}', matrix.package)) || (github.ref == 'refs/heads/ci-publish-test' && format('Publish (ci-publish-test) {0}', matrix.package)) || format('Preview publish {0}', matrix.package) }}
+    name: |
+      ${{
+        format(
+          'Publish {0}{1}',
+          matrix.package,
+          case(
+            github.ref == 'refs/heads/main',
+            '',
+            github.ref == 'refs/heads/ci-publish-test',
+            ' (pre-release testing version)',
+            ' (dry-run)'
+          ),
+        )
+      }}
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, list-packages]
     strategy:
       matrix:
-        package: [core, cli, example-plugin]
+        package: ${{ fromJson(needs.list-packages.outputs.packages) }}
     permissions:
       contents: write
       issues: write
@@ -94,7 +134,7 @@ jobs:
       - name: Verify provenance attestations and registry signatures
         run: npm audit signatures
 
-      - name: Release
+      - name: ${{ format('Release{0}', case(github.ref == 'refs/heads/ci-publish-test', ' (pre-release testing version)', '')) }}
         if: (github.ref == 'refs/heads/main') || (github.ref == 'refs/heads/ci-publish-test')
         working-directory: packages/${{ matrix.package }}
         env:
@@ -102,7 +142,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
 
-      - name: Preview release (dry-run)
+      - name: Release (dry-run)
         if: (github.ref != 'refs/heads/main') && (github.ref != 'refs/heads/ci-publish-test')
         working-directory: packages/${{ matrix.package }}
         env:
@@ -111,7 +151,7 @@ jobs:
         run: |
           npx semantic-release --dry-run --no-ci --branches "${GITHUB_REF_NAME}" | tee /tmp/semantic-release-dry-run-${{ matrix.package }}.log
 
-      - name: Print publish info
+      - name: ℹ️ Print publish info
         working-directory: packages/${{ matrix.package }}
         run: |
           if [[ "${GITHUB_REF}" == "refs/heads/main" || "${GITHUB_REF}" == "refs/heads/ci-publish-test" ]]; then

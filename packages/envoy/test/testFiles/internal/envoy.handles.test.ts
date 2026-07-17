@@ -2,7 +2,6 @@ import { type Server, createServer } from "node:http";
 import { envoy } from "@/src/envoy.js";
 import { CheerioDomSelection } from "@/src/lib/dom/CheerioDomSelection.js";
 import { PlaywrightDomSelection } from "@/src/lib/dom/PlaywrightDomSelection.js";
-import { shutdownBrowser } from "@/src/lib/playwrightBrowser.js";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const callCtxAlways = { cacheNetworkRequests: "always" as const };
@@ -71,11 +70,9 @@ function assertNode<T>(value: T | null): T {
 describe("envoy response handles", () => {
   beforeEach(async () => {
     await startServer();
-    await shutdownBrowser();
   });
 
   afterEach(async () => {
-    await shutdownBrowser();
     await stopServer();
   });
 
