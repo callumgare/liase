@@ -1,10 +1,6 @@
 import * as cheerio from "cheerio";
-import deepmerge from "deepmerge";
-import {
-  Options as GotOptions,
-  type OptionsInit as GotOptionsInit,
-  gotScraping,
-} from "got-scraping";
+import { fetch as wreqFetch } from "wreq-js";
+import type { RequestInit as WreqRequestInit } from "wreq-js";
 import type {
   UrlResAny,
   UrlResDom,
@@ -33,28 +29,14 @@ type EnvoyOptionsPlaywrightPage = {
 
 type EnvoyOptionsPlaywright = EnvoyOptionsPlaywrightPage;
 
-type EnvoyOptionsGot = {
-  agent?: "got";
+type EnvoyOptionsFetch = {
+  agent?: "fetch";
   responseType?: "dom" | "text" | "json";
   headers?: Record<string, string>;
   body?: string;
-  retryAdditional?: GotOptionsInit["retry"];
-} & Omit<
-  GotOptionsInit,
-  | "responseType"
-  | "headers"
-  | "body"
-  | "retry"
-  | "hooks"
-  | "resolveBodyOnly"
-  | "isStream"
-  | "url"
-  | "json"
-  | "form"
-  | "agent"
->;
+} & Omit<WreqRequestInit, "headers" | "body">;
 
-export type EnvoyOptions = EnvoyOptionsPlaywright | EnvoyOptionsGot;
+export type EnvoyOptions = EnvoyOptionsPlaywright | EnvoyOptionsFetch;
 
 export type EnvoyContext = {
   cacheNetworkRequests?: "never" | "auto" | "always";
@@ -99,20 +81,12 @@ export async function envoy(
     );
   }
   if (!options.agent) {
-    options.agent = "got";
+    options.agent = "fetch";
   }
 
-  if (options.agent === "got") {
+  if (options.agent === "fetch") {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- we define only to exclude from requestOptions
-    const { agent, retryAdditional, responseType, ...requestOptions } = options;
-
-    const defaultGotOptions = new GotOptions();
-    let retry = defaultGotOptions.retry;
-    if (options.retryAdditional) {
-      retry = deepmerge(retry, options.retryAdditional);
-    }
-
-    let cache: GotOptionsInit["cache"];
+    const { agent, responseType, ...requestOptions } = options;
 
     let res:
       | {
@@ -129,7 +103,6 @@ export async function envoy(
       method: requestOptions.method ?? "",
       headers: requestOptions.headers ?? {},
       body: requestOptions.body ?? "",
-      headerGeneratorOptions: requestOptions.headerGeneratorOptions,
     };
 
     if (cacheNetworkRequests === "always") {
@@ -139,35 +112,21 @@ export async function envoy(
     }
 
     if (!res) {
-      let sentHeaders: Record<string, string> = {};
-      const gotRes = await gotScraping({
-        url,
-        ...requestOptions,
-        responseType: "text",
-        retry,
-        cache,
-        http2: false,
-        hooks: {
-          beforeRequest: [
-            (requestConfig) => {
-              sentHeaders = headersToNormalisedBasicObject(
-                requestConfig.headers,
-              );
-            },
-          ],
-        },
-      });
-      if (!gotRes.ok) {
+      const fetchRes = await wreqFetch(url, requestOptions);
+      if (!fetchRes.ok) {
+        const errorBody = await fetchRes.text();
         throw Error(
-          `Got response status ${gotRes.statusCode} (retry count: ${gotRes.retryCount}) with body: ${gotRes.body}`,
+          `Got response status ${fetchRes.status} with body: ${errorBody}`,
         );
       }
       res = {
-        body: gotRes.body,
-        statusCode: gotRes.statusCode,
-        headers: headersToNormalisedBasicObject(gotRes.headers),
+        body: await fetchRes.text(),
+        statusCode: fetchRes.status,
+        headers: headersToNormalisedBasicObject([
+          ...fetchRes.headers.entries(),
+        ]),
         request: {
-          headers: sentHeaders ?? {},
+          headers: requestOptions.headers ?? {},
         },
       };
       await cacheResponse(cacheableRequest, res);

@@ -17,7 +17,6 @@ describe("network request cache", () => {
       method: "GET",
       headers: { accept: "text/plain" },
       body: "",
-      headerGeneratorOptions: undefined,
     });
     expect(res).toBeUndefined();
   });
@@ -29,7 +28,6 @@ describe("network request cache", () => {
       method: "POST",
       headers: { "content-type": "text/plain" },
       body: "body",
-      headerGeneratorOptions: undefined,
     };
 
     await cacheResponse(req, {

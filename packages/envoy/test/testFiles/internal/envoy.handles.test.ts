@@ -76,9 +76,9 @@ describe("envoy response handles", () => {
     await stopServer();
   });
 
-  it("returns a DOM response handle for got dom", async () => {
+  it("returns a DOM response handle for fetch dom", async () => {
     const response = await boundAlwaysEnvoy(serverUrl, {
-      agent: "got",
+      agent: "fetch",
       responseType: "dom",
     });
 
@@ -101,9 +101,9 @@ describe("envoy response handles", () => {
     expect(response.statusCode).toBe(200);
   });
 
-  it("returns a text response for got text", async () => {
+  it("returns a text response for fetch text", async () => {
     const response = await boundAlwaysEnvoy(`${serverUrl}/text`, {
-      agent: "got",
+      agent: "fetch",
       responseType: "text",
     });
 
@@ -117,9 +117,9 @@ describe("envoy response handles", () => {
     expect(response.data).toBe("plain-text-response");
   });
 
-  it("returns a json response for got json", async () => {
+  it("returns a json response for fetch json", async () => {
     const response = await boundAlwaysEnvoy(`${serverUrl}/json`, {
-      agent: "got",
+      agent: "fetch",
       responseType: "json",
     });
 
@@ -173,7 +173,7 @@ describe("envoy response handles", () => {
     await response.close();
   });
 
-  it("defaults to got+dom when options are omitted", async () => {
+  it("defaults to fetch+dom when options are omitted", async () => {
     const response = await boundNeverEnvoy(serverUrl);
 
     expect(response.type).toBe("dom");
@@ -204,7 +204,7 @@ describe("envoy response handles", () => {
     const address = invalidJsonLdServer.address() as { port: number };
     const url = `http://127.0.0.1:${address.port}`;
     const response = await boundNeverEnvoy(url, {
-      agent: "got",
+      agent: "fetch",
       responseType: "dom",
     });
 
@@ -222,12 +222,12 @@ describe("envoy response handles", () => {
 
   it("throws when cacheNetworkRequests is auto", async () => {
     const autoEnvoy = envoy.bind({ cacheNetworkRequests: "auto" as const });
-    await expect(autoEnvoy(serverUrl, { agent: "got" })).rejects.toThrow(
+    await expect(autoEnvoy(serverUrl, { agent: "fetch" })).rejects.toThrow(
       'The "auto" value for the cacheNetworkRequests option is not yet supported',
     );
   });
 
-  it("throws on non-ok got response", async () => {
+  it("throws on non-ok fetch response", async () => {
     const badServer = await new Promise<Server>((resolve) => {
       const s = createServer((_req, res) => {
         res.writeHead(500, { "Content-Type": "text/plain" });
@@ -239,7 +239,7 @@ describe("envoy response handles", () => {
     const url = `http://127.0.0.1:${address.port}`;
 
     await expect(
-      boundNeverEnvoy(url, { agent: "got", responseType: "text" }),
+      boundNeverEnvoy(url, { agent: "fetch", responseType: "text" }),
     ).rejects.toThrow("Got response status 500");
 
     await new Promise<void>((resolve, reject) => {

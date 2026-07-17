@@ -1,5 +1,4 @@
 import cacache from "cacache";
-import type { OptionsInit as GotOptionsInit } from "got-scraping";
 import stringify from "json-stable-stringify";
 import { headersToNormalisedBasicObject, parseFetchArgs } from "./fetch.js";
 
@@ -12,10 +11,6 @@ type CacheableRequest = {
   method: string;
   headers: Record<string, string>;
   body: string;
-  // Since the cache uses request headers before got has made any modifications changes to
-  // headerGeneratorOptions which impact got's generated headers won't break the cache.
-  // To get around this we include headerGeneratorOptions in the cache key.
-  headerGeneratorOptions: GotOptionsInit["headerGeneratorOptions"];
 };
 
 type CachedResponse = {
@@ -92,7 +87,6 @@ export function addCachingFetchWrapper(
       body: await body,
       headers,
       method,
-      headerGeneratorOptions: undefined,
     };
 
     let res: Response | CachedResponse | undefined;

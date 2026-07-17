@@ -51,6 +51,7 @@
   "dependencies": {
     "@liase/envoy": "*",
     "@atproto/api": "^0.19.13",
+    "deepmerge": "^4.3.1",
     "@refactorjs/http-proxy": "^0.2.14",
     "cacache": "^20.0.4",
     "chalk": "^5.3.0",
