@@ -2,27 +2,18 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import type { NetworkRequestsHistoryItem } from "@liase/envoy";
 import chalk from "chalk";
 import mimeTypes from "mime-types";
 import { ActionContext } from "../ActionContext.js";
 import { timeSince } from "./time.js";
 
-export type NetworkRequestsHistoryItem = {
-  constructorPath: (string | number)[];
-  request: {
-    url: URL;
-    method: string;
-    headers: Record<string, string>;
-    body?: string | Promise<string>;
-  };
-  response: {
-    headers: Record<string, string>;
-    body: string | Promise<string>;
-    statusCode: number;
-    cached: boolean;
-    cachedOn: Date | null;
-  };
-};
+function isConstructorPath(value: unknown): value is (string | number)[] {
+  return (
+    Array.isArray(value) &&
+    value.every((item) => typeof item === "string" || typeof item === "number")
+  );
+}
 
 export async function exportNetworkRequestsHistory({
   networkRequestsHistory,
@@ -40,8 +31,12 @@ export async function exportNetworkRequestsHistory({
   }
   const constructorPathCount: Record<string, number> = {};
   for (const networkRequestsHistoryItem of networkRequestsHistory) {
-    const constructorPath =
-      networkRequestsHistoryItem.constructorPath.join(".");
+    const constructorPathValue = isConstructorPath(
+      networkRequestsHistoryItem.meta?.constructorPath,
+    )
+      ? networkRequestsHistoryItem.meta.constructorPath
+      : [];
+    const constructorPath = constructorPathValue.join(".");
     if (!constructorPathCount[constructorPath]) {
       constructorPathCount[constructorPath] = 1;
     } else {
@@ -50,7 +45,7 @@ export async function exportNetworkRequestsHistory({
     const mimeType =
       networkRequestsHistoryItem.response.headers["content-type"];
     const ext = mimeTypes.extension(mimeType ?? "") || "txt";
-    const constructorPathStr = networkRequestsHistoryItem.constructorPath
+    const constructorPathStr = constructorPathValue
       .map((value) => (typeof value === "number" ? `[${value}]` : value))
       .join(".");
     const count = constructorPathCount[constructorPath];

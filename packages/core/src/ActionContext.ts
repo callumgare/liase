@@ -1,9 +1,8 @@
 import {
+  type EnvoySession,
   type UrlResAny,
   addCachingFetchWrapper,
-  headersToNormalisedBasicObject,
-  envoy as loadUrl,
-  parseFetchArgs,
+  type envoy as loadUrl,
 } from "@liase/envoy";
 import { decodeHTML } from "entities";
 import {
@@ -14,7 +13,6 @@ import {
   generateResponse,
   getResponseDetailsBasedOnRequest,
 } from "./generateResponse.js";
-import type { NetworkRequestsHistoryItem } from "./lib/networkRequestsHistory.js";
 import type { Action } from "./schemas/constructor.js";
 import type { GenericRequest } from "./schemas/request.js";
 import type { RequestHandler } from "./schemas/requestHandler.js";
@@ -24,6 +22,20 @@ import type { ConstructorExecutionContext } from "./types.js";
 export const excludeFieldMarker = Symbol("ExcludeField");
 
 export class ActionContext extends Function {
+  #constructorContext: ConstructorExecutionContext;
+  #executeActions: (
+    actions: Action[],
+    context: ActionContext,
+    path: (string | number)[],
+  ) => Promise<ActionContext>;
+  #path: (string | number)[];
+  // biome-ignore lint/suspicious/noExplicitAny: data store accepts arbitrary values
+  #dataStore: Record<string, any> = {};
+  // biome-ignore lint/suspicious/noExplicitAny: result history can store any type
+  #resultHistory: any[] = [];
+  #clonedChildren: ActionContext[] = [];
+  #envoySession: EnvoySession;
+
   constructor(args: {
     constructorContext: ConstructorExecutionContext;
     executeActions: (
@@ -34,16 +46,16 @@ export class ActionContext extends Function {
     path: (string | number)[];
     // biome-ignore lint/suspicious/noExplicitAny: data store accepts arbitrary values
     initialData?: Record<string, any>;
-    networkRequestsHistory?: NetworkRequestsHistoryItem[];
+    envoySession: EnvoySession;
   }) {
     super();
     this.#constructorContext = args.constructorContext;
     this.#executeActions = args.executeActions;
     this.#path = args.path;
+    this.#envoySession = args.envoySession;
     if (args.initialData) {
       this.#dataStore = args.initialData;
     }
-    this.#networkRequestsHistory = args.networkRequestsHistory ?? [];
     // biome-ignore lint/correctness/noConstructorReturn: Proxy wrapping requires returning from constructor
     return new Proxy(this, {
       apply: (target, thisArg, args) => target.get(...args),
@@ -59,20 +71,8 @@ export class ActionContext extends Function {
     });
   }
 
-  #constructorContext: ConstructorExecutionContext;
-  #executeActions;
-  #path;
-  // biome-ignore lint/suspicious/noExplicitAny: result history stores arbitrary action results
-  #resultHistory: any[] = [];
-  #networkRequestsHistory;
-  // eslint-disable-next-line no-use-before-define -- we need to use before it's defined since it's recursive
-  #clonedChildren: ActionContext[] = [];
-
   // biome-ignore lint/suspicious/noExplicitAny: unresolved promise store accepts arbitrary values
   #unresolvedPromises: any[] = [];
-
-  // biome-ignore lint/suspicious/noExplicitAny: data store accepts arbitrary values
-  #dataStore: Record<string, any> = {};
 
   get(key = "") {
     if (!(key in this.#dataStore)) {
@@ -130,12 +130,15 @@ export class ActionContext extends Function {
     // biome-ignore lint/suspicious/noExplicitAny: data store accepts arbitrary values
     data?: Record<string, any>;
   } = {}) {
+    const newPath = (path ?? this.#path).concat(appendToPath ?? []);
     const clone = new ActionContext({
       constructorContext: this.#constructorContext,
       initialData: data ? { ...data } : { ...this.#dataStore },
       executeActions: this.#executeActions,
-      path: (path ?? this.#path).concat(appendToPath ?? []),
-      networkRequestsHistory: this.#networkRequestsHistory,
+      path: newPath,
+      envoySession: this.#envoySession.clone({
+        meta: { constructorPath: newPath },
+      }),
     });
     this.#clonedChildren.push(clone);
     return clone;
@@ -179,48 +182,18 @@ export class ActionContext extends Function {
   }
 
   loadUrl = (async (url: string, options?: Parameters<typeof loadUrl>[1]) => {
-    const response = await loadUrl.call(this, url, options);
-
-    const requestMethod =
-      options && "method" in options ? (options.method ?? "GET") : "GET";
-    const requestBody = options && "body" in options ? options.body : undefined;
-
-    let stringifiedBody: string;
-    if (response.type === "rendered dom") {
-      // Page responses are interactive — record the URL but not the body
-      stringifiedBody = `[Playwright page: ${response.finalUrl}]`;
-    } else if (response.type === "dom") {
-      stringifiedBody = response.html;
-    } else if (response.type === "text") {
-      stringifiedBody = response.data;
-    } else {
-      response.type satisfies "json";
-      stringifiedBody = JSON.stringify(response.data, null, 2);
-    }
-
-    this.#networkRequestsHistory.push({
-      constructorPath: this.#path,
-      request: {
-        url: new URL(url),
-        method: requestMethod,
-        headers: response.request.headers,
-        body: requestBody,
-      },
-      response: {
-        headers: response.headers,
-        body: stringifiedBody,
-        statusCode: response.statusCode,
-        cached: response.cached,
-        cachedOn: response.cachedOn,
-      },
-    });
-
-    return response;
-    // We cast here so that we loadUrl inherts the overload signatures of the original loadUrl function
+    const envoyFn = this.#envoySession.envoy as unknown as (
+      url: string,
+      // biome-ignore lint/suspicious/noExplicitAny: envoy function requires flexible types
+      options?: any,
+      // biome-ignore lint/suspicious/noExplicitAny: envoy function requires flexible types
+    ) => Promise<any>;
+    return envoyFn(url, options);
+    // We cast here so that loadUrl inherits the overload signatures of the original loadUrl function
   }) as unknown as typeof loadUrl;
 
   get networkRequestsHistory() {
-    return this.#networkRequestsHistory;
+    return this.#envoySession.getHistory();
   }
 
   loadRequest = async (
@@ -259,43 +232,10 @@ export class ActionContext extends Function {
 
   get fetch(): typeof fetch {
     const cachingFetch = addCachingFetchWrapper(
-      fetch,
+      this.#envoySession.fetch,
       this.#constructorContext.cacheNetworkRequests,
     );
-    return async (
-      input: Parameters<typeof fetch>[0],
-      init?: Parameters<typeof fetch>[1],
-    ): Promise<Response> => {
-      const response = await cachingFetch(input, init);
-
-      const { url, body, headers, method } = parseFetchArgs(input, init);
-      const clonedResponse = response.clone();
-      const cacheTimestamp =
-        response.statusText.match(/^Cached on: (\d+)$/)?.[1];
-      const responseHeaders = headersToNormalisedBasicObject(
-        clonedResponse.headers,
-      );
-      this.#networkRequestsHistory.push({
-        constructorPath: this.#path,
-        request: {
-          url,
-          method,
-          headers,
-          body,
-        },
-        response: {
-          headers: responseHeaders,
-          body: clonedResponse.text(),
-          statusCode: clonedResponse.status,
-          cached: Boolean(cacheTimestamp),
-          cachedOn: cacheTimestamp
-            ? new Date(Number.parseInt(cacheTimestamp))
-            : null,
-        },
-      });
-
-      return response;
-    };
+    return cachingFetch;
   }
 
   guessMediaInfoFromUrl = guessMediaInfoFromUrl;

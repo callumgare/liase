@@ -15,3 +15,5 @@ export type { Source } from "./schemas/source.js";
 export type { Plugin } from "./schemas/plugin.js";
 export type { RequestHandler } from "./schemas/requestHandler.js";
 export type { Constructor } from "./schemas/constructor.js";
+
+// Envoy exports are re-exported in packages/core/src/envoy.ts

@@ -7,6 +7,7 @@ import type {
   UrlResText,
 } from "./UrlRes.js";
 import {
+  type FetchExtended,
   createFetchExtendedSession,
   fetchExtended,
 } from "./fetchExtended/index.js";
@@ -62,9 +63,29 @@ type EnvoyInternalContext = EnvoyContext & {
 export type EnvoySessionOptions = FetchExtendedSessionOptions &
   Pick<EnvoyContext, "cacheNetworkRequests">;
 
+export type NetworkRequestsHistoryItem = {
+  meta?: Record<string, unknown>;
+  request: {
+    url: URL;
+    method: string;
+    headers: Record<string, string>;
+    body?: string | Promise<string>;
+  };
+  response: {
+    headers: Record<string, string>;
+    body: string | Promise<string>;
+    statusCode: number;
+    cached: boolean;
+    cachedOn: Date | null;
+  };
+};
+
 export type EnvoySession = {
   envoy: typeof envoy;
+  fetch: FetchExtended;
   close: () => Promise<void>;
+  clone: (options?: { meta?: Record<string, unknown> }) => EnvoySession;
+  getHistory: () => NetworkRequestsHistoryItem[];
 };
 
 export async function envoy(
@@ -360,11 +381,161 @@ export async function createEnvoySession(
 ): Promise<EnvoySession> {
   const { cacheNetworkRequests, ...sessionOptions } = options ?? {};
   const session = await createFetchExtendedSession(sessionOptions);
-  return {
-    envoy: envoy.bind({
-      fetchFn: session.fetch,
-      cacheNetworkRequests,
-    } satisfies EnvoyInternalContext) as typeof envoy,
-    close: () => session.close(),
+
+  // Shared history array that will be shared across clones
+  const history: NetworkRequestsHistoryItem[] = [];
+
+  // Wrapper to track requests/responses
+  const createWrappedEnvoy = (
+    meta: Record<string, unknown> = {},
+    historyArray: NetworkRequestsHistoryItem[] = history,
+  ): typeof envoy => {
+    return (async (url: string, options?: EnvoyOptions): Promise<UrlResAny> => {
+      const response = (await envoy.call(
+        {
+          fetchFn: session.fetch,
+          cacheNetworkRequests,
+        } satisfies EnvoyInternalContext,
+        url,
+        options,
+        // biome-ignore lint/suspicious/noExplicitAny: envoy is overloaded, call through base envoy
+      )) as any;
+
+      // Extract request details
+      const requestMethod =
+        options && "method" in options ? (options.method ?? "GET") : "GET";
+      const requestBody =
+        options && "body" in options ? options.body : undefined;
+      const requestHeaders =
+        options && "headers" in options ? (options.headers ?? {}) : {};
+
+      // Extract response details
+      // biome-ignore lint/suspicious/noExplicitAny: response is union type, need to narrow it
+      const resp = response as any;
+      const responseHeaders = resp.headers ?? {};
+      const statusCode = resp.statusCode ?? 0;
+      const cached = resp.cached ?? false;
+      const cachedOn = resp.cachedOn ?? null;
+
+      // Handle the different response types based on type field
+      const stringifiedBody =
+        resp.type === "rendered dom"
+          ? `[Playwright page: ${resp.finalUrl}]`
+          : resp.type === "dom"
+            ? resp.html
+            : resp.type === "text"
+              ? resp.data
+              : resp.type === "json"
+                ? JSON.stringify(resp.data, null, 2)
+                : "[Unknown response type]";
+
+      // Add to history
+      historyArray.push({
+        meta,
+        request: {
+          url: new URL(url),
+          method: requestMethod,
+          headers: requestHeaders,
+          body: requestBody,
+        },
+        response: {
+          headers: responseHeaders,
+          body: stringifiedBody,
+          statusCode,
+          cached,
+          cachedOn,
+        },
+      });
+
+      return response;
+    }) as unknown as typeof envoy;
   };
+
+  // Wrapper to track fetch requests/responses
+  const createWrappedFetch = (
+    meta: Record<string, unknown> = {},
+    historyArray: NetworkRequestsHistoryItem[] = history,
+  ): FetchExtended => {
+    return async (input, init) => {
+      const urlStr =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      const url = new URL(urlStr);
+      const method =
+        init?.method ??
+        (typeof input !== "string" && !(input instanceof URL)
+          ? input.method
+          : undefined) ??
+        "GET";
+      const headers =
+        init?.headers &&
+        typeof init.headers === "object" &&
+        !Array.isArray(init.headers)
+          ? (init.headers as Record<string, string>)
+          : typeof input !== "string" &&
+              !(input instanceof URL) &&
+              input.headers
+            ? headersToNormalisedBasicObject([...input.headers.entries()])
+            : {};
+      const body =
+        typeof init?.body === "string"
+          ? init.body
+          : typeof input !== "string" && !(input instanceof URL) && input.body
+            ? typeof input.body === "string"
+              ? input.body
+              : undefined
+            : undefined;
+
+      // Make the actual fetch call through session.fetch
+      const response = await session.fetch(input, init);
+
+      // Clone the response so we can read the body
+      const clonedResponse = response.clone();
+      const responseBody = await clonedResponse.text();
+      const responseHeaders = headersToNormalisedBasicObject([
+        ...response.headers.entries(),
+      ]);
+      const statusCode = response.status;
+
+      // Add to history
+      historyArray.push({
+        meta,
+        request: {
+          url,
+          method,
+          headers,
+          body,
+        },
+        response: {
+          headers: responseHeaders,
+          body: responseBody,
+          statusCode,
+          cached: false,
+          cachedOn: null,
+        },
+      });
+
+      return response;
+    };
+  };
+
+  const createSession = (
+    meta: Record<string, unknown> = {},
+    sessionHistory: NetworkRequestsHistoryItem[] | null = null,
+  ): EnvoySession => {
+    const historyArray = sessionHistory ?? history;
+
+    return {
+      envoy: createWrappedEnvoy(meta, historyArray),
+      fetch: createWrappedFetch(meta, historyArray),
+      close: () => session.close(),
+      clone: (options) => createSession(options?.meta ?? {}, [...historyArray]),
+      getHistory: () => historyArray,
+    };
+  };
+
+  return createSession();
 }

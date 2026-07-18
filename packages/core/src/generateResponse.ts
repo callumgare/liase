@@ -1,4 +1,5 @@
 import assert from "node:assert";
+import { createEnvoySession } from "@liase/envoy";
 import { z } from "zod";
 import { ActionContext } from "./ActionContext.js";
 import { executeActions, executeConstructor } from "./constructorExecution.js";
@@ -26,16 +27,28 @@ export async function generateResponse(
     ),
   };
   Error.stackTraceLimit = 50;
-  const rootActionContext = new ActionContext({
-    constructorContext: resolvedContext,
-    executeActions,
-    path: [],
+
+  // Create a new envoy session with built-in history tracking
+  const envoySession = await createEnvoySession({
+    cacheNetworkRequests: resolvedContext.cacheNetworkRequests,
   });
-  const res = await executeConstructor(
-    resolvedContext.responseDetails.constructor,
-    rootActionContext,
-  );
-  return await validateResponse(res, resolvedContext, rootActionContext);
+
+  try {
+    const rootActionContext = new ActionContext({
+      constructorContext: resolvedContext,
+      executeActions,
+      path: [],
+      envoySession,
+    });
+
+    const res = await executeConstructor(
+      resolvedContext.responseDetails.constructor,
+      rootActionContext,
+    );
+    return await validateResponse(res, resolvedContext, rootActionContext);
+  } finally {
+    await envoySession.close();
+  }
 }
 
 async function validateResponse(

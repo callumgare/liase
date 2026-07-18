@@ -19,7 +19,7 @@ describe("executeConstructor excludeFieldMarker", () => {
       arrayValues: ["a", excludeFieldMarker, "b", excludeFieldMarker, null],
     } satisfies Constructor;
 
-    const context = createExampleActionContext();
+    const context = await createExampleActionContext();
     const result = (await executeConstructor(constructorDef, context)) as {
       keepString: string;
       keepUndefined: undefined;

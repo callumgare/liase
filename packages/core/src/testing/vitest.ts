@@ -1,3 +1,4 @@
+import { createEnvoySession } from "@liase/envoy";
 import { copy } from "copy-anything";
 import deepmerge from "deepmerge";
 import { expect, test } from "vitest";
@@ -17,7 +18,7 @@ import type { Source } from "../schemas/source.js";
 import type { ConstructorExecutionContext } from "../types.js";
 import { getSecrets } from "./secrets.js";
 
-export function createExampleActionContext(
+export async function createExampleActionContext(
   options: {
     request?: Partial<GenericRequest>;
   } = {},
@@ -58,10 +59,14 @@ export function createExampleActionContext(
     },
   };
 
+  // Create a new envoy session with built-in history tracking
+  const envoySession = await createEnvoySession();
+
   return new ActionContext({
     constructorContext,
     executeActions,
     path: [],
+    envoySession,
   });
 }
 

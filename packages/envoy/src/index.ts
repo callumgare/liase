@@ -14,6 +14,7 @@ export type {
   EnvoyOptions,
   EnvoySession,
   EnvoySessionOptions,
+  NetworkRequestsHistoryItem,
 } from "./envoy.js";
 export {
   fetchExtended,
