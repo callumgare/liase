@@ -16,7 +16,7 @@ export async function getRunCommand(): Promise<Command> {
     sourceOption,
     requestHandlerOption,
     pluginsOption,
-    cacheNetworkRequestsOption,
+    cachedResponseStrategyOption,
     secretsSetOption,
   } = getSharedLiaseOptions(liaseDetails);
   runCommand
@@ -24,7 +24,7 @@ export async function getRunCommand(): Promise<Command> {
     .addOption(sourceOption)
     .addOption(requestHandlerOption)
     .addOption(pluginsOption)
-    .addOption(cacheNetworkRequestsOption)
+    .addOption(cachedResponseStrategyOption)
     .addOption(secretsSetOption)
     .addOption(
       new Option(
@@ -36,12 +36,12 @@ export async function getRunCommand(): Promise<Command> {
         .default(process.stdout.isTTY ? "pretty" : "json"),
     )
     .action(async (options) => {
-      const { outputFormat, cacheNetworkRequests, secretsSet } = options;
+      const { outputFormat, cachedResponseStrategy, secretsSet } = options;
       const request = getRequestFromArgs(options, liaseDetails.requestHandler);
       const query = await getLiaseQuery({
         request,
         loadPluginsFromArgs: true,
-        cacheNetworkRequests,
+        cachedResponseStrategy,
         secretsSet,
       });
       const response = await query.getNext();

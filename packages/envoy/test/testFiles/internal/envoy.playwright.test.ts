@@ -18,11 +18,6 @@ import {
 } from "@/src/lib/playwrightBrowser.js";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-// envoy uses `this.cacheNetworkRequests`; bind a minimal context and cast to
-// preserve the overload signatures (envoy.call() drops overload dispatch).
-const callCtx = { cacheNetworkRequests: "never" as const };
-const boundEnvoy = envoy.bind(callCtx) as typeof envoy;
-
 // Simple HTML server for testing page interaction
 let server: Server;
 let serverUrl: string;
@@ -82,7 +77,7 @@ describe("envoy with responseType: page (Playwright)", () => {
   });
 
   it("returns a page response with correct shape", async () => {
-    const result = await boundEnvoy(serverUrl, {
+    const result = await envoy(serverUrl, {
       agent: "playwright",
       responseType: "rendered dom",
     });
@@ -104,7 +99,7 @@ describe("envoy with responseType: page (Playwright)", () => {
   });
 
   it("dom selection can read DOM content", async () => {
-    const { dom, close } = await boundEnvoy(serverUrl, {
+    const { dom, close } = await envoy(serverUrl, {
       agent: "playwright",
       responseType: "rendered dom",
     });
@@ -118,7 +113,7 @@ describe("envoy with responseType: page (Playwright)", () => {
   });
 
   it("dom selection supports interactive fill and click", async () => {
-    const result = await boundEnvoy(serverUrl, {
+    const result = await envoy(serverUrl, {
       agent: "playwright",
       responseType: "rendered dom",
     });
@@ -138,7 +133,7 @@ describe("envoy with responseType: page (Playwright)", () => {
   it("browser is lazily started — not running before first call", async () => {
     expect(isBrowserRunning()).toBe(false);
 
-    const { close } = await boundEnvoy(serverUrl, {
+    const { close } = await envoy(serverUrl, {
       agent: "playwright",
       responseType: "rendered dom",
     });
@@ -148,7 +143,7 @@ describe("envoy with responseType: page (Playwright)", () => {
   });
 
   it("browser stays alive between consecutive page requests", async () => {
-    const r1 = await boundEnvoy(serverUrl, {
+    const r1 = await envoy(serverUrl, {
       agent: "playwright",
       responseType: "rendered dom",
     });
@@ -156,7 +151,7 @@ describe("envoy with responseType: page (Playwright)", () => {
 
     expect(isBrowserRunning()).toBe(true);
 
-    const r2 = await boundEnvoy(serverUrl, {
+    const r2 = await envoy(serverUrl, {
       agent: "playwright",
       responseType: "rendered dom",
     });
@@ -166,7 +161,7 @@ describe("envoy with responseType: page (Playwright)", () => {
   });
 
   it("shutdownBrowser() immediately stops the browser", async () => {
-    const { close } = await boundEnvoy(serverUrl, {
+    const { close } = await envoy(serverUrl, {
       agent: "playwright",
       responseType: "rendered dom",
     });
@@ -183,7 +178,7 @@ describe("envoy with responseType: page (Playwright)", () => {
       receivedHeader = req.headers["x-test-header"] as string | undefined;
     });
 
-    const { close } = await boundEnvoy(serverUrl, {
+    const { close } = await envoy(serverUrl, {
       agent: "playwright",
       responseType: "rendered dom",
       headers: { "x-test-header": "test-value" },
@@ -194,7 +189,7 @@ describe("envoy with responseType: page (Playwright)", () => {
   });
 
   it("dom getter returns a PlaywrightDomSelection with correct DOM content", async () => {
-    const result = await boundEnvoy(serverUrl, {
+    const result = await envoy(serverUrl, {
       agent: "playwright",
       responseType: "rendered dom",
     });
@@ -211,7 +206,7 @@ describe("envoy with responseType: page (Playwright)", () => {
   });
 
   it("dom getter caches the result — returns the same instance on repeated access", async () => {
-    const result = await boundEnvoy(serverUrl, {
+    const result = await envoy(serverUrl, {
       agent: "playwright",
       responseType: "rendered dom",
     });

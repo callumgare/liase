@@ -130,13 +130,12 @@ export function getSharedLiaseOptions({ source, plugins }: LiaseDetails) {
     "Finds secrets set with given name and uses secrets in query",
   );
 
-  const cacheNetworkRequestsOption = new Option(
-    "--cacheNetworkRequests <caching option>",
-    `"never" will never cache network requests, "auto" will cache requests that seem like they might be cacheable and store them for as long as they seem fresh, ` +
-      `"always" will always cache requests with no expiry.`,
+  const cachedResponseStrategyOption = new Option(
+    "--cachedResponseStrategy <strategy>",
+    `"never" = never cache, "if-cached" = use cache if available (fetch fresh if miss), "if-fresh" = use cache if available (validate with server), "exclusively" = cache-only (error if miss).`,
   )
-    .choices(["never", "auto", "always"])
-    .default("always");
+    .choices(["never", "if-cached", "if-fresh", "exclusively"])
+    .default("if-cached");
 
   const liase = new Liase({ plugins });
   sourceOption.choices(liase.sources.map((source) => source.id));
@@ -151,7 +150,7 @@ export function getSharedLiaseOptions({ source, plugins }: LiaseDetails) {
     sourceOption,
     requestHandlerOption,
     pluginsOption,
-    cacheNetworkRequestsOption,
+    cachedResponseStrategyOption,
     secretsSetOption,
   };
 }

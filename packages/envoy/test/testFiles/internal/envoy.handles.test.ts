@@ -4,11 +4,6 @@ import { CheerioDomSelection } from "@/src/lib/dom/CheerioDomSelection.js";
 import { PlaywrightDomSelection } from "@/src/lib/dom/PlaywrightDomSelection.js";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-const callCtxAlways = { cacheNetworkRequests: "always" as const };
-const callCtxNever = { cacheNetworkRequests: "never" as const };
-const boundAlwaysEnvoy = envoy.bind(callCtxAlways) as typeof envoy;
-const boundNeverEnvoy = envoy.bind(callCtxNever) as typeof envoy;
-
 let server: Server;
 let serverUrl: string;
 
@@ -77,7 +72,7 @@ describe("envoy response handles", () => {
   });
 
   it("returns a DOM response handle for fetch dom", async () => {
-    const response = await boundAlwaysEnvoy(serverUrl, {
+    const response = await envoy(serverUrl, {
       agent: "fetch",
       responseType: "dom",
     });
@@ -102,7 +97,7 @@ describe("envoy response handles", () => {
   });
 
   it("returns a text response for fetch text", async () => {
-    const response = await boundAlwaysEnvoy(`${serverUrl}/text`, {
+    const response = await envoy(`${serverUrl}/text`, {
       agent: "fetch",
       responseType: "text",
     });
@@ -118,7 +113,7 @@ describe("envoy response handles", () => {
   });
 
   it("returns a json response for fetch json", async () => {
-    const response = await boundAlwaysEnvoy(`${serverUrl}/json`, {
+    const response = await envoy(`${serverUrl}/json`, {
       agent: "fetch",
       responseType: "json",
     });
@@ -134,7 +129,7 @@ describe("envoy response handles", () => {
   });
 
   it("returns an interactive page handle for playwright page", async () => {
-    const response = await boundNeverEnvoy(serverUrl, {
+    const response = await envoy(serverUrl, {
       agent: "playwright",
       responseType: "rendered dom",
     });
@@ -174,7 +169,7 @@ describe("envoy response handles", () => {
   });
 
   it("defaults to fetch+dom when options are omitted", async () => {
-    const response = await boundNeverEnvoy(serverUrl);
+    const response = await envoy(serverUrl);
 
     expect(response.type).toBe("dom");
     if (response.type !== "dom") {
@@ -203,7 +198,7 @@ describe("envoy response handles", () => {
 
     const address = invalidJsonLdServer.address() as { port: number };
     const url = `http://127.0.0.1:${address.port}`;
-    const response = await boundNeverEnvoy(url, {
+    const response = await envoy(url, {
       agent: "fetch",
       responseType: "dom",
     });
@@ -220,13 +215,6 @@ describe("envoy response handles", () => {
     });
   });
 
-  it("throws when cacheNetworkRequests is auto", async () => {
-    const autoEnvoy = envoy.bind({ cacheNetworkRequests: "auto" as const });
-    await expect(autoEnvoy(serverUrl, { agent: "fetch" })).rejects.toThrow(
-      'The "auto" value for the cacheNetworkRequests option is not yet supported',
-    );
-  });
-
   it("throws on non-ok fetch response", async () => {
     const badServer = await new Promise<Server>((resolve) => {
       const s = createServer((_req, res) => {
@@ -239,7 +227,7 @@ describe("envoy response handles", () => {
     const url = `http://127.0.0.1:${address.port}`;
 
     await expect(
-      boundNeverEnvoy(url, { agent: "fetch", responseType: "text" }),
+      envoy(url, { agent: "fetch", responseType: "text" }),
     ).rejects.toThrow("Got response status 500");
 
     await new Promise<void>((resolve, reject) => {

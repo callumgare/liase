@@ -209,7 +209,7 @@ describe("web-ui server", () => {
   function postRequest(overrides: Record<string, unknown> = {}) {
     return post(`${server.url}/`, {
       liaseRequest: { ...baseRequest, ...overrides },
-      cacheNetworkRequests: "never",
+      cachedResponseStrategy: "never",
     });
   }
 
@@ -268,7 +268,7 @@ describe("web-ui server", () => {
     >;
     const { ok } = await post(`${server.url}/`, {
       liaseRequest: withoutOptional,
-      cacheNetworkRequests: "never",
+      cachedResponseStrategy: "never",
     });
     expect(ok).toBe(true);
   });

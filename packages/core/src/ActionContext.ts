@@ -1,8 +1,7 @@
-import {
-  type EnvoySession,
-  type UrlResAny,
-  addCachingFetchWrapper,
-  type envoy as loadUrl,
+import type {
+  EnvoySession,
+  FetchExtended,
+  envoy as loadUrl,
 } from "@liase/envoy";
 import { decodeHTML } from "entities";
 import {
@@ -177,10 +176,6 @@ export class ActionContext extends Function {
     return this.#constructorContext.pageFetchLimitReached;
   }
 
-  get cacheNetworkRequests() {
-    return this.#constructorContext.cacheNetworkRequests;
-  }
-
   loadUrl = (async (url: string, options?: Parameters<typeof loadUrl>[1]) => {
     const envoyFn = this.#envoySession.envoy as unknown as (
       url: string,
@@ -230,12 +225,8 @@ export class ActionContext extends Function {
     return this.#constructorContext.hooks;
   }
 
-  get fetch(): typeof fetch {
-    const cachingFetch = addCachingFetchWrapper(
-      this.#envoySession.fetch,
-      this.#constructorContext.cacheNetworkRequests,
-    );
-    return cachingFetch;
+  get fetch(): FetchExtended {
+    return this.#envoySession.fetch;
   }
 
   guessMediaInfoFromUrl = guessMediaInfoFromUrl;

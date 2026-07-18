@@ -28,9 +28,8 @@ export async function generateResponse(
   };
   Error.stackTraceLimit = 50;
 
-  // Create a new envoy session with built-in history tracking
   const envoySession = await createEnvoySession({
-    cacheNetworkRequests: resolvedContext.cacheNetworkRequests,
+    cachedResponseStrategy: resolvedContext.cachedResponseStrategy,
   });
 
   try {

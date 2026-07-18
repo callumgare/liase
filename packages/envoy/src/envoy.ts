@@ -19,10 +19,6 @@ import { CheerioDomSelection } from "./lib/dom/CheerioDomSelection.js";
 import { PlaywrightDomSelection } from "./lib/dom/PlaywrightDomSelection.js";
 import type { RenderedDomNode } from "./lib/dom/RenderedDomNode.js";
 import { headersToNormalisedBasicObject } from "./lib/fetch.js";
-import {
-  cacheResponse,
-  getCachedResponse,
-} from "./lib/networkRequestsCache.js";
 import { getPage, gotoExtended, releasePage } from "./lib/playwrightBrowser.js";
 import type { RetryOptions } from "./lib/retryLogic.js";
 
@@ -47,8 +43,14 @@ type EnvoyOptionsFetch = {
 
 export type EnvoyOptions = EnvoyOptionsPlaywright | EnvoyOptionsFetch;
 
+export type CachedResponseStrategy =
+  | "never"
+  | "if-fresh"
+  | "if-cached"
+  | "exclusively";
+
 export type EnvoyContext = {
-  cacheNetworkRequests?: "never" | "auto" | "always";
+  cachedResponseStrategy?: CachedResponseStrategy;
 };
 
 // Internal extension — not exported; used to thread a custom fetch function
@@ -56,12 +58,12 @@ export type EnvoyContext = {
 type EnvoyInternalContext = EnvoyContext & {
   fetchFn?: (
     input: string | URL | Request,
-    init?: RequestInit,
+    init?: FetchExtendedRequestInit,
   ) => Promise<Response>;
 };
 
 export type EnvoySessionOptions = FetchExtendedSessionOptions &
-  Pick<EnvoyContext, "cacheNetworkRequests">;
+  Pick<EnvoyContext, "cachedResponseStrategy">;
 
 export type NetworkRequestsHistoryItem = {
   meta?: Record<string, unknown>;
@@ -119,13 +121,11 @@ export async function envoy(
     // biome-ignore lint/style/noParameterAssign: assigning default value to optional parameter
     options = {};
   }
-  const cacheNetworkRequests = this?.cacheNetworkRequests;
+  const cachedResponseStrategy = this?.cachedResponseStrategy;
 
-  if (cacheNetworkRequests === "auto") {
-    throw Error(
-      `The "auto" value for the cacheNetworkRequests option is not yet supported. Sorry!`,
-    );
-  }
+  // Map high-level strategy to standard fetch cache options
+  const cacheOption = mapStrategyToFetchCache(cachedResponseStrategy);
+
   if (!options.agent) {
     options.agent = "fetch";
   }
@@ -134,52 +134,42 @@ export async function envoy(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- we define only to exclude from requestOptions
     const { agent, responseType, ...requestOptions } = options;
 
-    let res:
-      | {
-          body: string;
-          statusCode: number;
-          headers: Record<string, string>;
-          cachedOn?: Date;
-          request: { headers: Record<string, string> };
-        }
-      | undefined;
-
-    const cacheableRequest = {
-      url,
-      method: requestOptions.method ?? "",
-      headers: requestOptions.headers ?? {},
-      body: requestOptions.body ?? "",
+    // Pass standard cache option through to the wrapped fetch
+    const fetchOptions = {
+      ...requestOptions,
+      cache: cacheOption,
     };
 
-    if (cacheNetworkRequests === "always") {
-      res = await getCachedResponse(cacheableRequest);
-    } else {
-      cacheNetworkRequests satisfies "never" | undefined;
+    const fetchFn = this?.fetchFn ?? fetchExtended;
+    const fetchRes = await fetchFn(url, fetchOptions);
+    if (!fetchRes.ok) {
+      const errorBody = await fetchRes.text();
+      throw Error(
+        `Got response status ${fetchRes.status} with body: ${errorBody}`,
+      );
     }
 
-    if (!res) {
-      const fetchFn = this?.fetchFn ?? fetchExtended;
-      const fetchRes = await fetchFn(url, requestOptions);
-      if (!fetchRes.ok) {
-        const errorBody = await fetchRes.text();
-        throw Error(
-          `Got response status ${fetchRes.status} with body: ${errorBody}`,
-        );
-      }
-      res = {
-        body: await fetchRes.text(),
-        statusCode: fetchRes.status,
-        headers: headersToNormalisedBasicObject([
-          ...fetchRes.headers.entries(),
-        ]),
-        request: {
-          headers: requestOptions.headers ?? {},
-        },
-      };
-      await cacheResponse(cacheableRequest, res);
-    }
+    // Detect if response was cached by checking statusText
+    // The caching wrapper sets statusText to "Cached on: {timestamp}" for cached responses
+    const isCached = fetchRes.statusText.startsWith("Cached on:");
+    const cachedOn = isCached
+      ? new Date(
+          Number.parseInt(fetchRes.statusText.split(":")[1]?.trim() ?? "0", 10),
+        )
+      : null;
 
-    const { body, statusCode, headers, cachedOn } = res;
+    const res = {
+      body: await fetchRes.text(),
+      statusCode: fetchRes.status,
+      headers: headersToNormalisedBasicObject([...fetchRes.headers.entries()]),
+      cached: isCached,
+      cachedOn,
+      request: {
+        headers: requestOptions.headers ?? {},
+      },
+    };
+
+    const { body, statusCode, headers, cached, cachedOn: cachedOnValue } = res;
 
     if (options.responseType === "dom" || !options.responseType) {
       const dom = new CheerioDomSelection(cheerio.load(body));
@@ -221,8 +211,8 @@ export async function envoy(
         refetch: async () => {},
         statusCode,
         headers,
-        cached: Boolean(cachedOn),
-        cachedOn: cachedOn ?? null,
+        cached,
+        cachedOn: cachedOnValue,
         request: res.request,
       };
     }
@@ -232,8 +222,8 @@ export async function envoy(
         data: JSON.parse(body),
         statusCode,
         headers,
-        cached: Boolean(cachedOn),
-        cachedOn: cachedOn ?? null,
+        cached,
+        cachedOn: cachedOnValue,
         request: res.request,
       };
     }
@@ -243,8 +233,8 @@ export async function envoy(
         data: body,
         statusCode,
         headers,
-        cached: Boolean(cachedOn),
-        cachedOn: cachedOn ?? null,
+        cached,
+        cachedOn: cachedOnValue,
         request: res.request,
       };
     }
@@ -376,11 +366,46 @@ export async function envoy(
   throw Error(`Unknown agent "${options.agent}"`);
 }
 
+/**
+ * Map high-level cached response strategy to standard fetch cache option.
+ *
+ * - if-fresh: use cache if fresh, validate with server for staleness (maps to 'default')
+ * - never: never use cache (maps to 'no-store')
+ * - if-cached: use cache if available, otherwise fetch fresh (maps to 'force-cache')
+ * - exclusively: only use cache, fail if not cached (maps to 'only-if-cached')
+ */
+function mapStrategyToFetchCache(
+  strategy?: CachedResponseStrategy,
+): RequestCache {
+  switch (strategy) {
+    case "never":
+      return "no-store";
+    case "exclusively":
+      return "only-if-cached";
+    case "if-cached":
+      return "force-cache";
+    case "if-fresh":
+      return "default";
+    case undefined:
+      return "default";
+    default:
+      strategy satisfies never;
+      throw Error(`Unknown cached response strategy: ${strategy}`);
+  }
+}
+
 export async function createEnvoySession(
   options?: EnvoySessionOptions,
 ): Promise<EnvoySession> {
-  const { cacheNetworkRequests, ...sessionOptions } = options ?? {};
-  const session = await createFetchExtendedSession(sessionOptions);
+  const { cachedResponseStrategy, ...sessionOptions } = options ?? {};
+
+  // Map strategy to standard fetch cache option for the session
+  const cacheOption = mapStrategyToFetchCache(cachedResponseStrategy);
+
+  const session = await createFetchExtendedSession({
+    ...sessionOptions,
+    cache: cacheOption,
+  });
 
   // Shared history array that will be shared across clones
   const history: NetworkRequestsHistoryItem[] = [];
@@ -394,7 +419,7 @@ export async function createEnvoySession(
       const response = (await envoy.call(
         {
           fetchFn: session.fetch,
-          cacheNetworkRequests,
+          cachedResponseStrategy,
         } satisfies EnvoyInternalContext,
         url,
         options,

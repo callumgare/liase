@@ -140,14 +140,15 @@ function handleMediaQueryRequest(
     body += chunk;
   });
   req.on("end", async () => {
-    const { liaseRequest, secretsSet, cacheNetworkRequests } = JSON.parse(body);
+    const { liaseRequest, secretsSet, cachedResponseStrategy } =
+      JSON.parse(body);
     let response: unknown;
     try {
       const query = await getLiaseQuery({
         request: liaseRequest,
         secretsSet,
         loadPluginsFromArgs: true,
-        cacheNetworkRequests,
+        cachedResponseStrategy,
       });
       response = await query.getNext();
     } catch (error) {

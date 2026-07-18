@@ -285,11 +285,12 @@ export default {
           </select>
         </div>
         <div class="group">
-          <label for="cache-network-requests">Cache Network Requests:</label>
-          <select name="cache-network-requests" id="cache-network-requests" v-model="currentQuery.cacheNetworkRequests">
-            <option value="never">Never</option>
-            <option value="auto">Auto</option>
-            <option value="always">Always</option>
+          <label for="cached-response-strategy">Cached Response Strategy:</label>
+          <select name="cached-response-strategy" id="cached-response-strategy" v-model="currentQuery.cachedResponseStrategy">
+            <option value="never">Never cache</option>
+            <option value="if-fresh">Use cache if available and fresh</option>
+            <option value="if-cached">Use cache if available</option>
+            <option value="exclusively">Cache only (error if miss)</option>
           </select>
         </div>
         <button @click="$emit('fetch')" :disabled="!requestValid">Fetch</button>

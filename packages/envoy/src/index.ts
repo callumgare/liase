@@ -15,12 +15,17 @@ export type {
   EnvoySession,
   EnvoySessionOptions,
   NetworkRequestsHistoryItem,
+  CachedResponseStrategy,
 } from "./envoy.js";
 export {
   fetchExtended,
   createFetchExtendedSession,
   type FetchExtendedRequestInit,
   type FetchExtendedSessionOptions,
+  cacheResponse,
+  getCachedResponse,
+  wrapFetchWithCachingLogic,
+  type FetchExtended,
 } from "./fetchExtended/index.js";
 export type {
   UrlRes,
@@ -31,12 +36,6 @@ export type {
   UrlResType,
   UrlResText,
 } from "./UrlRes.js";
-export {
-  addCachingFetchWrapper,
-  cacheResponse,
-  getCachedResponse,
-  type CacheNetworkRequests,
-} from "./lib/networkRequestsCache.js";
 export {
   headersToNormalisedBasicObject,
   parseFetchArgs,

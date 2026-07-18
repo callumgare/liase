@@ -154,7 +154,7 @@ export default class LiaseQuery extends Liase {
           secrets: parsedSecrets,
           responseDetails: this.getResponseDetails(),
           pageFetchLimitReached,
-          cacheNetworkRequests: this.#queryOptions.cacheNetworkRequests,
+          cachedResponseStrategy: this.#queryOptions.cachedResponseStrategy,
           sourceId: this.getSource(parsedRequest.source).id,
           hooks: this._hooks,
         });

@@ -13,7 +13,7 @@ export default {
       name: "untitled query",
       requestString: "{}",
       secretsSet: "",
-      cacheNetworkRequests: "always",
+      cachedResponseStrategy: "if-cached",
     };
     const queries = ref(
       JSON.parse(
@@ -77,7 +77,7 @@ export default {
           body: JSON.stringify({
             liaseRequest: JSON.parse(currentQuery.value?.requestString),
             secretsSet: currentQuery.value?.secretsSet,
-            cacheNetworkRequests: currentQuery.value?.cacheNetworkRequests,
+            cachedResponseStrategy: currentQuery.value?.cachedResponseStrategy,
           }),
         });
         response.value = await res.json();

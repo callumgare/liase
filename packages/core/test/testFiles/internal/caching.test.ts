@@ -1,4 +1,4 @@
-import { afterEach, expect } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import currentTimeSource, {
   startMockServer,
   stopMockServer,
@@ -15,7 +15,7 @@ createBasicTestsForRequestHandlers({
     "current-time": [
       {
         testName:
-          "Responses are not cached if cacheNetworkRequests = never using loadUrl",
+          "Responses are not cached with 'never' strategy using loadUrl",
         before: async () => await startMockServer(true),
         request: {
           requestMethod: "loadUrl",
@@ -24,12 +24,11 @@ createBasicTestsForRequestHandlers({
           expect(responses[0].time).not.toEqual(responses[1].time),
         numOfPagesToLoad: 2,
         queryOptions: {
-          cacheNetworkRequests: "never",
+          cachedResponseStrategy: "never",
         },
       },
       {
-        testName:
-          "Responses are not cached if cacheNetworkRequests = never using fetch",
+        testName: "Responses are not cached with 'never' strategy using fetch",
         before: async () => await startMockServer(true),
         request: {
           requestMethod: "fetch",
@@ -38,26 +37,26 @@ createBasicTestsForRequestHandlers({
           expect(responses[0].time).not.toEqual(responses[1].time),
         numOfPagesToLoad: 2,
         queryOptions: {
-          cacheNetworkRequests: "never",
+          cachedResponseStrategy: "never",
         },
       },
       {
-        testName: "cacheNetworkRequests = auto is not currently supported",
+        testName:
+          "Cacheable responses are cached and reused with 'if-fresh' strategy using fetch",
         before: async () => await startMockServer(true),
         request: {
           requestMethod: "fetch",
         },
         checkAllResponses: (responses) =>
-          expect(responses[0].time).not.toEqual(responses[1].time),
+          expect(responses[0].time).toEqual(responses[1].time),
         numOfPagesToLoad: 2,
         queryOptions: {
-          cacheNetworkRequests: "auto",
+          cachedResponseStrategy: "if-fresh",
         },
-        expectError: /not yet supported/,
       },
       {
         testName:
-          "Responses that indicate they are cacheable are cached if cacheNetworkRequests = always using loadUrl",
+          "Cacheable responses are cached and reused with 'if-cached' strategy using loadUrl",
         before: async () => await startMockServer(true),
         request: {
           requestMethod: "loadUrl",
@@ -66,12 +65,12 @@ createBasicTestsForRequestHandlers({
           expect(responses[0].time).toEqual(responses[1].time),
         numOfPagesToLoad: 2,
         queryOptions: {
-          cacheNetworkRequests: "always",
+          cachedResponseStrategy: "if-cached",
         },
       },
       {
         testName:
-          "Responses that indicate they are not cacheable are cached anyway if cacheNetworkRequests = always using loadUrl",
+          "Non-cacheable responses are still cached with 'if-cached' strategy using loadUrl",
         before: async () => await startMockServer(false),
         request: {
           requestMethod: "loadUrl",
@@ -80,12 +79,12 @@ createBasicTestsForRequestHandlers({
           expect(responses[0].time).toEqual(responses[1].time),
         numOfPagesToLoad: 2,
         queryOptions: {
-          cacheNetworkRequests: "always",
+          cachedResponseStrategy: "if-cached",
         },
       },
       {
         testName:
-          "Responses that indicate they are cacheable are cached if cacheNetworkRequests = always using fetch",
+          "Cacheable responses are cached and reused with 'if-cached' strategy using fetch",
         before: async () => await startMockServer(true),
         request: {
           requestMethod: "fetch",
@@ -94,12 +93,12 @@ createBasicTestsForRequestHandlers({
           expect(responses[0].time).toEqual(responses[1].time),
         numOfPagesToLoad: 2,
         queryOptions: {
-          cacheNetworkRequests: "always",
+          cachedResponseStrategy: "if-cached",
         },
       },
       {
         testName:
-          "Responses that indicate they are not cacheable are cached anyway if cacheNetworkRequests = always using fetch",
+          "Non-cacheable responses are still cached with 'if-cached' strategy using fetch",
         before: async () => await startMockServer(false),
         request: {
           requestMethod: "fetch",
@@ -108,11 +107,12 @@ createBasicTestsForRequestHandlers({
           expect(responses[0].time).toEqual(responses[1].time),
         numOfPagesToLoad: 2,
         queryOptions: {
-          cacheNetworkRequests: "always",
+          cachedResponseStrategy: "if-cached",
         },
       },
       {
-        testName: "Default setting for cacheNetworkRequests in tests is always",
+        testName:
+          "Default setting for cachedResponseStrategy in tests is 'if-cached'",
         before: async () => await startMockServer(false),
         request: {
           requestMethod: "loadUrl",

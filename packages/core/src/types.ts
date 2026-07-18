@@ -10,7 +10,7 @@ export type ConstructorExecutionContext = {
   requestHandler: RequestHandler;
   responseDetails: RequestHandler["responses"][0];
   pageFetchLimitReached?: boolean;
-  cacheNetworkRequests?: QueryOptions["cacheNetworkRequests"];
+  cachedResponseStrategy?: QueryOptions["cachedResponseStrategy"];
   sourceId: string;
   hooks: LiaseHooks;
 };

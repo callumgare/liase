@@ -7,15 +7,17 @@ import {
 import { getLiaseDetailsFromArgs } from "./liase-details.js";
 import { getSecretsSets } from "./secrets.js";
 
+import type { CachedResponseStrategy } from "@liase/envoy";
+
 export async function getLiaseQuery({
   request,
   secretsSet,
-  cacheNetworkRequests,
+  cachedResponseStrategy,
   loadPluginsFromArgs,
 }: {
   request: Record<string, unknown>;
   secretsSet?: string;
-  cacheNetworkRequests?: "never" | "auto" | "always";
+  cachedResponseStrategy?: CachedResponseStrategy;
   loadPluginsFromArgs?: boolean;
 }): Promise<LiaseQuery> {
   const plugins: Plugin[] = [];
@@ -33,7 +35,7 @@ export async function getLiaseQuery({
     request: request as GenericRequest,
     queryOptions: {
       secrets,
-      cacheNetworkRequests,
+      cachedResponseStrategy,
     },
     liaseOptions: {
       plugins,

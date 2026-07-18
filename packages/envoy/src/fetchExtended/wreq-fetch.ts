@@ -20,6 +20,7 @@ type NormalisedWreqRequestInit<
 > = Omit<TInit, "body" | "headers"> & {
   body?: BodyInit | null;
   headers?: HeadersInit;
+  cache?: RequestCache;
 };
 
 type NormalisedWreqResponse<TResponse extends WreqResponse = WreqResponse> =

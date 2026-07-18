@@ -2,9 +2,6 @@ import { type Server, createServer } from "node:http";
 import { envoy } from "@/src/envoy.js";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-const callCtx = { cacheNetworkRequests: "never" as const };
-const boundEnvoy = envoy.bind(callCtx) as typeof envoy;
-
 let server: Server;
 let serverUrl: string;
 
@@ -88,7 +85,7 @@ describe("PlaywrightDomSelection", () => {
   });
 
   it("covers traversal and non-interactive getters", async () => {
-    const result = await boundEnvoy(serverUrl, {
+    const result = await envoy(serverUrl, {
       agent: "playwright",
       responseType: "rendered dom",
     });
@@ -179,7 +176,7 @@ describe("PlaywrightDomSelection", () => {
   });
 
   it("covers interactive methods and async state getters", async () => {
-    const result = await boundEnvoy(serverUrl, {
+    const result = await envoy(serverUrl, {
       agent: "playwright",
       responseType: "rendered dom",
     });
@@ -239,7 +236,7 @@ describe("PlaywrightDomSelection", () => {
   });
 
   it("supports xpath selector syntax and navigation with waitForUrl", async () => {
-    const result = await boundEnvoy(serverUrl, {
+    const result = await envoy(serverUrl, {
       agent: "playwright",
       responseType: "rendered dom",
     });
@@ -259,7 +256,7 @@ describe("PlaywrightDomSelection", () => {
   });
 
   it("supports text selectors with exact text matching", async () => {
-    const result = await boundEnvoy(serverUrl, {
+    const result = await envoy(serverUrl, {
       agent: "playwright",
       responseType: "rendered dom",
     });

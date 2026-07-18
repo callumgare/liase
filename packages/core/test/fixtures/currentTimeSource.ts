@@ -53,11 +53,21 @@ let server: Server;
 
 export async function startMockServer(cacheable: boolean) {
   server = createServer((req, res) => {
+    const etag = '"current-time-response"';
+
+    // Handle conditional requests
+    if (req.headers["if-none-match"] === etag) {
+      res.writeHead(304, { ETag: etag });
+      res.end();
+      return;
+    }
+
     if (cacheable) {
       res.setHeader("Cache-Control", "public, max-age=604800, immutable");
     } else {
       res.setHeader("Cache-Control", "no-store");
     }
+    res.setHeader("ETag", etag);
     res.end(Date.now().toString());
   }).listen(0);
 

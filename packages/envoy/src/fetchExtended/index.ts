@@ -9,6 +9,12 @@ import {
 } from "./wreq-fetch.js";
 
 import {
+  cacheResponse,
+  getCachedResponse,
+  wrapFetchWithCachingLogic,
+} from "./caching.js";
+
+import {
   type RetryOptions,
   type WithRetryOptions,
   wrapFetchWithRetryLogic,
@@ -28,21 +34,28 @@ export type FetchExtended<
 export type FetchExtendedResponse<TResponse extends Response = WreqResponse> =
   TResponse;
 
+// Export caching types and functions
+export { wrapFetchWithCachingLogic, getCachedResponse, cacheResponse };
+
 // Unlike createFetchExtended(), createFetchExtendedSession() is specific to wreq-js, since there isn't a standard
 // fetch session interface as there is with the fetch client.
 export type FetchExtendedSessionOptions = WreqCreateSessionOptions & {
   retry?: RetryOptions;
+  cache?: RequestCache;
 };
 
 export type FetchExtendedSession = WreqSession & {
-  fetch: GenericFetch<FetchExtendedRequestInit, FetchExtendedResponse>;
+  fetch: (
+    input: RequestInfo | URL,
+    init?: FetchExtendedRequestInit,
+  ) => Promise<FetchExtendedResponse>;
 };
 
 /**
- * Create a fetch function with extended functionality (retry support).
- * Wraps the provided fetch client and returns a function that can handle retry options
+ * Create a fetch function with extended functionality (retry and caching support).
+ * Wraps the provided fetch client and returns a function that can handle retry and cache options
  * passed via the init parameter. The returned function has the same init type as the
- * input fetch client, extended with retry options.
+ * input fetch client, extended with retry and cache options.
  */
 function createFetchExtended<
   TInit extends RequestInit,
@@ -55,9 +68,15 @@ function createFetchExtended<
   const retryDefaults: WithRetryOptions<RequestInit> = {
     retry: defaults?.retry,
   };
+  const cacheDefaults = {
+    cache: defaults?.cache,
+  };
   return wrapFetchAndMergeDefaultInit(
-    wrapFetchWithRetryLogic(fetchClient),
-    retryDefaults,
+    wrapFetchWithCachingLogic(
+      wrapFetchWithRetryLogic(fetchClient),
+      defaults?.cache,
+    ),
+    Object.assign({}, cacheDefaults, retryDefaults),
   );
 }
 
@@ -91,17 +110,21 @@ export const fetchExtended = createFetchExtended(wreqFetch);
 export async function createFetchExtendedSession(
   options?: FetchExtendedSessionOptions,
 ) {
-  const { retry, ...wreqSessionOptions } = options ?? {};
+  const { retry, cache, ...wreqSessionOptions } = options ?? {};
 
   // Create the underlying wreq-js session for cookie/session persistence
   const wreqSession = await createWreqFetchSession(wreqSessionOptions);
 
-  // Wrap with retry support using createFetchExtended
+  // Wrap with retry and cache support using createFetchExtended
+  // Construct defaults object - use any to avoid type conflicts with RequestInit.cache
+  const defaults: WithRetryOptions<RequestInit> = {
+    retry: options?.retry,
+    cache: options?.cache,
+  };
+
   const extendedFetch = createFetchExtended(
     wreqSession.fetch.bind(wreqSession),
-    {
-      retry: options?.retry,
-    },
+    defaults,
   );
 
   return Object.assign(wreqSession, {

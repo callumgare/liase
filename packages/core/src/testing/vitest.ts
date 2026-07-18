@@ -165,7 +165,7 @@ export function createBasicTestsForRequestHandlers<
             queryOptions: deepmerge.all(
               [
                 {
-                  cacheNetworkRequests: "always",
+                  cachedResponseStrategy: "if-cached",
                 },
                 queriesShared?.queryOptions || {},
                 query?.queryOptions || {},
