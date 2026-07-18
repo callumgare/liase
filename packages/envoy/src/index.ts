@@ -15,6 +15,12 @@ export type {
   EnvoySession,
   EnvoySessionOptions,
 } from "./envoy.js";
+export {
+  fetchExtended,
+  createFetchExtendedSession,
+  type FetchExtendedRequestInit,
+  type FetchExtendedSessionOptions,
+} from "./fetchExtended/index.js";
 export type {
   UrlRes,
   UrlResAny,
