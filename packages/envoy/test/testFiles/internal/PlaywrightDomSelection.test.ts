@@ -62,6 +62,9 @@ function startServer() {
 
 function stopServer() {
   return new Promise<void>((resolve, reject) => {
+    // closeAllConnections() forces any keep-alive connections (e.g. from
+    // Playwright) to close so server.close() doesn't hang.
+    server.closeAllConnections();
     server.close((err) => (err ? reject(err) : resolve()));
   });
 }

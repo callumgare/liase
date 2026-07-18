@@ -53,6 +53,9 @@ function startTestServer() {
 
 function stopTestServer() {
   return new Promise<void>((resolve, reject) => {
+    // closeAllConnections() forces any keep-alive connections (e.g. from
+    // Playwright) to close so server.close() doesn't hang.
+    server.closeAllConnections();
     server.close((err) => (err ? reject(err) : resolve()));
   });
 }
@@ -68,6 +71,9 @@ function assertNode<T>(value: T | null): T {
 
 describe("envoy with responseType: page (Playwright)", () => {
   beforeEach(async () => {
+    // Ensure each test starts with no browser running so state doesn't leak
+    // between tests (e.g. "browser is lazily started" requires a fresh start).
+    await shutdownBrowser();
     await startTestServer();
   });
 
