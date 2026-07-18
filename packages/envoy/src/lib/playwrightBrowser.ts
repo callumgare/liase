@@ -14,7 +14,14 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import type { Browser, BrowserContext, Page } from "playwright";
+import type {
+  Browser,
+  BrowserContext,
+  Page,
+  Response as PlaywrightResponse,
+} from "playwright";
+import { retryWithLogic } from "./retryLogic.js";
+import type { RetryOptions } from "./retryLogic.js";
 
 const IDLE_TIMEOUT_MS = 60_000; // 1 minute
 
@@ -225,4 +232,45 @@ export async function captureDebugScreenshots(
   }
 
   return screenshots;
+}
+
+/**
+ * Navigate to a URL with optional retry support.
+ * Wraps page.goto() with the retry logic from retryWithLogic.
+ *
+ * @param page - The Playwright page to navigate
+ * @param url - URL to navigate to
+ * @param options - Navigation options (waitUntil, timeout, retry)
+ * @returns The response from the navigation
+ * @throws RetriesExhausted if retries are configured and exhausted
+ */
+export async function gotoExtended(
+  page: Page,
+  url: string,
+  options?: {
+    waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
+    timeout?: number;
+    retry?: RetryOptions;
+  },
+): Promise<PlaywrightResponse | null> {
+  const retryOptions = options?.retry;
+  const navigationOptions = {
+    waitUntil: options?.waitUntil ?? ("networkidle" as const),
+    timeout: options?.timeout,
+  };
+
+  // Create the retry-enabled wrapper
+  const wrappedGoto = retryWithLogic(
+    page.goto.bind(page),
+    (args, response) => {
+      return {
+        statusCode: response?.status() ?? 0,
+        method: "GET",
+      };
+    },
+    retryOptions,
+  );
+
+  // Call the wrapped function with the args
+  return wrappedGoto(url, navigationOptions);
 }

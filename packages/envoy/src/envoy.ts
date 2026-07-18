@@ -22,7 +22,8 @@ import {
   cacheResponse,
   getCachedResponse,
 } from "./lib/networkRequestsCache.js";
-import { getPage, releasePage } from "./lib/playwrightBrowser.js";
+import { getPage, gotoExtended, releasePage } from "./lib/playwrightBrowser.js";
+import type { RetryOptions } from "./lib/retryLogic.js";
 
 /** Options for Playwright requests that return an interactive page handle. */
 type EnvoyOptionsPlaywrightPage = {
@@ -31,6 +32,7 @@ type EnvoyOptionsPlaywrightPage = {
   headers?: Record<string, string>;
   waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
   timeout?: number;
+  retry?: RetryOptions;
 };
 
 type EnvoyOptionsPlaywright = EnvoyOptionsPlaywrightPage;
@@ -236,9 +238,10 @@ export async function envoy(
         await page.setExtraHTTPHeaders(options.headers);
       }
 
-      const response = await page.goto(url, {
+      const response = await gotoExtended(page, url, {
         waitUntil: options.waitUntil ?? "networkidle",
         timeout: options.timeout,
+        retry: options.retry,
       });
 
       const statusCode = response?.status() ?? 0;
