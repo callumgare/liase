@@ -20,6 +20,10 @@ import { PlaywrightDomSelection } from "./lib/dom/PlaywrightDomSelection.js";
 import type { RenderedDomNode } from "./lib/dom/RenderedDomNode.js";
 import { headersToNormalisedBasicObject } from "./lib/fetch.js";
 import { getPage, gotoExtended, releasePage } from "./lib/playwrightBrowser.js";
+import {
+  applyPlaywrightNetworkCache,
+  assertPlaywrightCacheStrategySupported,
+} from "./lib/playwrightNetworkCache.js";
 import type { RetryOptions } from "./lib/retryLogic.js";
 
 /** Options for Playwright requests that return an interactive page handle. */
@@ -243,7 +247,15 @@ export async function envoy(
   }
   if (options.agent === "playwright") {
     if (options.responseType === "rendered dom") {
+      assertPlaywrightCacheStrategySupported(cachedResponseStrategy);
       const page = await getPage();
+
+      try {
+        await applyPlaywrightNetworkCache(page, url, cachedResponseStrategy);
+      } catch (error) {
+        await releasePage(page);
+        throw error;
+      }
 
       if (options.headers) {
         await page.setExtraHTTPHeaders(options.headers);

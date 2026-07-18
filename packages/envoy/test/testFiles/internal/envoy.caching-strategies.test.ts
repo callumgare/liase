@@ -125,14 +125,15 @@ describe("envoy - CachedResponseStrategy behaviors", () => {
       const session = await createEnvoySession({
         cachedResponseStrategy: "if-cached",
       });
+      const url = `${baseUrl}/test-dom?case=cache-copies-${Date.now()}`;
 
       // First request - should cache
-      const res1 = await session.envoy(`${baseUrl}/test-dom`);
+      const res1 = await session.envoy(url);
       expect(res1.type).toBe("dom");
       expect(res1.cached).toBe(false); // First response is fresh
 
       // Second request - should be cached
-      const res2 = await session.envoy(`${baseUrl}/test-dom`);
+      const res2 = await session.envoy(url);
       expect(res2.type).toBe("dom");
       expect(res2.cached).toBe(true); // Second should be from cache
 

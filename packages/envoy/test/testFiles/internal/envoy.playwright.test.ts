@@ -10,7 +10,7 @@
  */
 
 import { type Server, createServer } from "node:http";
-import { envoy } from "@/src/envoy.js";
+import { createEnvoySession, envoy } from "@/src/envoy.js";
 import { PlaywrightDomSelection } from "@/src/lib/dom/PlaywrightDomSelection.js";
 import {
   isBrowserRunning,
@@ -217,5 +217,21 @@ describe("envoy with responseType: page (Playwright)", () => {
     expect(dom1).toBe(dom2);
 
     await result.close();
+  });
+
+  it("applies cachedResponseStrategy for Playwright and rejects unsupported exclusively", async () => {
+    const session = await createEnvoySession({
+      cachedResponseStrategy: "exclusively",
+    });
+
+    await expect(
+      session.envoy(serverUrl, {
+        agent: "playwright",
+        responseType: "rendered dom",
+      }),
+    ).rejects.toThrow(/not supported for Playwright requests/);
+
+    expect(isBrowserRunning()).toBe(false);
+    await session.close();
   });
 });
